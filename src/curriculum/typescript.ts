@@ -8,9 +8,9 @@ export const typescriptPhases: Phase[] = [
     level: 1,
     title: 'JS Fundamentals, TypeScript Style',
     timeEstimate: '4–6 hours',
-    intro: `TypeScript is a typed superset of JavaScript that compiles to plain JS. Before diving into its type system, you need a solid grip on the JavaScript fundamentals that sit underneath — primitive values, \`const\`/\`let\`, control flow, functions, and basic DOM interaction — because TypeScript simply adds type annotations on top of code you already understand.
+    intro: `TypeScript is a typed superset of JavaScript that compiles to plain JS. Before diving into its type system, you need a solid grip on the JavaScript fundamentals that sit underneath — primitive values, \`const\`/\`let\`, control flow, functions, and basic Node CLI I/O — because TypeScript simply adds type annotations on top of code you already understand.
 
-In this phase you write valid TypeScript from day one: every variable gets an explicit type annotation or a clear inferred type, and you use \`tsc --strict\` (or the playground) to catch mistakes before runtime. By the end you can write a small interactive page, describe all its data with primitive types, and explain why TypeScript is worth the extra characters.`,
+In this phase you write valid TypeScript from day one: every variable gets an explicit type annotation or a clear inferred type, and you use \`tsc --strict\` to catch mistakes before runtime. **Build locally**: a \`cli/greet.ts\` Node CLI (\`tsx\` or \`bun run\`) that takes argv name and prints greeting with ISO timestamp. By the end you can write a small CLI, describe all its data with primitive types, and explain why TypeScript is worth the extra characters.`,
     topics: [
       {
         label: 'TypeScript in 5 minutes',
@@ -38,13 +38,13 @@ In this phase you write valid TypeScript from day one: every variable gets an ex
         note: 'Parameter and return type annotations, optional params, overloads',
       },
       {
-        label: 'DOM manipulation (MDN)',
-        url: 'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/DOM_scripting',
-        note: 'querySelector, addEventListener, textContent — typed via lib.dom.d.ts',
+        label: 'process.argv (Node.js docs)',
+        url: 'https://nodejs.org/api/process.html#processargv',
+        note: 'How to read command-line arguments in a Node CLI',
       },
     ],
     deliverable:
-      'A TypeScript file (no framework) that renders a counter to the DOM using typed event listeners. Zero `any` annotations. Passes `tsc --strict`.',
+      'Build locally: a `cli/greet.ts` Node CLI (`tsx` or `bun run`) that takes argv name and prints greeting with ISO timestamp. Zero `any` annotations. Passes `tsc --strict`.',
     checks: [
       {
         kind: 'mcq',
@@ -53,7 +53,7 @@ In this phase you write valid TypeScript from day one: every variable gets an ex
         options: ['`int`', '`number`', '`integer`', '`float`'],
         correctIndex: 1,
         explanation:
-          'TypeScript inherits JavaScript\'s single `number` type, which covers integers and floats. There is no `int` or `integer` primitive.',
+          "TypeScript inherits JavaScript's single `number` type (IEEE 754 double), which covers integers and floats. There is no `int` or `integer` primitive. See the TS Handbook → Everyday Types.",
       },
       {
         kind: 'mcq',
@@ -68,32 +68,57 @@ In this phase you write valid TypeScript from day one: every variable gets an ex
         ],
         correctIndex: 1,
         explanation:
-          '`const` prevents reassignment of the binding (though object contents can still mutate). Both are block-scoped; `var` is function-scoped.',
+          '`const` prevents reassignment of the binding (though object contents can still mutate). Both are block-scoped; `var` is function-scoped. See MDN → Statements/const.',
       },
       {
-        kind: 'code',
-        id: 'ts1-code1',
+        kind: 'mcq',
+        id: 'ts1-mcq3',
         prompt:
-          'Write a function `greet` that accepts a `name: string` and returns `"Hello, <name>!"`. Call it with `"World"` and log the result.',
-        starterCode: `function greet(name: string): string {
-  // your code here
-  return '';
-}
-
-console.log(greet('World'));`,
-        expectedOutput: 'Hello, World!\n',
-        hint: 'Use a template literal: `` `Hello, ${name}!` ``',
+          'What does this code log?\n```typescript\nfunction greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));\n```',
+        options: [
+          '`Hello, ${name}!`',
+          '`Hello, World!`',
+          '`Hello, World`',
+          'TypeError: name is not defined',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Template literals (backticks) interpolate `${expr}`. Calling `greet("World")` substitutes the argument and the function returns `Hello, World!`. See MDN → Template literals.',
       },
       {
-        kind: 'code',
-        id: 'ts1-code2',
+        kind: 'mcq',
+        id: 'ts1-mcq4',
         prompt:
-          'Declare a `readonly` tuple type `[string, number]` called `person` holding your name and age. Log both values on separate lines.',
-        starterCode: `const person: readonly [string, number] = ['Alice', 30];
-// log name then age
-`,
-        expectedOutput: 'Alice\n30\n',
-        hint: 'Access tuple elements with index 0 and 1.',
+          'Which line type-errors under `tsc --strict`?\n```typescript\nconst nums: number[] = [1, 2, 3]; // L1\nnums.push(4);                     // L2\nnums.push("5");                   // L3\nconst n: number = nums[0];        // L4\n```',
+        options: ['L1', 'L2', 'L3', 'L4'],
+        correctIndex: 2,
+        explanation:
+          'L3 fails: `"5"` is a `string`, but `nums` is `number[]`, so `push` requires a `number`. L4 is only a problem with `noUncheckedIndexedAccess`, which is not part of base `strict`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts1-mcq5',
+        prompt:
+          'In a Node CLI run with `tsx cli/greet.ts Ada`, what is the value of `process.argv[2]`?',
+        options: ['`"cli/greet.ts"`', '`"tsx"`', '`"Ada"`', '`undefined`'],
+        correctIndex: 2,
+        explanation:
+          '`process.argv[0]` is the Node binary, `argv[1]` is the script path, and the first user-supplied argument starts at `argv[2]` — here, `"Ada"`. See Node.js docs → `process.argv`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts1-mcq6',
+        prompt:
+          'What is the inferred type of `person` here?\n```typescript\nconst person = ["Alice", 30] as const;\n```',
+        options: [
+          '`(string | number)[]`',
+          '`[string, number]`',
+          '`readonly ["Alice", 30]`',
+          '`Array<unknown>`',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`as const` produces a deeply readonly tuple of literal types, so the inferred type is `readonly ["Alice", 30]`. Without it, TypeScript widens to `(string | number)[]`.',
       },
     ],
   },
@@ -107,7 +132,7 @@ console.log(greet('World'));`,
     timeEstimate: '5–8 hours',
     intro: `TypeScript's type system is structural, not nominal — types are compatible when their shapes match. This phase covers the constructs you reach for every day: interfaces and type aliases, union and intersection types, literal types, and the narrowing / type-guard patterns that let you write safe code without runtime bloat.
 
-You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with proper generic type annotations, and learn when to prefer an \`interface\` over a \`type\` alias. By the end you can model any real-world data domain and write functions that TypeScript can verify exhaustively.`,
+You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with proper generic type annotations, and learn when to prefer an \`interface\` over a \`type\` alias. **Build locally**: a \`cart.ts\` Node CLI that models a small e-commerce cart with \`Product\`, \`CartItem\`, and \`Cart\` types, a \`total()\` function, and a discriminated union for \`PaymentMethod\`. By the end you can model any real-world data domain and write functions that TypeScript can verify exhaustively.`,
     topics: [
       {
         label: 'Interfaces',
@@ -141,7 +166,7 @@ You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with prope
       },
     ],
     deliverable:
-      'A typed data model for a small e-commerce cart: `Product`, `CartItem`, and `Cart` interfaces; a `total` function; a discriminated union for `PaymentMethod`. Zero `any`.',
+      'Build locally: a `cart.ts` Node CLI with `Product`, `CartItem`, and `Cart` types, a `total()` function, and a discriminated union for `PaymentMethod`. Prints a receipt to stdout. Zero `any`.',
     checks: [
       {
         kind: 'mcq',
@@ -156,13 +181,13 @@ You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with prope
         ],
         correctIndex: 1,
         explanation:
-          'A discriminated union uses a common literal property (`ok`) as the discriminant. TypeScript narrows the type after a check like `if (result.ok)`.',
+          'A discriminated union uses a common literal property (`ok`) as the discriminant. TypeScript narrows the type after a check like `if (result.ok)`. See TS Handbook → Narrowing → Discriminated unions.',
       },
       {
         kind: 'mcq',
         id: 'ts2-mcq2',
         prompt:
-          'Which assertion correctly narrows `unknown` to `string` in TypeScript?',
+          'Which expression correctly narrows `unknown` to `string` in TypeScript?',
         options: [
           '`if (x.isString())`',
           '`if (typeof x === "string")`',
@@ -171,44 +196,47 @@ You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with prope
         ],
         correctIndex: 1,
         explanation:
-          '`typeof x === "string"` is a type guard that narrows `unknown` (or `any`) to `string` in the true branch. `instanceof String` matches boxed String objects, not primitives.',
+          '`typeof x === "string"` is a type guard that narrows `unknown` to `string` in the true branch. `instanceof String` matches only boxed `String` objects, not primitives, and `x as string` is an unchecked assertion.',
       },
       {
-        kind: 'code',
-        id: 'ts2-code1',
+        kind: 'mcq',
+        id: 'ts2-mcq3',
         prompt:
-          'Define an interface `Shape` with a discriminant field `kind: "circle" | "square"`. For circles add `radius: number`; for squares add `side: number`. Write an `area` function that handles both cases and logs the area of a circle with radius 5 and a square with side 4.',
-        starterCode: `type Shape =
-  | { kind: 'circle'; radius: number }
-  | { kind: 'square'; side: number };
-
-function area(shape: Shape): number {
-  // your code here
-  return 0;
-}
-
-console.log(area({ kind: 'circle', radius: 5 }));
-console.log(area({ kind: 'square', side: 4 }));`,
-        hint: 'Use `Math.PI * radius ** 2` for circles. The assertions check numeric accuracy so the exact float output format does not matter.',
-        assertions: `
-const circleArea = area({ kind: 'circle', radius: 5 });
-const squareArea = area({ kind: 'square', side: 4 });
-if (Math.abs(circleArea - Math.PI * 25) > 0.001) throw new Error('circle area wrong, got ' + circleArea);
-if (squareArea !== 16) throw new Error('square area wrong, got ' + squareArea);
-`,
+          'What does this code log?\n```typescript\ntype Shape =\n  | { kind: "circle"; radius: number }\n  | { kind: "square"; side: number };\n\nfunction area(shape: Shape): number {\n  switch (shape.kind) {\n    case "circle": return Math.PI * shape.radius ** 2;\n    case "square": return shape.side ** 2;\n  }\n}\n\nconsole.log(area({ kind: "square", side: 4 }));\n```',
+        options: ['`8`', '`16`', '`12.566...`', '`NaN`'],
+        correctIndex: 1,
+        explanation:
+          'The square branch returns `4 ** 2 === 16`. The switch on `shape.kind` is an exhaustiveness check — the discriminant narrows `shape` so `.side` is type-safe.',
       },
       {
-        kind: 'code',
-        id: 'ts2-code2',
+        kind: 'mcq',
+        id: 'ts2-mcq4',
         prompt:
-          'Use `Array.prototype.filter` and `map` to extract all even numbers from `[1,2,3,4,5,6]` and double them. Log the result as a JSON array.',
-        starterCode: `const nums: number[] = [1, 2, 3, 4, 5, 6];
-const result = nums
-  .filter(/* your predicate */)
-  .map(/* your transform */);
-console.log(JSON.stringify(result));`,
-        expectedOutput: '[4,8,12]\n',
-        hint: '`n % 2 === 0` checks evenness; `n * 2` doubles.',
+          'What is the inferred type of `result`?\n```typescript\nconst nums = [1, 2, 3, 4, 5, 6];\nconst result = nums.filter(n => n % 2 === 0).map(n => n * 2);\n```',
+        options: ['`unknown[]`', '`number[]`', '`(number | undefined)[]`', '`Array<{ value: number }>`'],
+        correctIndex: 1,
+        explanation:
+          'TypeScript infers `nums` as `number[]`. `filter` preserves the element type and `map(n => n * 2)` returns `number`, so `result` is `number[]`. See MDN → Array.prototype.map.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts2-mcq5',
+        prompt:
+          'Which line type-errors?\n```typescript\ninterface User { id: number; name: string }\nconst a: User = { id: 1, name: "Ada" };          // L1\nconst b: Readonly<User> = { id: 2, name: "Bo" }; // L2\nb.name = "Bee";                                  // L3\na.id = 99;                                       // L4\n```',
+        options: ['L1', 'L2', 'L3', 'L4'],
+        correctIndex: 2,
+        explanation:
+          '`Readonly<User>` makes every property `readonly`, so reassigning `b.name` (L3) is a compile error. `a` is a mutable `User`, so L4 is allowed.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts2-mcq6',
+        prompt:
+          'What is the inferred type of `x` inside the `if` block?\n```typescript\nfunction handle(value: string | number) {\n  if (typeof value === "string") {\n    const x = value;\n    // x is here\n  }\n}\n```',
+        options: ['`string | number`', '`string`', '`number`', '`never`'],
+        correctIndex: 1,
+        explanation:
+          'The `typeof` type guard narrows `value` to `string` inside the truthy branch, so `x` is inferred as `string`. See TS Handbook → Narrowing.',
       },
     ],
   },
@@ -220,9 +248,9 @@ console.log(JSON.stringify(result));`,
     level: 3,
     title: 'Modules, Async/Await & Error Handling',
     timeEstimate: '6–8 hours',
-    intro: `Modern TypeScript is written in ES modules (\`import\`/\`export\`), runs asynchronous code with \`async\`/\`await\`, and fetches remote data with the Fetch API. This phase closes the gap between "I can write typed functions" and "I can build a real networked app."
+    intro: `Modern TypeScript is written in ES modules (\`import\`/\`export\`), runs asynchronous code with \`async\`/\`await\`, and fetches remote data with the global Fetch API (Node 18+). This phase closes the gap between "I can write typed functions" and "I can build a real networked app."
 
-You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Promise<T>\` automatically, how to model errors with discriminated unions instead of \`try/catch\` swallowing, and how tooling (\`tsconfig.json\`, \`npm\`/\`pnpm\`) ties everything together. Generators are introduced as the low-level primitive behind async iteration.`,
+You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Promise<T>\` automatically, how to model errors with discriminated unions, and how to use \`AbortController\` for timeouts. **Build locally**: a \`fetcher.ts\` CLI that fetches a URL, parses JSON, prints top-level keys, with proper error handling and \`AbortController\` timeout.`,
     topics: [
       {
         label: 'ES Modules in TypeScript',
@@ -240,9 +268,9 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         note: 'fetch(), Response.json(), typed with generics',
       },
       {
-        label: 'Iterators and Generators (MDN)',
-        url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_generators',
-        note: 'function*, yield, Symbol.iterator, async generators',
+        label: 'AbortController (MDN)',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/AbortController',
+        note: 'Cancellation tokens for fetch and other long-running APIs',
       },
       {
         label: 'tsconfig reference',
@@ -250,13 +278,13 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         note: 'strict, target, module, moduleResolution — the settings that matter most',
       },
       {
-        label: 'pnpm quick start',
-        url: 'https://pnpm.io/installation',
-        note: 'Faster npm alternative; standard in modern monorepos',
+        label: 'Iterators and Generators (MDN)',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_generators',
+        note: 'function*, yield, Symbol.iterator, async generators',
       },
     ],
     deliverable:
-      'A typed CLI script (or browser module) that fetches a JSON endpoint, validates the shape with a type guard, and handles errors with a `Result<T, E>` type instead of naked `try/catch`.',
+      'Build locally: a `fetcher.ts` CLI that fetches a URL, parses JSON, prints top-level keys, with proper error handling and `AbortController` timeout.',
     checks: [
       {
         kind: 'mcq',
@@ -270,7 +298,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         ],
         correctIndex: 1,
         explanation:
-          'An `async` function always returns a `Promise`. The annotation `Promise<User>` tells TypeScript what the resolved value type will be.',
+          'An `async` function always returns a `Promise`. The annotation `Promise<User>` tells TypeScript what the resolved value type will be. See TS Handbook release notes — TS 1.7 async/await.',
       },
       {
         kind: 'mcq',
@@ -285,42 +313,62 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         ],
         correctIndex: 1,
         explanation:
-          '`"strict": true` is the umbrella flag that activates `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, and several others at once.',
+          '`"strict": true` is the umbrella flag that activates `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, and several others at once. See tsconfig reference.',
       },
       {
-        kind: 'code',
-        id: 'ts3-code1',
+        kind: 'mcq',
+        id: 'ts3-mcq3',
         prompt:
-          'Write a `Result<T, E>` type and a `safeDiv` function that returns `{ ok: true; value: number }` for valid division or `{ ok: false; error: string }` when dividing by zero. Log the `.value` for `safeDiv(10, 2)` and the `.error` for `safeDiv(5, 0)`.',
-        starterCode: `type Result<T, E> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-
-function safeDiv(a: number, b: number): Result<number, string> {
-  // your code here
-  return { ok: false, error: 'not implemented' };
-}
-
-const r1 = safeDiv(10, 2);
-const r2 = safeDiv(5, 0);
-if (r1.ok) console.log(r1.value);
-if (!r2.ok) console.log(r2.error);`,
-        expectedOutput: '5\nDivision by zero\n',
-        hint: 'Check `if (b === 0)` and return the error variant.',
+          'What does this code log?\n```typescript\ntype Result<T, E> = { ok: true; value: T } | { ok: false; error: E };\n\nfunction safeDiv(a: number, b: number): Result<number, string> {\n  if (b === 0) return { ok: false, error: "Division by zero" };\n  return { ok: true, value: a / b };\n}\n\nconst r = safeDiv(10, 0);\nif (!r.ok) console.log(r.error);\n```',
+        options: [
+          '`5`',
+          '`Division by zero`',
+          '`undefined`',
+          'TypeError: Cannot read property',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The dividend `b === 0` triggers the error variant. After `if (!r.ok)`, TypeScript narrows `r` to `{ ok: false; error: string }`, so `r.error` is accessible and logs `Division by zero`.',
       },
       {
-        kind: 'code',
-        id: 'ts3-code2',
+        kind: 'mcq',
+        id: 'ts3-mcq4',
         prompt:
-          'Write a generator function `range(start: number, end: number)` that yields integers from `start` up to (but not including) `end`. Collect the values for `range(1, 6)` into an array and log it as JSON.',
-        starterCode: `function* range(start: number, end: number): Generator<number> {
-  // your code here
-}
-
-const values = [...range(1, 6)];
-console.log(JSON.stringify(values));`,
-        expectedOutput: '[1,2,3,4,5]\n',
-        hint: 'Use a `while (start < end)` loop with `yield start++`.',
+          'Which Promise pattern is correct for a 1-second fetch timeout using `AbortController`?',
+        options: [
+          '`setTimeout(() => fetch(url).cancel(), 1000);`',
+          '`const c = new AbortController(); setTimeout(() => c.abort(), 1000); fetch(url, { signal: c.signal });`',
+          '`fetch(url, { timeout: 1000 });`',
+          '`Promise.race([fetch(url), 1000]);`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Pass `controller.signal` to `fetch` and call `controller.abort()` after the timeout. `fetch()` does not have a `timeout` option natively, and `Promise.race` against a number is a type error. See MDN → AbortController.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts3-mcq5',
+        prompt:
+          'What does this generator log?\n```typescript\nfunction* range(start: number, end: number): Generator<number> {\n  while (start < end) yield start++;\n}\nconsole.log(JSON.stringify([...range(1, 6)]));\n```',
+        options: ['`[1,2,3,4,5]`', '`[1,2,3,4,5,6]`', '`[2,3,4,5,6]`', '`[]`'],
+        correctIndex: 0,
+        explanation:
+          '`range(1, 6)` yields integers while `start < end` (exclusive of `end`). The spread collects `1,2,3,4,5`. See MDN → Iterators and generators.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts3-mcq6',
+        prompt:
+          'Which import is erased entirely at compile time and is required when bundlers like esbuild are running with `isolatedModules`?',
+        options: [
+          '`import { Foo } from "./foo";`',
+          '`import type { Foo } from "./foo";`',
+          '`import("./foo");`',
+          '`require("./foo");`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`import type` is purely a type-level import and is stripped during transpilation. This is critical for single-file transpilers that cannot resolve whether an import is used as a type or a value. See TS 3.8 release notes.',
       },
     ],
   },
@@ -334,7 +382,7 @@ console.log(JSON.stringify(values));`,
     timeEstimate: '8–10 hours',
     intro: `Generics are TypeScript's answer to reusability without sacrificing type safety. A single \`Stack<T>\` implementation works for numbers, strings, or any other type — and the compiler tracks which \`T\` you used. This phase covers generic functions, generic interfaces, constraints (\`extends\`), mapped types, conditional types, and the built-in utility types (\`Partial\`, \`Required\`, \`Pick\`, \`Omit\`, \`Record\`, \`ReturnType\`…).
 
-You will also get your first taste of the testing ecosystem — Vitest brings fast ESM-native unit tests — and a brief React/Next.js orientation so you can contextualise where TypeScript sits in a real product stack.`,
+**Build locally**: a generic \`db.ts\` typed wrapper around an in-memory store with \`add<T>\`, \`find<T>\`, \`delete<T>\` and full type narrowing. You'll also get your first taste of the testing ecosystem with Vitest.`,
     topics: [
       {
         label: 'Generics — TypeScript handbook',
@@ -368,7 +416,7 @@ You will also get your first taste of the testing ecosystem — Vitest brings fa
       },
     ],
     deliverable:
-      'A generic `Queue<T>` class with `enqueue`, `dequeue`, and `peek`, tested with Vitest. Plus a utility type `DeepReadonly<T>` that recursively makes all properties readonly.',
+      'Build locally: a generic `db.ts` typed wrapper around an in-memory store with `add<T>`, `find<T>`, `delete<T>` and full type narrowing. Vitest unit tests cover the happy path and the `not found` case.',
     checks: [
       {
         kind: 'mcq',
@@ -383,7 +431,7 @@ You will also get your first taste of the testing ecosystem — Vitest brings fa
         ],
         correctIndex: 1,
         explanation:
-          '`keyof T` produces a union of the literal key names of `T`. For `{ name: string; age: number }` that is `"name" | "age"`.',
+          '`keyof T` produces a union of the literal key names of `T`. For `{ name: string; age: number }` that is `"name" | "age"`. See TS Handbook → Keyof Type Operator.',
       },
       {
         kind: 'mcq',
@@ -392,34 +440,67 @@ You will also get your first taste of the testing ecosystem — Vitest brings fa
         options: ['`Required<T>`', '`Partial<T>`', '`Readonly<T>`', '`Pick<T, K>`'],
         correctIndex: 1,
         explanation:
-          '`Partial<T>` maps every property of `T` to its optional (`?`) equivalent. `Required<T>` does the opposite.',
+          '`Partial<T>` maps every property of `T` to its optional (`?`) equivalent. `Required<T>` does the opposite. See TS Handbook → Utility Types.',
       },
       {
-        kind: 'code',
-        id: 'ts4-code1',
+        kind: 'mcq',
+        id: 'ts4-mcq3',
         prompt:
-          'Implement a generic `first<T>(arr: T[]): T | undefined` function. Log the first element of `[10, 20, 30]` and the result of calling it on an empty array.',
-        starterCode: `function first<T>(arr: T[]): T | undefined {
-  // your code here
-}
-
-console.log(first([10, 20, 30]));
-console.log(first([]));`,
-        expectedOutput: '10\nundefined\n',
-        hint: 'Return `arr[0]` — which is `undefined` when the array is empty (with `noUncheckedIndexedAccess` enabled).',
+          'What does this code log?\n```typescript\nfunction first<T>(arr: readonly T[]): T | undefined {\n  return arr[0];\n}\n\nconsole.log(first([10, 20, 30]));\nconsole.log(first<number>([]));\n```',
+        options: [
+          '`10\\n0`',
+          '`10\\nundefined`',
+          '`undefined\\nundefined`',
+          'Compile error: cannot index empty array',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`arr[0]` for `[10,20,30]` is `10`. For an empty array, indexing returns `undefined`. The return type `T | undefined` reflects this.',
       },
       {
-        kind: 'code',
-        id: 'ts4-code2',
+        kind: 'mcq',
+        id: 'ts4-mcq4',
         prompt:
-          'Using `Omit<T, K>`, create a type `UserPreview` from `{ id: number; name: string; email: string; password: string }` that excludes `password` and `email`. Log the keys of a sample object of that type as JSON.',
-        starterCode: `type User = { id: number; name: string; email: string; password: string };
-type UserPreview = Omit<User, 'password' | 'email'>;
-
-const preview: UserPreview = { id: 1, name: 'Alice' };
-console.log(JSON.stringify(Object.keys(preview)));`,
-        expectedOutput: '["id","name"]\n',
-        hint: '`Omit` takes a type and a union of keys to remove. Just get the object keys right.',
+          'Which generic constraint correctly limits `T` to objects that have a `length: number` property?',
+        options: [
+          '`function len<T>(x: T): number`',
+          '`function len<T extends number>(x: T): number`',
+          '`function len<T extends { length: number }>(x: T): number`',
+          '`function len<T: { length: number }>(x: T): number`',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`T extends { length: number }` is the standard generic constraint syntax — `T` must be assignable to the constraint shape. Flow-style `T: {…}` is not valid TypeScript.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts4-mcq5',
+        prompt:
+          'Given `type User = { id: number; name: string; email: string; password: string }`, what is `Omit<User, "password" | "email">`?',
+        options: [
+          '`{ password: string; email: string }`',
+          '`{ id: number; name: string }`',
+          '`{ id: number; name: string; email: string; password: string }`',
+          '`never`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Omit<T, K>` returns a type identical to `T` minus the keys in `K`. Removing `password` and `email` leaves `{ id; name }`. See TS Handbook → Utility Types.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts4-mcq6',
+        prompt:
+          'What is the inferred return type?\n```typescript\nfunction wrap<const T>(value: T) {\n  return { value } satisfies { value: T };\n}\nconst r = wrap("hello");\n```',
+        options: [
+          '`{ value: string }`',
+          '`{ value: "hello" }`',
+          '`{ value: any }`',
+          '`{ value: unknown }`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The `const` type parameter (TS 5.0) tells TypeScript to infer `T` as the narrowest literal type — `"hello"` rather than the widened `string`. `satisfies` validates the shape without widening.',
       },
     ],
   },
@@ -433,7 +514,7 @@ console.log(JSON.stringify(Object.keys(preview)));`,
     timeEstimate: '10–14 hours',
     intro: `TypeScript 4.x–5.x introduced features that blur the line between types and computation: template literal types, recursive types, distributive conditional types, variance annotations, and \`infer\` patterns that let you extract type information from deeply nested structures.
 
-This phase treats the type system as a programming language in its own right. You will build type utilities that would have been impossible in TS 3.x, learn why variance matters for function parameters, and understand how distributive conditional types process union members individually — enabling powerful patterns like \`UnionToIntersection<T>\`.`,
+**Build locally**: a \`type-lab.ts\` Node script that defines and exercises five type utilities (\`DeepPartial<T>\`, \`FlattenPromise<T>\`, \`UnionToIntersection<U>\`, \`PathsOf<T>\`, and a re-implementation of \`Awaited<T>\`), each with a \`satisfies\`-based type test. The script logs a small sanity-check value to stdout for each utility.`,
     topics: [
       {
         label: 'Template Literal Types',
@@ -441,7 +522,7 @@ This phase treats the type system as a programming language in its own right. Yo
         note: '`\`${A}${B}\`` at the type level — powerful string manipulation',
       },
       {
-        label: 'Recursive Types and Conditional Types deep dive',
+        label: 'Conditional Types deep dive',
         url: 'https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types',
         note: 'Distributive behaviour, `infer`, recursive depth limits',
       },
@@ -467,7 +548,7 @@ This phase treats the type system as a programming language in its own right. Yo
       },
     ],
     deliverable:
-      'A set of five type utilities: `DeepPartial<T>`, `FlattenPromise<T>`, `UnionToIntersection<U>`, `PathsOf<T>` (dot-notation string keys), and `Awaited<T>` (re-implement the built-in). Each has a `type` test using `satisfies`.',
+      'Build locally: a `type-lab.ts` Node script with five type utilities — `DeepPartial<T>`, `FlattenPromise<T>`, `UnionToIntersection<U>`, `PathsOf<T>`, and a re-implemented `Awaited<T>`. Each utility has a `satisfies`-based type test and a small runtime log.',
     checks: [
       {
         kind: 'mcq',
@@ -500,41 +581,59 @@ This phase treats the type system as a programming language in its own right. Yo
           '`satisfies` checks the expression against a type constraint without widening the inferred type. You keep the narrow `["home", "about"]` tuple while confirming it is a valid `readonly string[]`.',
       },
       {
-        kind: 'code',
-        id: 'ts5-code1',
+        kind: 'mcq',
+        id: 'ts5-mcq3',
         prompt:
-          'Use a template literal type to build an `EventName<T extends string>` type that produces `"on${Capitalize<T>}"`. Then write a small runtime function that mirrors this: given a string, return the prefixed event name. Log the result for `"click"` and `"keydown"`.',
-        starterCode: `type EventName<T extends string> = \`on\${Capitalize<T>}\`;
-
-// Runtime mirror
-function eventName<const T extends string>(event: T): \`on\${Capitalize<T>}\` {
-  return \`on\${event.charAt(0).toUpperCase()}\${event.slice(1)}\` as \`on\${Capitalize<T>}\`;
-}
-
-console.log(eventName('click'));
-console.log(eventName('keydown'));`,
-        expectedOutput: 'onClick\nonKeydown\n',
-        hint: 'Use `event.charAt(0).toUpperCase() + event.slice(1)` to capitalise at runtime.',
+          'What is the resulting type?\n```typescript\ntype EventName<T extends string> = `on${Capitalize<T>}`;\ntype Click = EventName<"click">;\n```',
+        options: ['`"onclick"`', '`"OnClick"`', '`"onClick"`', '`string`'],
+        correctIndex: 2,
+        explanation:
+          '`Capitalize<"click">` is `"Click"`, so the template literal resolves to `"onClick"`. See TS Handbook → Template Literal Types and the intrinsic string manipulation types.',
       },
       {
-        kind: 'code',
-        id: 'ts5-code2',
+        kind: 'mcq',
+        id: 'ts5-mcq4',
         prompt:
-          'Implement `DeepReadonly<T>` as a recursive mapped type. Apply it to a nested object and log a key to confirm the structure compiles.',
-        starterCode: `type DeepReadonly<T> = {
-  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];
-};
-
-type Config = DeepReadonly<{
-  server: { host: string; port: number };
-  debug: boolean;
-}>;
-
-const cfg: Config = { server: { host: 'localhost', port: 3000 }, debug: false };
-console.log(cfg.server.host);
-console.log(cfg.debug);`,
-        expectedOutput: 'localhost\nfalse\n',
-        hint: 'The recursive branch applies `DeepReadonly` when the property type `extends object`.',
+          'Which `infer` pattern correctly extracts the element type of `T`?',
+        options: [
+          '`type Elem<T> = T extends Array<infer U> ? U : never`',
+          '`type Elem<T> = T extends infer U[] ? U : never`',
+          '`type Elem<T> = infer U extends T ? U : never`',
+          '`type Elem<T> = T extends infer U ? U[] : never`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`T extends Array<infer U> ? U : never` declares an inference site `U` inside the constraint. The form `T extends infer U[]` is invalid syntax — `infer` must appear in a generic position.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts5-mcq5',
+        prompt:
+          'What does this evaluate to at the type level?\n```typescript\ntype DeepReadonly<T> = {\n  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];\n};\ntype Result = DeepReadonly<{ a: { b: number } }>;\n```',
+        options: [
+          '`{ a: { b: number } }`',
+          '`{ readonly a: { readonly b: number } }`',
+          '`{ readonly a: { b: number } }`',
+          '`Readonly<{ a: { b: number } }>`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The mapped type adds `readonly` at every level by recursing whenever the property type extends `object`. Both `a` and `b` end up `readonly`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts5-mcq6',
+        prompt:
+          'In TypeScript 4.7+, what does the `in` variance annotation in `interface Box<in T> { setValue(v: T): void }` enforce?',
+        options: [
+          'It marks `T` as covariant',
+          'It marks `T` as contravariant (used only in input positions)',
+          'It is purely cosmetic and ignored by the checker',
+          'It makes the property `in` operator available on instances',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`in` marks a type parameter as contravariant. `out` marks it covariant. The compiler verifies the annotation matches actual usage. See TS 4.7 release notes → Variance annotations.',
       },
     ],
   },
@@ -548,7 +647,7 @@ console.log(cfg.debug);`,
     timeEstimate: '8–12 hours',
     intro: `Writing a library is a different discipline from writing an application: every type you expose becomes a public contract that consumers depend on. This phase covers the full publishing pipeline — strict \`tsconfig\` settings, hand-crafting \`.d.ts\` declaration files, dual ESM/CJS output with the \`exports\` field in \`package.json\`, type-only imports and exports to keep bundles lean, and declaration merging to extend third-party types.
 
-You will also learn the ergonomics that distinguish great public APIs: avoiding \`any\` in public signatures, using \`readonly\` arrays for return values, and documenting with JSDoc so VS Code hover cards show rich descriptions.`,
+**Build locally**: a tiny utility library (\`packages/tiny-utils\`) with \`src/index.ts\`, dual ESM/CJS output, a hand-written \`.d.ts\` entry, and TSDoc comments on every export. A consumer script demonstrates \`import type\` usage and verifies the package via \`node\` after \`tsc --build\`.`,
     topics: [
       {
         label: 'Declaration Files (.d.ts)',
@@ -582,7 +681,7 @@ You will also learn the ergonomics that distinguish great public APIs: avoiding 
       },
     ],
     deliverable:
-      'A minimal utility library (`src/index.ts`) with dual ESM/CJS output. Includes a hand-written `.d.ts` entry, TSDoc comments on every export, and a README snippet showing `import type` usage.',
+      'Build locally: a `packages/tiny-utils` library with dual ESM/CJS output, a hand-written `.d.ts` entry, and TSDoc comments on every export. A consumer script demonstrates `import type` usage.',
     checks: [
       {
         kind: 'mcq',
@@ -612,57 +711,62 @@ You will also learn the ergonomics that distinguish great public APIs: avoiding 
         ],
         correctIndex: 1,
         explanation:
-          'The `exports` field in package.json supports conditional exports: `"import"` matches `import` statements (ESM) and `"require"` matches `require()` calls (CJS), enabling dual packages.',
+          'The `exports` field in package.json supports conditional exports: `"import"` matches `import` statements (ESM) and `"require"` matches `require()` calls (CJS). See Node.js docs → packages → exports.',
       },
       {
-        kind: 'code',
-        id: 'ts6-code1',
+        kind: 'mcq',
+        id: 'ts6-mcq3',
         prompt:
-          'Demonstrate declaration merging: declare an interface `Logger` with a `log(msg: string): void` method. Then merge in a second `debug(msg: string): void` method via a second interface declaration. Create an object satisfying both and call both methods, logging the outputs.',
-        starterCode: `interface Logger {
-  log(msg: string): void;
-}
-
-// Merge a second method in
-interface Logger {
-  debug(msg: string): void;
-}
-
-const logger: Logger = {
-  log(msg) { console.log('[LOG] ' + msg); },
-  debug(msg) { console.log('[DEBUG] ' + msg); },
-};
-
-logger.log('hello');
-logger.debug('world');`,
-        expectedOutput: '[LOG] hello\n[DEBUG] world\n',
-        hint: 'Two `interface Logger` declarations in the same scope merge automatically.',
+          'What does this code log?\n```typescript\ninterface Logger { log(msg: string): void; }\ninterface Logger { debug(msg: string): void; }\n\nconst logger: Logger = {\n  log(msg) { console.log("[LOG] " + msg); },\n  debug(msg) { console.log("[DEBUG] " + msg); },\n};\n\nlogger.debug("hi");\n```',
+        options: [
+          '`[LOG] hi`',
+          '`[DEBUG] hi`',
+          'Compile error: duplicate identifier `Logger`',
+          '`undefined`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Two `interface` declarations with the same name in the same scope are *merged*, not duplicated. The merged `Logger` has both `log` and `debug`. See TS Handbook → Declaration Merging.',
       },
       {
-        kind: 'code',
-        id: 'ts6-code2',
+        kind: 'mcq',
+        id: 'ts6-mcq4',
         prompt:
-          'Write a generic `memoize<T extends (...args: unknown[]) => unknown>(fn: T): T` function that caches results keyed by JSON-stringified arguments. Call it with an `add` function and log the result of two calls to confirm caching works.',
-        starterCode: `function memoize<T extends (...args: unknown[]) => unknown>(fn: T): T {
-  const cache = new Map<string, unknown>();
-  return ((...args: unknown[]) => {
-    const key = JSON.stringify(args);
-    if (cache.has(key)) return cache.get(key);
-    const result = fn(...args);
-    cache.set(key, result);
-    return result;
-  }) as T;
-}
-
-const add = memoize((a: number, b: number) => {
-  console.log('computing');
-  return a + b;
-});
-
-console.log(add(2, 3));
-console.log(add(2, 3)); // should NOT log 'computing' again`,
-        expectedOutput: 'computing\n5\n5\n',
-        hint: 'The second call returns the cached result without running the function body again.',
+          'What is the inferred type of `add`?\n```typescript\nfunction memoize<T extends (...args: any[]) => any>(fn: T): T {\n  const cache = new Map<string, ReturnType<T>>();\n  return ((...args: Parameters<T>) => {\n    const key = JSON.stringify(args);\n    if (!cache.has(key)) cache.set(key, fn(...args));\n    return cache.get(key)!;\n  }) as T;\n}\n\nconst add = memoize((a: number, b: number) => a + b);\n```',
+        options: [
+          '`(...args: any[]) => any`',
+          '`(a: number, b: number) => number`',
+          '`unknown`',
+          '`Function`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`memoize` returns `T`, and `T` is inferred from the argument as `(a: number, b: number) => number`. The `as T` assertion preserves the signature for callers.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts6-mcq5',
+        prompt:
+          'Which export is *erased* at compile time and never appears in the emitted JS?',
+        options: [
+          '`export function helper() {}`',
+          '`export const VERSION = "1.0";`',
+          '`export type Foo = string;`',
+          '`export default class A {}`',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`export type` (and `export interface`) are type-only constructs and are stripped at compile time. The other forms produce runtime JavaScript exports.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts6-mcq6',
+        prompt:
+          'Which TSDoc tag adds a `@deprecated` marker that VS Code will visually strike through at call sites?',
+        options: ['`@obsolete`', '`@deprecated`', '`@removed`', '`@warning`'],
+        correctIndex: 1,
+        explanation:
+          '`@deprecated` is recognised by the TypeScript language service and surfaces in editor tooling. See tsdoc.org for the full tag list.',
       },
     ],
   },
@@ -672,11 +776,11 @@ console.log(add(2, 3)); // should NOT log 'computing' again`,
     id: 'typescript-7',
     language: 'typescript',
     level: 7,
-    title: 'Modern React & Next.js Patterns',
+    title: 'Modern React & Next.js 16 Patterns',
     timeEstimate: '10–16 hours',
-    intro: `React 19 and Next.js App Router introduce a new mental model: components can be async, data fetching happens on the server, and the client bundle ships only the JS users actually need. This phase maps TypeScript concepts onto that model — typing \`use()\`, server/client component boundaries, Suspense boundaries, transitions, and the React Compiler's assumptions about pure functions.
+    intro: `React 19 and Next.js 16 App Router introduce a new mental model: components can be async, data fetching happens on the server, and the client bundle ships only the JS users actually need. This phase maps TypeScript concepts onto that model — typing \`use()\`, server/client component boundaries, Suspense boundaries, transitions, and the React Compiler's assumptions about pure functions.
 
-You will learn how to type \`params\` and \`searchParams\` in App Router pages, how to co-locate server actions with their calling components, and why TypeScript's \`strict\` mode is non-negotiable in a codebase this complex.`,
+**Build locally**: a Next.js App Router blog with RSC, dynamic routes, server actions for comments, and Suspense streaming. Full strict TypeScript, \`params\` typed as \`Promise<{ slug: string }>\`, and a typed server action calling \`revalidatePath\`.`,
     topics: [
       {
         label: 'React TypeScript guide (react.dev)',
@@ -694,9 +798,9 @@ You will learn how to type \`params\` and \`searchParams\` in App Router pages, 
         note: 'Automatic memoization — what it requires of your types and functions',
       },
       {
-        label: 'Next.js App Router — TypeScript',
+        label: 'Next.js App Router — Pages',
         url: 'https://nextjs.org/docs/app/api-reference/file-conventions/page',
-        note: 'PageProps, LayoutProps, server actions typing',
+        note: 'PageProps, LayoutProps, server actions typing (Next.js 16)',
       },
       {
         label: 'React Server Components (Next.js)',
@@ -710,22 +814,22 @@ You will learn how to type \`params\` and \`searchParams\` in App Router pages, 
       },
     ],
     deliverable:
-      'A Next.js App Router page with a server component that fetches data (typed with an interface), a client component that handles user interaction, and a Suspense boundary between them. Full strict TypeScript throughout.',
+      'Build locally: a Next.js App Router blog with RSC, dynamic routes, server actions for comments, Suspense streaming. Zero `any`, `params` typed as `Promise<{ slug: string }>`.',
     checks: [
       {
         kind: 'mcq',
         id: 'ts7-mcq1',
         prompt:
-          'In Next.js App Router, what TypeScript type is used for the `params` prop on a dynamic segment page?',
+          'In Next.js 16 App Router, what TypeScript type is used for the `params` prop on a dynamic segment page like `app/blog/[slug]/page.tsx`?',
         options: [
           '`{ params: Record<string, string> }`',
-          '`{ params: Promise<{ [key: string]: string }> }` (Next.js 15+)',
-          '`URLSearchParams`',
+          '`{ params: Promise<{ slug: string }> }`',
+          '`{ params: URLSearchParams }`',
           '`{ params: string[] }`',
         ],
         correctIndex: 1,
         explanation:
-          'From Next.js 15, `params` and `searchParams` are `Promise`s that must be awaited inside the component body. The type is `Promise<{ slug: string }>` for a `[slug]` segment.',
+          'From Next.js 15+, `params` and `searchParams` are `Promise`s that must be awaited inside the component body. For `[slug]`, the type is `Promise<{ slug: string }>`.',
       },
       {
         kind: 'mcq',
@@ -733,7 +837,7 @@ You will learn how to type \`params\` and \`searchParams\` in App Router pages, 
         prompt:
           'What does the `"use client"` directive at the top of a file tell the Next.js bundler?',
         options: [
-          'The file will only run in the browser; it marks the client component boundary',
+          'The file marks the boundary into the client component tree — it and its imports are bundled for the browser',
           'The file uses client-side encryption',
           'The file imports from the `client` npm scope',
           'It enables hot-module replacement for that file only',
@@ -743,48 +847,69 @@ You will learn how to type \`params\` and \`searchParams\` in App Router pages, 
           '`"use client"` is a bundler directive that marks the file (and everything it imports) as a client component tree. Without it, components in the App Router are server components by default.',
       },
       {
-        kind: 'code',
-        id: 'ts7-code1',
+        kind: 'mcq',
+        id: 'ts7-mcq3',
         prompt:
-          'Type a React component\'s props using an interface. Write a `Badge` component that accepts `label: string` and `count: number`, and returns a string representation (for the sandbox, log it instead of rendering). Log the output for `{ label: "Alerts", count: 3 }`.',
-        starterCode: `interface BadgeProps {
-  label: string;
-  count: number;
-}
-
-function Badge({ label, count }: BadgeProps): string {
-  return \`\${label} (\${count})\`;
-}
-
-console.log(Badge({ label: 'Alerts', count: 3 }));`,
-        expectedOutput: 'Alerts (3)\n',
-        hint: 'Use a template literal to combine label and count.',
+          'What is the return type of this React 19 component?\n```typescript\nimport type { ReactNode } from "react";\ninterface BadgeProps { label: string; count: number }\nfunction Badge({ label, count }: BadgeProps): ReactNode {\n  return `${label} (${count})`;\n}\n```',
+        options: ['`string`', '`ReactNode`', '`JSX.Element`', '`void`'],
+        correctIndex: 1,
+        explanation:
+          'The declared return type is `ReactNode`. Modern React allows strings as valid `ReactNode` values, so returning a template literal is type-safe and renderable.',
       },
       {
-        kind: 'code',
-        id: 'ts7-code2',
+        kind: 'mcq',
+        id: 'ts7-mcq4',
         prompt:
-          'Simulate a typed server action: write a function `createTodo(formData: { title: string; done: boolean })` that returns a `Promise<{ id: number; title: string; done: boolean }>`. Await it and log the `id` and `title`.',
-        starterCode: `interface Todo {
-  id: number;
-  title: string;
-  done: boolean;
-}
-
-async function createTodo(data: { title: string; done: boolean }): Promise<Todo> {
-  // Simulate async DB insert
-  return { id: 1, ...data };
-}
-
-async function main() {
-  const todo = await createTodo({ title: 'Write tests', done: false });
-  console.log(todo.id);
-  console.log(todo.title);
-}
-
-main();`,
-        expectedOutput: '1\nWrite tests\n',
-        hint: 'Spread the incoming `data` object and add a static `id: 1`.',
+          'Which Promise pattern is correct for awaiting `params` inside a Next.js 16 server page?',
+        options: [
+          '`export default function Page({ params }) { return params.slug; }`',
+          '`export default async function Page({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; return slug; }`',
+          '`export default function Page({ params }) { return params.then(p => p.slug); }`',
+          '`export default function Page() { return useParams().slug; }`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'In Next.js 16, async page components await the `params` Promise directly. `useParams` is a client-side hook and `.then` does not return JSX.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts7-mcq5',
+        prompt:
+          'In React 19, what does the `use()` hook do when given a Promise?',
+        options: [
+          'Throws a compile error — Promises must be awaited',
+          'Suspends the component until the Promise resolves, returning its value synchronously to the caller',
+          'Returns the Promise unchanged',
+          'Cancels the Promise after the component unmounts',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`use(promise)` integrates with Suspense: the component suspends until resolution, then re-renders with the resolved value as if it were synchronous. See react.dev → use().',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts7-mcq6',
+        prompt:
+          'What does this typed server action return?\n```typescript\n"use server";\nexport async function createTodo(data: { title: string; done: boolean }) {\n  return { id: 1, ...data };\n}\n```',
+        options: [
+          '`{ title: string; done: boolean }`',
+          '`Promise<{ id: number; title: string; done: boolean }>`',
+          '`Promise<void>`',
+          '`{ id: number }`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'An `async` function always returns a `Promise`. The inferred element type is the object literal `{ id: 1, ...data }`, widened to `{ id: number; title: string; done: boolean }`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts7-mcq7',
+        prompt:
+          'Which line type-errors if `Item` is a *server* component and `Button` is a *client* component (`"use client"`)?\n```typescript\n// In Item (server)\nimport { Button } from "./button";              // L1\nimport { handler } from "./handler";            // L2 — handler is not "use server"\nexport default function Item() {\n  return <Button onClick={handler} />;          // L3\n}\n```',
+        options: ['L1', 'L2', 'L3', 'No error'],
+        correctIndex: 2,
+        explanation:
+          'Functions cannot be passed across the server→client boundary unless marked `"use server"`. Importing a client component into a server component is fine; importing a plain function is fine; passing it as a prop is the violation.',
       },
     ],
   },
@@ -798,7 +923,7 @@ main();`,
     timeEstimate: '12–16 hours',
     intro: `Production-grade UIs have states that are hard to reason about — loading, error, empty, populated, editing. XState models these explicitly as finite state machines or statecharts, and TypeScript types each state and event, making impossible states truly impossible to represent in code.
 
-This phase also covers advanced testing: Playwright end-to-end tests with proper TypeScript types, Vitest component testing, and accessibility tooling (axe-core, Lighthouse CI). You will learn how accessibility and types reinforce each other — semantic HTML produces fewer TypeScript gymnastics around \`null\` checks.`,
+**Build locally**: a \`forms-machine.ts\` Node script that defines a typed XState v5 machine for a multi-step form (\`idle → filling → submitting → success | error\`) and runs Vitest unit tests for each transition. A Playwright spec runs against a small Next.js page that drives the same machine in the browser.`,
     topics: [
       {
         label: 'XState v5 — TypeScript',
@@ -832,90 +957,92 @@ This phase also covers advanced testing: Playwright end-to-end tests with proper
       },
     ],
     deliverable:
-      'A typed XState machine for a multi-step form (idle → filling → submitting → success | error). Vitest unit tests for each transition. A Playwright test verifying the happy path in a browser.',
+      'Build locally: a `forms-machine.ts` typed XState v5 machine (`idle → filling → submitting → success | error`), Vitest unit tests for each transition, and a Playwright spec verifying the happy path against a Next.js page.',
     checks: [
       {
         kind: 'mcq',
         id: 'ts8-mcq1',
         prompt:
-          'In XState v5, what TypeScript type represents "an object describing all possible states and their transitions"?',
+          'In XState v5, what is the recommended way to type a machine\'s states and events?',
         options: [
-          '`StateMachine<TContext, TEvent>`',
-          '`MachineConfig<TContext, TEvent>`',
-          'The first argument to `createMachine()` — an inline object literal inferred by TypeScript',
-          '`StateChart<TState, TContext>`',
+          'Manually annotate `StateMachine<TContext, TEvent>` on every call site',
+          'Pass an inferred inline object to `createMachine()` and let TypeScript infer all types from the definition, optionally with `setup({ types: { ... } })`',
+          'Use `MachineConfig<TContext, TEvent>` imported from `xstate/config`',
+          'XState v5 does not support TypeScript inference',
         ],
-        correctIndex: 2,
+        correctIndex: 1,
         explanation:
-          'XState v5 uses TypeScript inference on the `createMachine()` argument directly — there is no separate `MachineConfig` import needed. TypeScript infers all state and event types from the definition object.',
+          'XState v5 prefers `setup({ types: { context, events } }).createMachine(...)`. TypeScript then infers all state and transition types from the literal definition. See stately.ai/docs/typescript.',
       },
       {
         kind: 'mcq',
         id: 'ts8-mcq2',
         prompt:
-          'What Playwright method waits for a specific text to appear in the DOM before continuing?',
+          'Which Playwright assertion is the idiomatic way to wait for an element to be visible (auto-retrying until timeout)?',
         options: [
-          '`page.waitForSelector(".text")`',
           '`page.waitForTimeout(1000)`',
-          '`expect(page.getByText("Hello")).toBeVisible()`',
+          '`page.waitForSelector(".text")`',
+          '`await expect(page.getByText("Hello")).toBeVisible()`',
           '`page.on("text", ...)`',
         ],
         correctIndex: 2,
         explanation:
-          '`expect(locator).toBeVisible()` auto-waits until the element is visible (or times out). It is the idiomatic Playwright assertion and avoids brittle `waitForTimeout` sleeps.',
+          '`expect(locator).toBeVisible()` auto-retries until the element is visible or the test times out. `waitForTimeout` is brittle and `page.on` is for events, not visibility.',
       },
       {
-        kind: 'code',
-        id: 'ts8-code1',
+        kind: 'mcq',
+        id: 'ts8-mcq3',
         prompt:
-          'Model a traffic-light state machine (without XState) using a discriminated union and a typed `transition` function. Log the sequence: Green → Yellow → Red → Green.',
-        starterCode: `type TrafficLight = 'green' | 'yellow' | 'red';
-
-function transition(current: TrafficLight): TrafficLight {
-  // your code here
-  return current;
-}
-
-let state: TrafficLight = 'green';
-console.log(state);
-state = transition(state);
-console.log(state);
-state = transition(state);
-console.log(state);
-state = transition(state);
-console.log(state);`,
-        expectedOutput: 'green\nyellow\nred\ngreen\n',
-        hint: 'Use a switch or object map: green→yellow, yellow→red, red→green.',
+          'What does this code log?\n```typescript\ntype TrafficLight = "green" | "yellow" | "red";\nconst next: Record<TrafficLight, TrafficLight> = { green: "yellow", yellow: "red", red: "green" };\nlet state: TrafficLight = "green";\nstate = next[state];\nstate = next[state];\nconsole.log(state);\n```',
+        options: ['`green`', '`yellow`', '`red`', '`undefined`'],
+        correctIndex: 2,
+        explanation:
+          'Starting from `green`: first transition → `yellow`, second → `red`. The `Record<TrafficLight, TrafficLight>` type guarantees the lookup is total.',
       },
       {
-        kind: 'code',
-        id: 'ts8-code2',
+        kind: 'mcq',
+        id: 'ts8-mcq4',
         prompt:
-          'Write a typed `EventEmitter<Events>` class where `Events` is a record of event name → callback type. Implement `on` and `emit`. Log messages from two different events.',
-        starterCode: `type Listener<T> = (payload: T) => void;
-
-class TypedEmitter<Events extends Record<string, unknown>> {
-  private listeners: { [K in keyof Events]?: Listener<Events[K]>[] } = {};
-
-  on<K extends keyof Events>(event: K, fn: Listener<Events[K]>): void {
-    (this.listeners[event] ??= []).push(fn);
-  }
-
-  emit<K extends keyof Events>(event: K, payload: Events[K]): void {
-    this.listeners[event]?.forEach(fn => fn(payload));
-  }
-}
-
-type AppEvents = { message: string; count: number };
-const emitter = new TypedEmitter<AppEvents>();
-
-emitter.on('message', msg => console.log('msg: ' + msg));
-emitter.on('count', n => console.log('count: ' + n));
-
-emitter.emit('message', 'hello');
-emitter.emit('count', 42);`,
-        expectedOutput: 'msg: hello\ncount: 42\n',
-        hint: 'Use `??=` to initialise the listeners array lazily.',
+          'Which generic constraint makes `EventEmitter<Events>` reject a payload of the wrong type at compile time?\n```typescript\nclass TypedEmitter<Events extends Record<string, unknown>> {\n  emit<K extends keyof Events>(event: K, payload: Events[K]): void;\n  emit(event: string, payload: any): void; // <-- this overload\n}\n```',
+        options: [
+          'Remove the `any` overload',
+          'Keep the `any` overload — it preserves type safety',
+          'Change the constraint to `Events extends string`',
+          'Add `as any` casts internally',
+        ],
+        correctIndex: 0,
+        explanation:
+          'The second overload accepts any payload, defeating the typed inference. Removing it forces every call to `emit` to match `payload: Events[K]`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts8-mcq5',
+        prompt:
+          'Which aria attribute is correctly typed by `lib.dom.d.ts` and the right choice for a busy-state region (e.g. loading spinner) per WCAG 2.2?',
+        options: [
+          '`aria-busy="true"`',
+          '`aria-loading="spinner"`',
+          '`role="loading"`',
+          '`data-busy`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`aria-busy="true"` informs assistive technologies that the element is currently being updated. `aria-loading` is not a real ARIA attribute, and `data-busy` is not semantic.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts8-mcq6',
+        prompt:
+          'In Vitest, what does this test do?\n```typescript\nimport { describe, expect, it } from "vitest";\n\ndescribe("math", () => {\n  it.each([[1, 1, 2], [2, 3, 5]])("%i + %i = %i", (a, b, expected) => {\n    expect(a + b).toBe(expected);\n  });\n});\n```',
+        options: [
+          'It runs a single test with three arguments',
+          'It runs three independent tests, one per row, with formatted titles',
+          'It fails — `it.each` requires a tagged template',
+          'It snapshots the array',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`it.each(rows)` (table form) generates a test per row, formatting the title with `printf`-style placeholders. See vitest.dev/api → it.each.',
       },
     ],
   },
@@ -929,7 +1056,7 @@ emitter.emit('count', 42);`,
     timeEstimate: '14–20 hours',
     intro: `Modern TypeScript projects are compiled by tools that are not \`tsc\`: esbuild, swc, Vite, and Turbopack all transpile TypeScript orders of magnitude faster than the compiler, because they skip type checking and operate on each file independently. Understanding that pipeline — what is stripped (type annotations), what is transformed (decorators, JSX), and what errors can only be caught by \`tsc\` — makes you a far more effective engineer.
 
-This phase also covers the TypeScript compiler API itself: parsing a source file into an AST, traversing nodes, writing a simple code transformation, and understanding how the Language Server Protocol (LSP) connects the compiler to your editor.`,
+**Build locally**: a tiny ts-to-js transformer with the TS Compiler API that strips type annotations from a single file. The CLI accepts an input path and writes the stripped output to stdout, exiting non-zero on parse errors.`,
     topics: [
       {
         label: 'esbuild — How it works',
@@ -963,7 +1090,7 @@ This phase also covers the TypeScript compiler API itself: parsing a source file
       },
     ],
     deliverable:
-      'A Node.js script using the TypeScript Compiler API that reads a `.ts` file, finds every `console.log` call, and prints the line numbers. Include a Vite `vite.config.ts` for a toy project demonstrating a custom plugin.',
+      'Build locally: a tiny ts-to-js transformer with the TS Compiler API that strips type annotations from a single file. CLI reads a path, writes stripped output to stdout, exits non-zero on parse errors.',
     checks: [
       {
         kind: 'mcq',
@@ -972,13 +1099,13 @@ This phase also covers the TypeScript compiler API itself: parsing a source file
           'Why does esbuild transpile TypeScript significantly faster than `tsc`?',
         options: [
           'It uses WASM to run inside the browser',
-          'It processes each file independently without performing type checking, written in Go with parallelism',
+          'It processes each file independently in Go with parallelism and skips type checking entirely',
           'It caches all previous outputs permanently on disk',
           'It skips source maps to save time',
         ],
         correctIndex: 1,
         explanation:
-          'esbuild is written in Go, processes files in parallel, and strips type annotations without doing full type inference. This is why it cannot catch type errors — that is still `tsc`\'s job.',
+          'esbuild is written in Go, processes files in parallel, and strips type annotations without doing full type inference. This is why it cannot catch type errors — that is still `tsc`\'s job. See esbuild.github.io/how-it-works.',
       },
       {
         kind: 'mcq',
@@ -996,44 +1123,59 @@ This phase also covers the TypeScript compiler API itself: parsing a source file
           '`ts.createSourceFile()` parses a single TypeScript source text and returns a `SourceFile` node — the root of the AST. A `Program` is created from multiple source files using `ts.createProgram()`.',
       },
       {
-        kind: 'code',
-        id: 'ts9-code1',
+        kind: 'mcq',
+        id: 'ts9-mcq3',
         prompt:
-          'Demonstrate simple AST-like analysis without the compiler API: write a function `countConsoleLogs(src: string): number` that counts occurrences of `console.log(` in a source string using a regex. Log the count for a sample string.',
-        starterCode: `function countConsoleLogs(src: string): number {
-  const matches = src.match(/console\\.log\\(/g);
-  return matches ? matches.length : 0;
-}
-
-const sample = \`
-const x = 1;
-console.log(x);
-console.log('hello');
-const y = 2;
-\`;
-
-console.log(countConsoleLogs(sample));`,
-        expectedOutput: '2\n',
-        hint: 'Use a global regex `/console\\.log\\(/g` and count the match array length.',
+          'What does this code log?\n```typescript\nfunction countConsoleLogs(src: string): number {\n  const matches = src.match(/console\\.log\\(/g);\n  return matches ? matches.length : 0;\n}\nconst sample = `console.log(1); console.log("a"); const x = 2;`;\nconsole.log(countConsoleLogs(sample));\n```',
+        options: ['`0`', '`1`', '`2`', '`3`'],
+        correctIndex: 2,
+        explanation:
+          'The global regex matches `console.log(` twice in the sample. `String.prototype.match(/.../g)` returns an array of all matches (or `null` when there are none).',
       },
       {
-        kind: 'code',
-        id: 'ts9-code2',
+        kind: 'mcq',
+        id: 'ts9-mcq4',
         prompt:
-          'Write a typed `pipe<T>(...fns: Array<(x: T) => T>)` function that applies functions left-to-right. Log the result of piping `[x => x + 1, x => x * 2, x => x - 3]` over `5`.',
-        starterCode: `function pipe<T>(...fns: Array<(x: T) => T>): (x: T) => T {
-  return (x: T) => fns.reduce((acc, fn) => fn(acc), x);
-}
-
-const transform = pipe<number>(
-  x => x + 1,
-  x => x * 2,
-  x => x - 3,
-);
-
-console.log(transform(5));`,
-        expectedOutput: '9\n',
-        hint: '(5+1)=6, (6*2)=12, (12-3)=9. Use `Array.prototype.reduce`.',
+          'Which type signature is correct for a left-to-right pipe of single-argument functions?',
+        options: [
+          '`function pipe<T>(...fns: Array<(x: T) => T>): (x: T) => T`',
+          '`function pipe<T>(fns: (x: T) => T): (x: T) => T`',
+          '`function pipe<T>(fns: Array<T>): T`',
+          '`function pipe(...fns: Function[]): unknown`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'A variadic pipe collects functions of type `(x: T) => T` and returns a function with the same shape. The other signatures either lose the generic parameter or accept a non-array.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts9-mcq5',
+        prompt:
+          'Which transformation can `tsc` perform but esbuild cannot?',
+        options: [
+          'Stripping type annotations',
+          'Emitting JSX to `React.createElement` / `_jsx`',
+          'Running the full type checker and reporting type errors',
+          'Down-leveling ES2022 syntax to ES2015',
+        ],
+        correctIndex: 2,
+        explanation:
+          'esbuild deliberately skips type checking — that is what makes it fast. Only `tsc` (or `tsgo`/`tsc --noEmit` in CI) understands the full type system.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts9-mcq6',
+        prompt:
+          'In a Vite project, where should a TypeScript-aware plugin be registered?',
+        options: [
+          'In `tsconfig.json` under `plugins`',
+          'In `vite.config.ts` inside the `plugins` array',
+          'In `package.json` under `vite.plugins`',
+          'It is loaded automatically from `node_modules/vite-plugins/`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Vite plugins are registered in the `plugins` array inside `vite.config.ts`. `tsconfig.json#plugins` is for *Language Service* plugins, which serve the editor — not the bundler.',
       },
     ],
   },
@@ -1047,7 +1189,7 @@ console.log(transform(5));`,
     timeEstimate: '20–30 hours',
     intro: `The final level is about understanding TypeScript from the inside out: how the checker resolves types, how language service plugins add custom diagnostics and completions, and how to contribute to — or at least intelligently read — the TypeScript source itself.
 
-You will write a language service plugin that adds a custom completion entry, explore how \`tsc\` performs type inference (unification, widening, narrowing), and study advanced inference patterns like \`NoInfer<T>\` (TS 5.4) and const type parameters (TS 5.0). By the end you can file a precise TypeScript bug report, read a type inference trace (\`--generateTrace\`), and explain how any given type is resolved.`,
+**Build locally**: a TS Language Service plugin (npm package) that adds a custom diagnostic when a Promise is awaited inside a loop (e.g. \`for (const x of xs) await fn(x)\`). The plugin registers via \`tsconfig.json#plugins\` and surfaces the warning in any TypeScript-aware editor.`,
     topics: [
       {
         label: 'Writing a TS Language Service Plugin',
@@ -1081,7 +1223,7 @@ You will write a language service plugin that adds a custom completion entry, ex
       },
     ],
     deliverable:
-      'A TypeScript Language Service Plugin (npm package) that adds a `// @deprecated-hint` diagnostic whenever a function named `legacyFn` is called. Tested with the TypeScript test infrastructure. A written explanation of one non-trivial type inference rule from `checker.ts`.',
+      'Build locally: a TS Language Service plugin that adds a custom diagnostic when a Promise is awaited inside a loop. Registered via `tsconfig.json#plugins`, exercised via the TS test-runner.',
     checks: [
       {
         kind: 'mcq',
@@ -1096,54 +1238,82 @@ You will write a language service plugin that adds a custom completion entry, ex
         ],
         correctIndex: 1,
         explanation:
-          '`NoInfer<T>` is a built-in utility type that opts a specific argument out of inference. The type parameter `T` is still usable — TypeScript just will not infer it from the annotated position.',
+          '`NoInfer<T>` is a built-in utility type that opts a specific argument out of inference. The type parameter `T` is still usable — TypeScript just will not infer it from the annotated position. See TS 5.4 release notes.',
       },
       {
         kind: 'mcq',
         id: 'ts10-mcq2',
         prompt:
-          'In TypeScript 5.5+, what happens when you write `const strings = mixed.filter(x => typeof x === "string")`?',
+          'In TypeScript 5.5+, what is the inferred type of `strings`?\n```typescript\nconst mixed: (string | number)[] = ["a", 1, "b", 2];\nconst strings = mixed.filter(x => typeof x === "string");\n```',
         options: [
-          'TypeScript infers `strings` as `unknown[]` because `filter` returns the same array type',
-          'TypeScript infers the predicate as `x is string` automatically, so `strings` is typed as `string[]`',
-          'You must write `.filter((x): x is string => ...)` explicitly or get a type error',
-          'TypeScript widens the type to `(string | number)[]` to be safe',
+          '`(string | number)[]`',
+          '`string[]`',
+          '`unknown[]`',
+          'Compile error — explicit type predicate required',
         ],
         correctIndex: 1,
         explanation:
           'TS 5.5 introduced inferred type predicates: when a filter callback is a simple type-narrowing expression, TypeScript automatically infers the `x is string` predicate, so the result is `string[]`.',
       },
       {
-        kind: 'code',
-        id: 'ts10-code1',
+        kind: 'mcq',
+        id: 'ts10-mcq3',
         prompt:
-          'Use `const` type parameters (TS 5.0) to write a `tuple<const T extends readonly unknown[]>(...args: T): T` function that infers the narrowest possible tuple type. Log the JSON of calling it with `(1, "two", true)`.',
-        starterCode: `function tuple<const T extends readonly unknown[]>(...args: T): T {
-  return args;
-}
-
-const t = tuple(1, 'two', true);
-console.log(JSON.stringify(t));`,
-        expectedOutput: '[1,"two",true]\n',
-        hint: 'The `const` modifier on the type parameter tells TypeScript to infer literal types rather than widening to `number | string | boolean`.',
+          'What is the inferred type of `t`?\n```typescript\nfunction tuple<const T extends readonly unknown[]>(...args: T): T {\n  return args;\n}\nconst t = tuple(1, "two", true);\n```',
+        options: [
+          '`(string | number | boolean)[]`',
+          '`readonly [1, "two", true]`',
+          '`readonly [number, string, boolean]`',
+          '`Array<unknown>`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`const T extends readonly unknown[]` infers literal element types. The result is the narrowest tuple `readonly [1, "two", true]`. See TS 5.0 release notes → const type parameters.',
       },
       {
-        kind: 'code',
-        id: 'ts10-code2',
+        kind: 'mcq',
+        id: 'ts10-mcq4',
         prompt:
-          'Implement `UnionToIntersection<U>` using distributive conditional types and the contra-variance of function parameters. Apply it to `{ a: number } | { b: string }` and log a value of the resulting type.',
-        starterCode: `type UnionToIntersection<U> =
-  (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void
-    ? I
-    : never;
-
-type Merged = UnionToIntersection<{ a: number } | { b: string }>;
-
-const obj: Merged = { a: 42, b: 'hello' };
-console.log(obj.a);
-console.log(obj.b);`,
-        expectedOutput: '42\nhello\n',
-        hint: 'The trick is that a function parameter position is contra-variant, so the intersection is inferred when unifying multiple `(x: T) => void` signatures.',
+          'What does `UnionToIntersection<{ a: number } | { b: string }>` evaluate to?\n```typescript\ntype UnionToIntersection<U> =\n  (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;\n```',
+        options: [
+          '`{ a: number } | { b: string }`',
+          '`{ a: number } & { b: string }`',
+          '`{ a: number; b: string } | never`',
+          '`never`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Function parameter positions are *contravariant*, so unifying `(x: A) => void` with `(x: B) => void` yields `(x: A & B) => void`. `infer I` extracts `A & B` — here, `{ a: number } & { b: string }`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts10-mcq5',
+        prompt:
+          'Which TypeScript Language Service plugin entry point is called to surface custom diagnostics in the editor?',
+        options: [
+          '`getCompletionsAtPosition`',
+          '`getSemanticDiagnostics` (typically wrapped via a proxy returned from `create()`)',
+          '`getQuickInfoAtPosition`',
+          '`emitFile`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Custom diagnostics are returned from a proxied `getSemanticDiagnostics`. The plugin module exports an `init` that returns a `create(info)` factory; `info.languageService` is the proxy target.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts10-mcq6',
+        prompt:
+          'Which flag tells `tsc` to emit a Chrome-trace JSON describing exactly what the checker did during compilation, for performance debugging?',
+        options: [
+          '`--listFiles`',
+          '`--explainFiles`',
+          '`--generateTrace ./trace`',
+          '`--diagnostics`',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`tsc --generateTrace ./trace` writes a Chrome-trace event log to the given directory. Open it with `chrome://tracing` or `https://ui.perfetto.dev/`. See TS Wiki → Performance Tracing.',
       },
     ],
   },
