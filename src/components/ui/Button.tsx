@@ -29,31 +29,51 @@ interface ButtonAsLinkProps extends ButtonBaseProps {
 
 type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
+/*
+ * Sizes
+ *
+ * Each variant has a "painted height" (the visible border) and a "touch height"
+ * (the actual hit surface). On coarse pointers the touch height bumps to 44px
+ * minimum per Apple HIG — handled via the global rule in globals.css.
+ */
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-2 py-1.5 text-xs min-h-[32px]',
-  md: 'px-3 py-2 text-sm min-h-[38px]',
-  lg: 'px-4 py-2.5 text-sm min-h-[44px]',
+  sm: 'px-2.5 py-1.5 text-xs min-h-[36px]',
+  md: 'px-3 py-2 text-sm min-h-[40px]',
+  lg: 'px-4 py-3 text-sm min-h-[44px]',
 };
 
+/*
+ * Variants
+ *
+ * The :active selector mirrors :hover so tap response works without a
+ * hover-capable pointer. The inverted fill style on primary/danger gives a
+ * crisp terminal "selected row" feel.
+ */
 const variantStyles: Record<ButtonVariant, string> = {
   primary: [
     'bg-transparent text-[var(--accent-prompt)]',
     'border border-[var(--accent-prompt)]',
     'hover:bg-[var(--accent-prompt)] hover:text-[var(--bg)]',
+    'active:bg-[var(--accent-prompt)] active:text-[var(--bg)]',
   ].join(' '),
   secondary: [
     'bg-transparent text-[var(--fg)]',
     'border border-[var(--border-active)]',
     'hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
+    'active:border-[var(--accent-prompt)] active:text-[var(--accent-prompt)]',
+    'active:bg-[color-mix(in_srgb,var(--accent-prompt)_8%,transparent)]',
   ].join(' '),
   ghost: [
     'bg-transparent text-[var(--fg-muted)] border border-transparent',
     'hover:text-[var(--accent-prompt)] hover:border-[var(--border-active)]',
+    'active:text-[var(--accent-prompt)] active:border-[var(--border-active)]',
+    'active:bg-[color-mix(in_srgb,var(--accent-prompt)_6%,transparent)]',
   ].join(' '),
   danger: [
     'bg-transparent text-[var(--accent-error)]',
     'border border-[var(--accent-error)]',
     'hover:bg-[var(--accent-error)] hover:text-[var(--bg)]',
+    'active:bg-[var(--accent-error)] active:text-[var(--bg)]',
   ].join(' '),
 };
 
@@ -62,8 +82,11 @@ const baseStyles = [
   'font-mono font-medium leading-none tracking-wide',
   'transition-colors duration-100 ease-out',
   'cursor-pointer select-none',
+  /* Suppress 300ms tap delay + the default iOS grey flash */
+  'touch-manipulation',
   'focus-visible:outline-1 focus-visible:outline-offset-2',
   'disabled:opacity-40 disabled:cursor-not-allowed',
+  'disabled:hover:bg-transparent disabled:active:bg-transparent',
 ].join(' ');
 
 function withBrackets(children: ReactNode, bracketed: boolean) {

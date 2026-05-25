@@ -55,9 +55,10 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
 
   return (
     <div className="min-h-dvh flex flex-col">
-      {/* Top bar — terminal header */}
+      {/* Top bar — terminal header. Safe-area inset on top so the chrome
+       * doesn't slip under the iPhone notch / Dynamic Island. */}
       <header
-        className="sticky top-0 z-50 flex items-center justify-between gap-4 px-3 sm:px-6 h-12"
+        className="sticky top-0 z-50 safe-sticky-top"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--bg) 92%, transparent)',
           backdropFilter: 'blur(10px)',
@@ -65,68 +66,73 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
           borderBottom: '1px solid var(--border)',
         }}
       >
-        {/* Wordmark + breadcrumb */}
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 font-mono text-xs leading-none flex-shrink-0"
-            aria-label="polyglot home"
-          >
-            <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft font-semibold">
-              polyglot
-            </span>
-            <span style={{ color: 'var(--fg-muted)' }}>@</span>
-            <span style={{ color: 'var(--accent-info)' }} className="hidden sm:inline">
-              terminal
-            </span>
-            <span style={{ color: 'var(--fg-muted)' }} className="hidden sm:inline">
-              :
-            </span>
-          </Link>
+        <div className="flex items-center justify-between gap-3 px-3 sm:px-6 h-12">
+          {/* Wordmark + breadcrumb */}
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 font-mono text-xs leading-none flex-shrink-0 -mx-2 px-2 h-11 sm:h-9"
+              aria-label="polyglot home"
+            >
+              <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft font-semibold">
+                polyglot
+              </span>
+              <span style={{ color: 'var(--fg-muted)' }}>@</span>
+              <span style={{ color: 'var(--accent-info)' }} className="hidden sm:inline">
+                terminal
+              </span>
+              <span style={{ color: 'var(--fg-muted)' }} className="hidden sm:inline">
+                :
+              </span>
+            </Link>
 
-          {/* Breadcrumb */}
-          <div className="min-w-0 truncate hidden sm:block">
-            <PathBreadcrumb segments={segments} />
+            {/* Breadcrumb */}
+            <div className="min-w-0 truncate hidden sm:block">
+              <PathBreadcrumb segments={segments} />
+            </div>
           </div>
-        </div>
 
-        {/* Right actions */}
-        <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">
-          <Link
-            href="/settings"
-            className={[
-              'inline-flex items-center font-mono text-xs leading-none',
-              'h-8 px-2 border transition-colors duration-100',
-              'focus-visible:outline-1 focus-visible:outline-offset-2',
-              onSettings
-                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
-                : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
-            ].join(' ')}
-            aria-label="Settings"
-            aria-current={onSettings ? 'page' : undefined}
-          >
-            <span aria-hidden="true" className="opacity-60">[</span>
-            <span className="px-1">settings</span>
-            <span aria-hidden="true" className="opacity-60">]</span>
-          </Link>
-          <Link
-            href="/intake"
-            className={[
-              'inline-flex items-center font-mono text-xs leading-none',
-              'h-8 px-2 border transition-colors duration-100',
-              'focus-visible:outline-1 focus-visible:outline-offset-2',
-              onIntake
-                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
-                : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-warn)] hover:text-[var(--accent-warn)]',
-            ].join(' ')}
-            aria-label="Intake"
-            aria-current={onIntake ? 'page' : undefined}
-          >
-            <span aria-hidden="true" className="opacity-60">[</span>
-            <span className="px-1">intake</span>
-            <span aria-hidden="true" className="opacity-60">]</span>
-          </Link>
-        </nav>
+          {/* Right actions */}
+          <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">
+            <Link
+              href="/settings"
+              className={[
+                'inline-flex items-center justify-center font-mono text-xs leading-none',
+                /* 44px touch surface, painted 32px tall via inner span */
+                'h-11 sm:h-8 px-2 border transition-colors duration-100',
+                'focus-visible:outline-1 focus-visible:outline-offset-2',
+                'active:bg-[color-mix(in_srgb,var(--accent-prompt)_14%,transparent)]',
+                onSettings
+                  ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                  : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
+              ].join(' ')}
+              aria-label="Settings"
+              aria-current={onSettings ? 'page' : undefined}
+            >
+              <span aria-hidden="true" className="opacity-60">[</span>
+              <span className="px-1">settings</span>
+              <span aria-hidden="true" className="opacity-60">]</span>
+            </Link>
+            <Link
+              href="/intake"
+              className={[
+                'inline-flex items-center justify-center font-mono text-xs leading-none',
+                'h-11 sm:h-8 px-2 border transition-colors duration-100',
+                'focus-visible:outline-1 focus-visible:outline-offset-2',
+                'active:bg-[color-mix(in_srgb,var(--accent-warn)_14%,transparent)]',
+                onIntake
+                  ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                  : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-warn)] hover:text-[var(--accent-warn)]',
+              ].join(' ')}
+              aria-label="Intake"
+              aria-current={onIntake ? 'page' : undefined}
+            >
+              <span aria-hidden="true" className="opacity-60">[</span>
+              <span className="px-1">intake</span>
+              <span aria-hidden="true" className="opacity-60">]</span>
+            </Link>
+          </nav>
+        </div>
       </header>
 
       {/* Mobile-only breadcrumb */}
@@ -149,24 +155,28 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
         {children}
       </main>
 
-      {/* Status-bar footer */}
+      {/* Status-bar footer — collapses to single-line typography in landscape
+       * iPhone (height ≤ 480px) so chrome doesn't eat the visible viewport.
+       * The safe-pb class adds env(safe-area-inset-bottom) so the home-indicator
+       * doesn't overlap. */}
       <footer
-        className="px-3 sm:px-6 py-2 flex items-center justify-between text-[11px] font-mono"
+        className="app-footer-mobile-collapse safe-pb px-3 sm:px-6 py-2 flex items-center justify-between gap-3 text-[11px] font-mono"
         style={{
           color: 'var(--fg-dim)',
           borderTop: '1px solid var(--border)',
           backgroundColor: 'var(--bg-elevated)',
         }}
       >
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex items-center gap-2 truncate">
           <span style={{ color: 'var(--accent-prompt)' }}>●</span>
-          <span>polyglot-curriculum v1.0.0</span>
+          <span className="hidden xs:inline sm:inline">polyglot-curriculum v1.0.0</span>
+          <span className="sm:hidden">v1.0.0</span>
         </span>
-        <span className="inline-flex items-center gap-2">
-          <span>jetbrains-mono</span>
-          <span style={{ color: 'var(--fg-dim)' }}>/</span>
-          <span>tab=2</span>
-          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+        <span className="inline-flex items-center gap-2 truncate">
+          <span className="hidden sm:inline">jetbrains-mono</span>
+          <span style={{ color: 'var(--fg-dim)' }} className="hidden sm:inline">/</span>
+          <span className="hidden sm:inline">tab=2</span>
+          <span style={{ color: 'var(--fg-dim)' }} className="hidden sm:inline">/</span>
           <span className="inline-flex items-center">
             ready<TerminalCursor thin />
           </span>

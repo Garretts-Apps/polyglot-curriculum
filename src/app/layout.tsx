@@ -19,6 +19,12 @@ export const viewport: Viewport = {
   themeColor: '#0a0d12',
   width: 'device-width',
   initialScale: 1,
+  /* iOS notch / Dynamic Island: render under chrome and let CSS env() handle
+   * insets. Combined with the dot-grid background-attachment: fixed this gives
+   * an edge-to-edge terminal feel without breaking content layout. */
+  viewportFit: 'cover',
+  /* Match dark terminal palette so the iOS status-bar contrast is correct. */
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
