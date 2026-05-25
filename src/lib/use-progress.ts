@@ -11,6 +11,7 @@ export function useProgress() {
   // Hydrate from localStorage on mount, then merge with server if server is newer
   useEffect(() => {
     const local = loadLocal();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration only, reads localStorage once on mount
     setState(local);
     setHydrated(true);
     fetch('/api/progress')

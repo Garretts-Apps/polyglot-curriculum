@@ -9,6 +9,7 @@ type GoSandboxProps = Omit<SandboxProps, 'language'>;
 export default function GoSandbox({
   starterCode,
   expectedOutput,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   assertions: _assertions,
   onResult,
 }: GoSandboxProps) {

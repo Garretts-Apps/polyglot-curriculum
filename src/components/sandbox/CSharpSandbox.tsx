@@ -36,7 +36,7 @@ export default function CSharpSandbox({ starterCode, onResult }: CSharpSandboxPr
         <span style={{ color: 'var(--accent-csharp)' }} className="glow-soft">●</span>
         <span style={{ color: 'var(--fg)' }}>csharp/main.cs</span>
         <span className="flex-1" />
-        <span style={{ color: 'var(--fg-dim)' }}>// external fiddle</span>
+        <span style={{ color: 'var(--fg-dim)' }}>{'// external fiddle'}</span>
       </div>
 
       <div
@@ -55,7 +55,7 @@ export default function CSharpSandbox({ starterCode, onResult }: CSharpSandboxPr
 
       <div className="border-b" style={{ borderColor: 'var(--border)' }}>
         <p className="px-3 pt-2 pb-1 text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          // starter code — copy into the fiddle below
+          {'// starter code — copy into the fiddle below'}
         </p>
         <CodeEditor language="csharp" value={starterCode} readOnly />
       </div>
@@ -79,7 +79,7 @@ export default function CSharpSandbox({ starterCode, onResult }: CSharpSandboxPr
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
       >
         <span className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          // manual confirmation
+          {'// manual confirmation'}
         </span>
         <button
           type="button"

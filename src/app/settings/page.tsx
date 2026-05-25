@@ -14,7 +14,7 @@ export default function SettingsPage() {
             <ShellPrompt minimal command=" config --edit" />
           </h1>
           <p className="text-sm font-mono" style={{ color: 'var(--fg-muted)' }}>
-            // preferences, progress, and local storage management
+            {/* preferences, progress, and local storage management */}
           </p>
         </header>
 

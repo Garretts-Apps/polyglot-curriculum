@@ -53,6 +53,7 @@ export function BootSequence({ lines, tail = 350, onComplete, skip = false }: Bo
     startedRef.current = true;
 
     if (skip || reducedMotion()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration only, runs once on mount when skip/reduced-motion
       setDone(true);
       onComplete?.();
       return;

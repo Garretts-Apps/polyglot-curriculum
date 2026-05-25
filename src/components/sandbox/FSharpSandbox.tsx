@@ -30,7 +30,7 @@ export default function FSharpSandbox({ starterCode, onResult }: FSharpSandboxPr
         <span style={{ color: 'var(--accent-fsharp)' }} className="glow-soft">●</span>
         <span style={{ color: 'var(--fg)' }}>fsharp/main.fs</span>
         <span className="flex-1" />
-        <span style={{ color: 'var(--fg-dim)' }}>// external REPL</span>
+        <span style={{ color: 'var(--fg-dim)' }}>{'// external REPL'}</span>
       </div>
 
       <div
@@ -49,7 +49,7 @@ export default function FSharpSandbox({ starterCode, onResult }: FSharpSandboxPr
 
       <div className="border-b" style={{ borderColor: 'var(--border)' }}>
         <p className="px-3 pt-2 pb-1 text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          // starter code — copy into the REPL below
+          {'// starter code — copy into the REPL below'}
         </p>
         <CodeEditor language="fsharp" value={starterCode} readOnly />
       </div>
@@ -73,7 +73,7 @@ export default function FSharpSandbox({ starterCode, onResult }: FSharpSandboxPr
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
       >
         <span className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          // manual confirmation
+          {'// manual confirmation'}
         </span>
         <button
           type="button"

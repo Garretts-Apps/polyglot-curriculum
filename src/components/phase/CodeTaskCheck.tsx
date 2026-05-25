@@ -82,7 +82,7 @@ export function CodeTaskCheck({ check, language, onResult }: CodeTaskCheckProps)
             </span>
             <span>hint</span>
             <span style={{ color: 'var(--fg-dim)' }} className="text-[10px]">
-              // toggle to reveal
+              {/* toggle to reveal */}
             </span>
           </summary>
           <div

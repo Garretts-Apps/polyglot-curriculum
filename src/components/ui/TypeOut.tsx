@@ -72,6 +72,7 @@ export function TypeOut({
     startedRef.current = true;
 
     if (reducedMotion() || alreadyTyped(sessionKey)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration only, runs once on mount for reduced-motion/already-typed path
       setShown(text);
       setDone(true);
       onDone?.();

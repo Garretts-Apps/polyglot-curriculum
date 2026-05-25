@@ -67,6 +67,7 @@ export default function HomePage() {
     if (typeof window === 'undefined') return;
     try {
       if (sessionStorage.getItem(BOOT_SESSION_KEY) === '1') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration only, reads sessionStorage once on mount
         setSkipBoot(true);
         setBootDone(true);
       }

@@ -9,6 +9,7 @@ type RustSandboxProps = Omit<SandboxProps, 'language'>;
 export default function RustSandbox({
   starterCode,
   expectedOutput,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   assertions: _assertions,
   onResult,
 }: RustSandboxProps) {

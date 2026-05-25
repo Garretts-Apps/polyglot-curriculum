@@ -20,6 +20,7 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
 
   // Keep local draft in sync if value changes from outside (e.g. server hydration)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional prop sync, mirrors external value changes into local draft
     setDraft(value);
   }, [value]);
 
@@ -153,7 +154,7 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
             <Markdown content={draft} className="prose-terminal" />
           ) : (
             <p className="text-xs" style={{ color: 'var(--fg-dim)' }}>
-              <span style={{ color: 'var(--fg-muted)' }}>// </span>
+              <span style={{ color: 'var(--fg-muted)' }}>{'// '}</span>
               buffer is empty. switch to{' '}
               <button
                 type="button"
@@ -214,7 +215,7 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
               </span>
             </span>
           ) : (
-            <span style={{ color: 'var(--fg-dim)' }}>// no edits yet</span>
+            <span style={{ color: 'var(--fg-dim)' }}>{'// no edits yet'}</span>
           )}
         </span>
       </div>

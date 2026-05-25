@@ -264,7 +264,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
                         className="text-[11px] mt-0.5 leading-snug truncate"
                         style={{ color: 'var(--fg-muted)' }}
                       >
-                        <span style={{ color: 'var(--fg-dim)' }}>// </span>
+                        <span style={{ color: 'var(--fg-dim)' }}>{'// '}</span>
                         {topic.note}
                       </p>
                     ) : (
@@ -315,7 +315,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
           >
             <span aria-hidden="true">▼</span>
             <span>deliverable</span>
-            <span style={{ color: 'var(--fg-dim)' }}>// build this to graduate the phase</span>
+            <span style={{ color: 'var(--fg-dim)' }}>{'// build this to graduate the phase'}</span>
           </p>
           <p
             className="text-sm leading-relaxed"

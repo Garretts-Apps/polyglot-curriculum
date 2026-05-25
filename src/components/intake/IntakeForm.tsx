@@ -215,7 +215,7 @@ export function IntakeForm() {
             }}
           />
           <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
-            // 1-80
+            {/* 1-80 */}
           </span>
         </div>
       </section>
@@ -226,7 +226,7 @@ export function IntakeForm() {
           <ShellPrompt minimal command=" set --priority-order" />
         </h2>
         <p className="text-xs mb-4" style={{ color: 'var(--fg-muted)' }}>
-          // rank 1st = highest priority, 6th = lowest
+          {/* rank 1st = highest priority, 6th = lowest */}
         </p>
         <div className="space-y-1">
           {LANGUAGES.map((lang) => {
@@ -281,7 +281,7 @@ export function IntakeForm() {
         style={{ borderColor: 'var(--border)' }}
       >
         <p className="text-xs" style={{ color: 'var(--fg-dim)' }}>
-          // hit <span style={{ color: 'var(--accent-prompt)' }}>[ continue ]</span> to write /progress
+          {'// hit '}<span style={{ color: 'var(--accent-prompt)' }}>[ continue ]</span>{' to write /progress'}
         </p>
         <Button onClick={validateAndSubmit} variant="primary" size="lg">
           continue →

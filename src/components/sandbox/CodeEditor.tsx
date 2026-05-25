@@ -132,7 +132,7 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
           backgroundColor: 'var(--bg-overlay)',
         }}
       >
-        // a11y: press Escape then Tab to exit the editor
+        {'// a11y: press Escape then Tab to exit the editor'}
       </p>
     </>
   );

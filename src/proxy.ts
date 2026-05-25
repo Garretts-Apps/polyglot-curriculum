@@ -8,10 +8,9 @@ export const config = {
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
     // Still iterate to avoid length-based timing leak
-    let diff = 0;
     const len = Math.max(a.length, b.length);
     for (let i = 0; i < len; i++) {
-      diff |= (a.charCodeAt(i) ?? 0) ^ (b.charCodeAt(i) ?? 0);
+      void ((a.charCodeAt(i) ?? 0) ^ (b.charCodeAt(i) ?? 0));
     }
     return false;
   }

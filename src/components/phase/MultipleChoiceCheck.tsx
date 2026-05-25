@@ -173,7 +173,7 @@ export function MultipleChoiceCheck({
 
         {!submitted && (
           <p className="pt-3 px-2 text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-            <span style={{ color: 'var(--fg-muted)' }}>// </span>
+            <span style={{ color: 'var(--fg-muted)' }}>{'// '}</span>
             press{' '}
             <kbd
               className="px-1 border tabular-nums"

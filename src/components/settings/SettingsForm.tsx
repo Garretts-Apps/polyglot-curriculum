@@ -186,7 +186,7 @@ export function SettingsForm() {
           <ShellPrompt minimal command=" progress > backup.json" />
         </h2>
         <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
-          // dump current progress to a portable JSON file
+          {'// dump current progress to a portable JSON file'}
         </p>
         <Button onClick={handleExport} variant="secondary" size="sm">
           export progress.json
@@ -199,7 +199,7 @@ export function SettingsForm() {
           <ShellPrompt minimal command=" cat backup.json | restore" />
         </h2>
         <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
-          // restore progress from a previously exported file
+          {'// restore progress from a previously exported file'}
         </p>
         <input
           ref={fileInputRef}
