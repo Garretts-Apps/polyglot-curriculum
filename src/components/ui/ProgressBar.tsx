@@ -1,54 +1,46 @@
+import { BlockProgress } from './BlockProgress';
+
 interface ProgressBarProps {
-  value: number; // 0-100
-  accentVar?: string; // CSS var e.g. '--accent-python'
+  /** 0-100 */
+  value: number;
+  /** CSS var name like '--accent-python'. Falls back to terminal green. */
+  accentVar?: string;
   label?: string;
   showLabel?: boolean;
+  /** Bar width in cells. Defaults to 16. */
+  width?: number;
+  /** Legacy prop (ignored) — kept so existing callers don't break. */
   height?: 'sm' | 'md';
 }
 
+/**
+ * Drop-in replacement for the old <ProgressBar>. Renders a unicode block bar
+ * (`███████░░░░░░░░░ 47%`) — same accessible API, terminal aesthetic.
+ */
 export function ProgressBar({
   value,
-  accentVar = '--accent-typescript',
+  accentVar,
   label,
   showLabel = false,
-  height = 'sm',
+  width = 16,
 }: ProgressBarProps) {
   const clamped = Math.min(100, Math.max(0, value));
-  const heightClass = height === 'sm' ? 'h-1' : 'h-2';
+  const color = accentVar ? `var(${accentVar})` : 'var(--accent-prompt)';
 
   return (
     <div className="w-full">
-      {(showLabel || label) && (
-        <div className="flex justify-between items-center mb-1.5">
-          {label && (
-            <span className="text-xs text-[var(--fg-muted)] font-sans">{label}</span>
-          )}
-          {showLabel && (
-            <span
-              className="text-xs font-mono tabular-nums ml-auto"
-              style={{ color: `var(${accentVar})` }}
-            >
-              {clamped}%
-            </span>
-          )}
+      {label && (
+        <div className="flex justify-between items-center mb-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+          <span>{label}</span>
         </div>
       )}
-      <div
-        className={`w-full ${heightClass} rounded-full bg-[var(--border)] overflow-hidden`}
-        role="progressbar"
-        aria-valuenow={clamped}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={label ?? 'Progress'}
-      >
-        <div
-          className="h-full rounded-full transition-all duration-500 ease-out"
-          style={{
-            width: `${clamped}%`,
-            backgroundColor: `var(${accentVar})`,
-          }}
-        />
-      </div>
+      <BlockProgress
+        value={clamped / 100}
+        width={width}
+        color={color}
+        showPercent={showLabel}
+        label={label}
+      />
     </div>
   );
 }

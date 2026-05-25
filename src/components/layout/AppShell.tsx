@@ -1,5 +1,11 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { LANGUAGES } from '@/curriculum/types';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
+import { PathBreadcrumb } from '@/components/ui/PathBreadcrumb';
 
 interface AppShellProps {
   children: ReactNode;
@@ -8,67 +14,130 @@ interface AppShellProps {
   navSlot?: ReactNode;
 }
 
+/**
+ * Builds a path breadcrumb from the current URL.
+ * /python/3 → [python, phase_03]
+ */
+function buildSegments(pathname: string): { label: string; href?: string }[] {
+  if (!pathname || pathname === '/') return [];
+  const parts = pathname.split('/').filter(Boolean);
+  const segments: { label: string; href?: string }[] = [];
+  let acc = '';
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (part === undefined) continue;
+    acc += `/${part}`;
+
+    const lang = LANGUAGES.find((l) => l.id === part);
+    if (lang) {
+      segments.push({ label: lang.id, href: acc });
+      continue;
+    }
+
+    if (/^\d+$/.test(part)) {
+      const padded = part.padStart(2, '0');
+      segments.push({ label: `phase_${padded}`, href: acc });
+      continue;
+    }
+
+    segments.push({ label: part, href: acc });
+  }
+
+  return segments;
+}
+
 export function AppShell({ children, showNav = false, navSlot }: AppShellProps) {
+  const pathname = usePathname() ?? '/';
+  const segments = buildSegments(pathname);
+  const onSettings = pathname.startsWith('/settings');
+  const onIntake = pathname.startsWith('/intake');
+
   return (
-    <div className="min-h-dvh flex flex-col bg-[var(--bg)]">
-      {/* Top bar */}
+    <div className="min-h-dvh flex flex-col">
+      {/* Top bar — terminal header */}
       <header
-        className="sticky top-0 z-50 h-14 flex items-center justify-between px-4 sm:px-8"
+        className="sticky top-0 z-50 flex items-center justify-between gap-4 px-3 sm:px-6 h-12"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--bg) 85%, transparent)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          backgroundColor: 'color-mix(in srgb, var(--bg) 92%, transparent)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           borderBottom: '1px solid var(--border)',
         }}
       >
-        {/* Wordmark */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 min-h-0 min-w-0 focus-visible:outline-2 focus-visible:outline-offset-4"
-          aria-label="Polyglot Curriculum home"
-        >
-          <span
-            className="font-serif text-xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}
+        {/* Wordmark + breadcrumb */}
+        <div className="flex items-center gap-3 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 font-mono text-xs leading-none flex-shrink-0"
+            aria-label="polyglot home"
           >
-            Polyglot
-          </span>
-          <span
-            className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
-            style={{
-              color: 'var(--fg-muted)',
-              borderColor: 'var(--border)',
-              lineHeight: '1.4',
-            }}
-          >
-            curriculum
-          </span>
-        </Link>
+            <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft font-semibold">
+              polyglot
+            </span>
+            <span style={{ color: 'var(--fg-muted)' }}>@</span>
+            <span style={{ color: 'var(--accent-info)' }} className="hidden sm:inline">
+              terminal
+            </span>
+            <span style={{ color: 'var(--fg-muted)' }} className="hidden sm:inline">
+              :
+            </span>
+          </Link>
+
+          {/* Breadcrumb */}
+          <div className="min-w-0 truncate hidden sm:block">
+            <PathBreadcrumb segments={segments} />
+          </div>
+        </div>
 
         {/* Right actions */}
-        <nav className="flex items-center gap-2" aria-label="App navigation">
+        <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">
           <Link
             href="/settings"
-            className="flex items-center justify-center w-11 h-11 rounded-[var(--radius-md)] text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[var(--bg-elevated)] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className={[
+              'inline-flex items-center font-mono text-xs leading-none',
+              'h-8 px-2 border transition-colors duration-100',
+              'focus-visible:outline-1 focus-visible:outline-offset-2',
+              onSettings
+                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
+            ].join(' ')}
             aria-label="Settings"
+            aria-current={onSettings ? 'page' : undefined}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
+            <span aria-hidden="true" className="opacity-60">[</span>
+            <span className="px-1">settings</span>
+            <span aria-hidden="true" className="opacity-60">]</span>
+          </Link>
+          <Link
+            href="/intake"
+            className={[
+              'inline-flex items-center font-mono text-xs leading-none',
+              'h-8 px-2 border transition-colors duration-100',
+              'focus-visible:outline-1 focus-visible:outline-offset-2',
+              onIntake
+                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-warn)] hover:text-[var(--accent-warn)]',
+            ].join(' ')}
+            aria-label="Intake"
+            aria-current={onIntake ? 'page' : undefined}
+          >
+            <span aria-hidden="true" className="opacity-60">[</span>
+            <span className="px-1">intake</span>
+            <span aria-hidden="true" className="opacity-60">]</span>
           </Link>
         </nav>
       </header>
+
+      {/* Mobile-only breadcrumb */}
+      {segments.length > 0 && (
+        <div
+          className="sm:hidden px-3 py-1.5 text-[11px] overflow-x-auto"
+          style={{ borderBottom: '1px dashed var(--border)' }}
+        >
+          <PathBreadcrumb segments={segments} />
+        </div>
+      )}
 
       {/* Optional language nav */}
       {showNav && navSlot && (
@@ -76,7 +145,33 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
       )}
 
       {/* Page content */}
-      <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1">
+        {children}
+      </main>
+
+      {/* Status-bar footer */}
+      <footer
+        className="px-3 sm:px-6 py-2 flex items-center justify-between text-[11px] font-mono"
+        style={{
+          color: 'var(--fg-dim)',
+          borderTop: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-elevated)',
+        }}
+      >
+        <span className="inline-flex items-center gap-2">
+          <span style={{ color: 'var(--accent-prompt)' }}>●</span>
+          <span>polyglot-curriculum v1.0.0</span>
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span>jetbrains-mono</span>
+          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+          <span>tab=2</span>
+          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+          <span className="inline-flex items-center">
+            ready<TerminalCursor thin />
+          </span>
+        </span>
+      </footer>
     </div>
   );
 }

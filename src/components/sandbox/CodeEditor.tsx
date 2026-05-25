@@ -28,7 +28,6 @@ function getLanguageExtension(lang: EditorLanguage) {
       return rust();
     case 'go':
       return go();
-    // No dedicated CodeMirror extension for C# or F#; fall back to JS highlighting
     case 'csharp':
     case 'fsharp':
       return javascript();
@@ -39,7 +38,6 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
-  // Initialize editor once
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -51,6 +49,32 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
         getLanguageExtension(language),
         EditorView.lineWrapping,
         EditorState.readOnly.of(readOnly),
+        EditorView.theme({
+          '&': {
+            backgroundColor: 'var(--bg-elevated)',
+            color: 'var(--fg)',
+          },
+          '.cm-content': {
+            fontFamily: 'var(--font-mono)',
+            caretColor: 'var(--accent-prompt)',
+            padding: '12px 0',
+          },
+          '.cm-cursor, .cm-dropCursor': {
+            borderLeftColor: 'var(--accent-prompt)',
+            borderLeftWidth: '2px',
+          },
+          '.cm-gutters': {
+            backgroundColor: 'var(--bg)',
+            borderRight: '1px solid var(--border)',
+            color: 'var(--fg-dim)',
+          },
+          '.cm-activeLine, .cm-activeLineGutter': {
+            backgroundColor: 'color-mix(in srgb, var(--accent-prompt) 4%, transparent)',
+          },
+          '.cm-selectionBackground, ::selection': {
+            backgroundColor: 'color-mix(in srgb, var(--accent-prompt) 25%, transparent) !important',
+          },
+        }),
         ...(onChange
           ? [
               EditorView.updateListener.of((update) => {
@@ -74,11 +98,9 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
       view.destroy();
       viewRef.current = null;
     };
-    // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync external value changes (e.g. reset) without re-creating the editor
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -95,10 +117,23 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
       <div
         ref={containerRef}
         aria-label={`${language} code editor`}
-        className="w-full overflow-auto rounded border border-[var(--border)] text-sm"
-        style={{ fontFamily: 'var(--font-mono)', minHeight: '200px' }}
+        className="w-full overflow-auto text-sm"
+        style={{
+          fontFamily: 'var(--font-mono)',
+          minHeight: '220px',
+          backgroundColor: 'var(--bg-elevated)',
+        }}
       />
-      <p className="text-xs text-[color:var(--fg-muted)] mt-1">Press Escape, then Tab to exit the editor.</p>
+      <p
+        className="text-[10px] px-3 py-1 font-mono"
+        style={{
+          color: 'var(--fg-dim)',
+          borderTop: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-overlay)',
+        }}
+      >
+        // a11y: press Escape then Tab to exit the editor
+      </p>
     </>
   );
 }

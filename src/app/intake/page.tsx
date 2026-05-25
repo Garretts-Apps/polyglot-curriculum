@@ -1,8 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { IntakeForm } from '@/components/intake/IntakeForm';
+import { ShellPrompt } from '@/components/ui/ShellPrompt';
+import { TypeOut } from '@/components/ui/TypeOut';
+import { Button } from '@/components/ui/Button';
 import { useProgress } from '@/lib/use-progress';
 
 export default function IntakePage() {
@@ -13,27 +15,31 @@ export default function IntakePage() {
   if (state.intake !== null) {
     return (
       <AppShell>
-        <div className="mx-auto w-full max-w-2xl px-4 sm:px-8 py-16 text-center">
-          <h1
-            className="font-serif font-semibold mb-4"
+        <div className="mx-auto w-full max-w-2xl px-3 sm:px-6 py-12 text-left font-mono">
+          <pre
+            className="text-xs leading-snug mb-6 whitespace-pre"
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-              letterSpacing: '-0.025em',
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              color: 'var(--accent-warn)',
             }}
           >
-            Intake already complete
-          </h1>
-          <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>
-            You&apos;ve already completed intake.
+            {`╭──────────────────────────────────────────────╮
+│  intake.lock — already initialised           │
+╰──────────────────────────────────────────────╯`}
+          </pre>
+          <p className="text-sm mb-2" style={{ color: 'var(--fg-muted)' }}>
+            <span style={{ color: 'var(--accent-warn)' }}>warn:</span> you&apos;ve already run{' '}
+            <code className="px-1">intake</code> on this device.
           </p>
-          <Link
-            href="/settings"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)] border"
-            style={{ borderColor: 'var(--border)', color: 'var(--fg)', minHeight: '44px' }}
-          >
-            Edit in Settings →
-          </Link>
+          <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>
+            Use <code className="px-1">settings</code> to adjust target levels or reset your
+            answers.
+          </p>
+          <Button as="link" href="/settings" variant="primary" size="md">
+            cd ~/settings
+          </Button>
         </div>
       </AppShell>
     );
@@ -41,21 +47,21 @@ export default function IntakePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-2xl px-4 sm:px-8 py-10">
-        <header className="mb-10">
+      <div className="mx-auto w-full max-w-2xl px-3 sm:px-6 py-8 sm:py-12">
+        <header className="mb-8">
           <h1
-            className="font-serif font-semibold mb-2"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2rem, 5vw, 3rem)',
-              letterSpacing: '-0.03em',
-              color: 'var(--fg)',
-            }}
+            className="text-xl sm:text-2xl font-semibold mb-2"
+            style={{ color: 'var(--fg)' }}
           >
-            Welcome to Polyglot Curriculum
+            <ShellPrompt minimal command=" init --interactive" />
           </h1>
-          <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>
-            Tell us your current level in each language and where you want to go.
+          <p className="text-sm font-mono" style={{ color: 'var(--fg-muted)' }}>
+            <TypeOut
+              text="// tell me your current level, weekly study budget, and priorities. then i'll write your curriculum to /progress."
+              speed={18}
+              sessionKey="intake-hero"
+              cursorAfterDone={false}
+            />
           </p>
         </header>
 

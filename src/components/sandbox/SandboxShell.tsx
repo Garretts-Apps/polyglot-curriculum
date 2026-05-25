@@ -4,20 +4,30 @@ import { useState } from 'react';
 import type { RunOutcome, SandboxProps } from '@/lib/sandbox/types';
 import CodeEditor from './CodeEditor';
 import type { EditorLanguage } from './CodeEditor';
+import { StatusTag } from '@/components/ui/StatusTag';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
 
 interface SandboxShellProps extends SandboxProps {
   hint?: string;
-  /** The actual execution component renders inside this shell via children */
   onRun: (code: string) => Promise<RunOutcome>;
 }
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  python: 'Python',
-  typescript: 'TypeScript',
-  rust: 'Rust',
-  go: 'Go',
-  fsharp: 'F#',
-  csharp: 'C#',
+const LANGUAGE_FILE_EXT: Record<string, string> = {
+  python: 'py',
+  typescript: 'ts',
+  rust: 'rs',
+  go: 'go',
+  fsharp: 'fs',
+  csharp: 'cs',
+};
+
+const LANGUAGE_CMD: Record<string, string> = {
+  python: 'python',
+  typescript: 'tsx',
+  rust: 'cargo run',
+  go: 'go run',
+  fsharp: 'dotnet fsi',
+  csharp: 'dotnet run',
 };
 
 const LANGUAGE_ACCENT: Record<string, string> = {
@@ -29,39 +39,87 @@ const LANGUAGE_ACCENT: Record<string, string> = {
   csharp: 'var(--accent-csharp)',
 };
 
-function ResultPanel({ outcome }: { outcome: RunOutcome }) {
+function ResultPanel({ outcome, language }: { outcome: RunOutcome; language: string }) {
   if (outcome.kind === 'pending') return null;
+  const ext = LANGUAGE_FILE_EXT[language] ?? 'txt';
+  const cmd = LANGUAGE_CMD[language] ?? language;
 
   if (outcome.kind === 'pass') {
     return (
-      <div className="mt-3 rounded border border-green-700 bg-green-950/40 px-4 py-3 text-sm text-green-400">
-        Passed
-      </div>
+      <pre
+        className="font-mono text-xs leading-relaxed p-3 mt-3 whitespace-pre-wrap"
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--accent-prompt)',
+          borderLeft: '2px solid var(--accent-prompt)',
+          color: 'var(--fg)',
+        }}
+      >
+        <div>
+          <span style={{ color: 'var(--accent-prompt)' }}>$</span>{' '}
+          <span style={{ color: 'var(--fg)' }}>{cmd} main.{ext}</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <StatusTag status="pass" />
+          <span style={{ color: 'var(--accent-prompt)' }}>all assertions passed</span>
+        </div>
+      </pre>
     );
   }
 
   if (outcome.kind === 'fail') {
     return (
-      <div className="mt-3 rounded border border-red-700 bg-red-950/40 px-4 py-3 text-sm text-red-400">
-        <p className="font-semibold">Failed</p>
-        <p className="mt-1">
-          <span className="text-[var(--muted)]">Expected:</span>{' '}
-          <code className="font-mono">{outcome.expected}</code>
-        </p>
-        <p className="mt-0.5">
-          <span className="text-[var(--muted)]">Got:</span>{' '}
-          <code className="font-mono">{outcome.actual}</code>
-        </p>
-      </div>
+      <pre
+        className="font-mono text-xs leading-relaxed p-3 mt-3 whitespace-pre-wrap"
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--accent-error)',
+          borderLeft: '2px solid var(--accent-error)',
+          color: 'var(--fg)',
+        }}
+      >
+        <div>
+          <span style={{ color: 'var(--accent-prompt)' }}>$</span>{' '}
+          <span style={{ color: 'var(--fg)' }}>{cmd} main.{ext}</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <StatusTag status="fail" />
+          <span style={{ color: 'var(--accent-error)' }}>assertion failed</span>
+        </div>
+        <div className="mt-1.5">
+          <span style={{ color: 'var(--fg-muted)' }}>expected: </span>
+          <span style={{ color: 'var(--accent-prompt)' }}>{outcome.expected}</span>
+        </div>
+        <div>
+          <span style={{ color: 'var(--fg-muted)' }}>actual:   </span>
+          <span style={{ color: 'var(--accent-error)' }}>{outcome.actual}</span>
+        </div>
+      </pre>
     );
   }
 
-  // error
   return (
-    <div className="mt-3 rounded border border-yellow-700 bg-yellow-950/40 px-4 py-3 text-sm text-yellow-400">
-      <p className="font-semibold">Runtime error</p>
-      <pre className="mt-1 whitespace-pre-wrap font-mono text-xs">{outcome.message}</pre>
-    </div>
+    <pre
+      className="font-mono text-xs leading-relaxed p-3 mt-3 whitespace-pre-wrap"
+      style={{
+        background: 'var(--bg)',
+        border: '1px solid var(--accent-warn)',
+        borderLeft: '2px solid var(--accent-warn)',
+        color: 'var(--fg)',
+      }}
+    >
+      <div>
+        <span style={{ color: 'var(--accent-prompt)' }}>$</span>{' '}
+        <span style={{ color: 'var(--fg)' }}>{cmd} main.{ext}</span>
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        <StatusTag status="fail" />
+        <span style={{ color: 'var(--accent-warn)' }}>runtime error</span>
+      </div>
+      <div className="mt-1.5" style={{ color: 'var(--accent-error)' }}>
+        {outcome.message}
+      </div>
+    </pre>
   );
 }
 
@@ -78,7 +136,7 @@ export default function SandboxShell({
   const [showHint, setShowHint] = useState(false);
 
   const accent = LANGUAGE_ACCENT[language] ?? 'var(--accent-typescript)';
-  const label = LANGUAGE_LABELS[language] ?? language;
+  const ext = LANGUAGE_FILE_EXT[language] ?? 'txt';
 
   async function handleRun() {
     setRunning(true);
@@ -103,75 +161,114 @@ export default function SandboxShell({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[#13131a] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-2">
-        <span
-          className="rounded px-2 py-0.5 text-xs font-semibold"
-          style={{ background: accent, color: '#0f0f11' }}
-        >
-          {label}
-        </span>
-        <span className="flex-1" />
-        <button
-          onClick={handleReset}
-          className="text-xs text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
-          title="Reset code"
-        >
-          Reset
-        </button>
-        {hint && (
+    <div className="border font-mono" style={{ borderColor: 'var(--border)' }}>
+      <div
+        className="flex items-center justify-between border-b px-3 py-1.5"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <div className="flex items-center gap-2 text-[11px]">
+          <span style={{ color: accent }} className="glow-soft">●</span>
+          <span style={{ color: 'var(--fg)' }}>
+            {language}/main.{ext}
+          </span>
+          {running && (
+            <span
+              className="inline-flex items-center gap-1"
+              style={{ color: 'var(--accent-warn)' }}
+            >
+              <span className="text-[10px]">~ running</span>
+              <TerminalCursor thin color="var(--accent-warn)" />
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => setShowHint((v) => !v)}
-            className="text-xs text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
+            type="button"
+            onClick={handleReset}
+            className="text-[11px] px-2 py-1 border transition-colors duration-100 hover:text-[var(--accent-prompt)] hover:border-[var(--accent-prompt)]"
+            style={{ color: 'var(--fg-muted)', borderColor: 'var(--border)' }}
+            title="Reset code"
           >
-            {showHint ? 'Hide hint' : 'Hint'}
+            :reset
           </button>
-        )}
+          {hint && (
+            <button
+              type="button"
+              onClick={() => setShowHint((v) => !v)}
+              className="text-[11px] px-2 py-1 border transition-colors duration-100 hover:text-[var(--accent-warn)] hover:border-[var(--accent-warn)]"
+              style={{ color: 'var(--fg-muted)', borderColor: 'var(--border)' }}
+            >
+              {showHint ? ':hide-hint' : ':hint'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Hint */}
       {showHint && hint && (
-        <div className="border-b border-[var(--border)] bg-[#1a1a2e] px-4 py-3 text-sm text-[var(--muted)]">
-          {hint}
+        <div
+          className="border-b px-3 py-2 text-xs border-l-2"
+          style={{
+            borderColor: 'var(--border)',
+            borderLeftColor: 'var(--accent-warn)',
+            color: 'var(--fg-muted)',
+            backgroundColor: 'var(--bg-elevated)',
+          }}
+        >
+          <span style={{ color: 'var(--accent-warn)' }}>hint:</span> {hint}
         </div>
       )}
 
-      {/* Editor */}
-      <div className="px-0 py-0">
-        <CodeEditor
-          language={language as EditorLanguage}
-          value={code}
-          onChange={setCode}
-        />
+      <div>
+        <CodeEditor language={language as EditorLanguage} value={code} onChange={setCode} />
       </div>
 
-      {/* Run button */}
-      <div className="flex items-center gap-3 border-t border-[var(--border)] px-4 py-3">
+      <div
+        className="flex items-center justify-between gap-3 border-t px-3 py-2"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <span className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
+          press <span style={{ color: 'var(--accent-prompt)' }}>[ run ]</span> to execute
+        </span>
         <button
+          type="button"
           onClick={handleRun}
           disabled={running}
-          className="flex items-center gap-2 rounded px-4 py-1.5 text-sm font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: accent, color: '#0f0f11' }}
+          className={[
+            'inline-flex items-center justify-center gap-1.5',
+            'font-mono font-semibold text-xs leading-none px-3 py-2 border',
+            'transition-colors duration-100',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'focus-visible:outline-1 focus-visible:outline-offset-2',
+          ].join(' ')}
+          style={{
+            color: running ? 'var(--accent-warn)' : 'var(--accent-prompt)',
+            borderColor: running ? 'var(--accent-warn)' : 'var(--accent-prompt)',
+          }}
         >
+          <span aria-hidden="true" className="opacity-60">[</span>
           {running ? (
-            <>
+            <span className="inline-flex items-center gap-1.5">
               <span
-                className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                className="inline-block h-2.5 w-2.5 animate-spin"
+                style={{
+                  border: '1.5px solid currentColor',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                }}
                 aria-hidden="true"
               />
-              Running…
-            </>
+              running…
+            </span>
           ) : (
-            'Run'
+            <span>▶ run</span>
           )}
+          <span aria-hidden="true" className="opacity-60">]</span>
         </button>
       </div>
 
-      {/* Result panel */}
-      <div className="px-4 pb-4">
+      <div className="px-3 pb-3 pt-0">
         <div role="status" aria-live="polite" aria-atomic="true">
-          <ResultPanel outcome={outcome} />
+          <ResultPanel outcome={outcome} language={language} />
         </div>
       </div>
     </div>
