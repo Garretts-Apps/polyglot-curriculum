@@ -6,6 +6,7 @@ import { useProgress } from '@/lib/use-progress';
 import { BlockProgress } from '@/components/ui/BlockProgress';
 import { StatusTag } from '@/components/ui/StatusTag';
 import type { StatusKind } from '@/components/ui/StatusTag';
+import { phasePassed } from '@/lib/phase-status';
 
 interface PhaseListProps {
   phases: Phase[];
@@ -32,17 +33,20 @@ function formatTime(estimate: string): string {
  *  - done     → completed
  *  - wip      → some checks passed but not all
  *  - todo     → no progress
+ *  - locked   → previous phase hasn't met 80% pass threshold
  */
-type RowState = 'skip' | 'done' | 'wip' | 'todo';
+type RowState = 'skip' | 'done' | 'wip' | 'todo' | 'locked';
 
 function getRowState(args: {
   isBelowStart: boolean;
   isCompleted: boolean;
   passed: number;
   total: number;
+  isLocked: boolean;
 }): RowState {
-  const { isBelowStart, isCompleted, passed, total } = args;
+  const { isBelowStart, isCompleted, passed, total, isLocked } = args;
   if (isCompleted) return 'done';
+  if (isLocked) return 'locked';
   if (passed > 0 && passed < total) return 'wip';
   if (isBelowStart) return 'skip';
   return 'todo';
@@ -55,6 +59,7 @@ function rowStatusKind(state: RowState): StatusKind {
     case 'wip':
       return 'running';
     case 'skip':
+    case 'locked':
       return 'locked';
     case 'todo':
     default:
@@ -64,7 +69,7 @@ function rowStatusKind(state: RowState): StatusKind {
 
 /**
  * Override label so the status column matches the brief exactly:
- * [ DONE ] / [ WIP  ] / [ TODO ] / [ SKIP ]
+ * [ DONE ] / [ WIP  ] / [ TODO ] / [ SKIP ] / [ LOCK ]
  */
 function rowStatusLabel(state: RowState): string {
   switch (state) {
@@ -74,6 +79,8 @@ function rowStatusLabel(state: RowState): string {
       return 'WIP ';
     case 'skip':
       return 'SKIP';
+    case 'locked':
+      return 'LOCK';
     case 'todo':
     default:
       return 'TODO';
@@ -142,7 +149,7 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
 
         {/* Rows */}
         <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
-          {visiblePhases.map((phase) => {
+          {visiblePhases.map((phase, idx) => {
             const progress = state.phases[phase.id];
             const checkResults = progress?.checkResults ?? {};
             const totalChecks = phase.checks.length;
@@ -153,13 +160,20 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
             const isBelowStart = phase.level <= startLevel;
             const isCompleted = progress?.completed ?? false;
 
+            // A phase is locked if it's not the first visible phase and the
+            // previous phase hasn't met the 80% pass threshold.
+            const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
+            const isLocked =
+              prevPhase !== undefined && !phasePassed(prevPhase, state.phases[prevPhase.id]);
+
             const rowState = getRowState({
               isBelowStart,
               isCompleted,
               passed: passedChecks,
               total: totalChecks,
+              isLocked,
             });
-            const dimmed = rowState === 'skip';
+            const dimmed = rowState === 'skip' || rowState === 'locked';
 
             return (
               <li
@@ -168,11 +182,14 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
                 className="border-b last:border-b-0"
               >
                 <Link
-                  href={`/${langMeta.id}/${phase.level}`}
+                  href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                  aria-disabled={isLocked}
                   className="group relative grid items-center transition-colors duration-100"
                   style={{
                     gridTemplateColumns: gridCols,
                     opacity: dimmed ? 0.5 : 1,
+                    pointerEvents: isLocked ? 'none' : undefined,
+                    cursor: isLocked ? 'not-allowed' : undefined,
                   }}
                   aria-label={`phase ${paddedLevel(phase.level)}: ${phase.title}`}
                 >
@@ -266,7 +283,7 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
 
       {/* ── Mobile: stacked cards (still terminal-styled) ────────────────── */}
       <ul className="sm:hidden space-y-1">
-        {visiblePhases.map((phase) => {
+        {visiblePhases.map((phase, idx) => {
           const progress = state.phases[phase.id];
           const checkResults = progress?.checkResults ?? {};
           const totalChecks = phase.checks.length;
@@ -276,23 +293,32 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
           const pct = totalChecks > 0 ? passedChecks / totalChecks : 0;
           const isBelowStart = phase.level <= startLevel;
           const isCompleted = progress?.completed ?? false;
+
+          const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
+          const isLocked =
+            prevPhase !== undefined && !phasePassed(prevPhase, state.phases[prevPhase.id]);
+
           const rowState = getRowState({
             isBelowStart,
             isCompleted,
             passed: passedChecks,
             total: totalChecks,
+            isLocked,
           });
-          const dimmed = rowState === 'skip';
+          const dimmed = rowState === 'skip' || rowState === 'locked';
 
           return (
             <li key={phase.id}>
               <Link
-                href={`/${langMeta.id}/${phase.level}`}
+                href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                aria-disabled={isLocked}
                 className="group block relative border px-3 py-3 transition-colors duration-100"
                 style={{
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--bg-elevated)',
                   opacity: dimmed ? 0.55 : 1,
+                  pointerEvents: isLocked ? 'none' : undefined,
+                  cursor: isLocked ? 'not-allowed' : undefined,
                 }}
               >
                 {/* Accent bar */}

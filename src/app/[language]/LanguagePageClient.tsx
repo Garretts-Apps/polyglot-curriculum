@@ -107,14 +107,12 @@ export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
           <TerminalCursor color={accent} />
         </h1>
 
-        {/* Sublabel: full name + sandbox kind in muted */}
+        {/* Sublabel: full name + phase count */}
         <p
           className="mt-3 text-[11px] uppercase tracking-[0.2em]"
           style={{ color: 'var(--fg-dim)' }}
         >
           <span style={{ color: 'var(--fg-muted)' }}>{langMeta.name}</span>
-          <span className="mx-2" style={{ color: 'var(--fg-dim)' }}>·</span>
-          <span style={{ color: 'var(--accent-warn)' }}>{langMeta.sandboxKind}</span>
           <span className="mx-2" style={{ color: 'var(--fg-dim)' }}>·</span>
           <span style={{ color: 'var(--fg-muted)' }}>{phases.length} phases total</span>
         </p>
@@ -191,10 +189,6 @@ export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
         </span>
         <span style={{ color: 'var(--fg-dim)' }}>complete</span>
 
-        <Bullet />
-
-        <span style={{ color: 'var(--fg-dim)' }}>runtime=</span>
-        <span style={{ color: accent }}>{langMeta.sandboxKind}</span>
       </section>
 
       {/* ── Phase list (TUI table) ───────────────────────────────────────── */}

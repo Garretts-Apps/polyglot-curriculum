@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import type { Phase, LanguageMeta } from '@/curriculum/types';
 import type { PhaseProgress, CheckResult } from '@/lib/storage';
 import { useProgress } from '@/lib/use-progress';
+import { phasePassed, phasePassFraction, PASS_THRESHOLD } from '@/lib/phase-status';
 import { Markdown } from '@/components/ui/Markdown';
 import { Button } from '@/components/ui/Button';
 import { ShellPrompt } from '@/components/ui/ShellPrompt';
@@ -57,7 +58,9 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   const checkResults = phaseProgress?.checkResults ?? {};
   const passedCount = Object.values(checkResults).filter((r) => r.status === 'pass').length;
   const totalChecks = phase.checks.length;
-  const allPassed = passedCount === totalChecks;
+  const thresholdMet = phasePassed(phase, phaseProgress);
+  const { pct: passPct } = phasePassFraction(phase, phaseProgress);
+  const thresholdPct = Math.round(PASS_THRESHOLD * 100);
   const notes = phaseProgress?.notes ?? '';
 
   const handleResult = useCallback(
@@ -176,7 +179,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
             </span>
           </span>
           <span style={{ color: 'var(--fg-dim)' }} aria-hidden="true">·</span>
-          <StatusTag status={phaseProgress?.completed ? 'ok' : allPassed ? 'pass' : 'pending'} />
+          <StatusTag status={phaseProgress?.completed ? 'ok' : thresholdMet ? 'pass' : 'pending'} />
         </div>
       </header>
 
@@ -357,7 +360,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
               : result?.status === 'fail'
                 ? 'fail'
                 : 'pending';
-            const kindLabel = check.kind === 'mcq' ? 'multiple-choice' : 'code-task';
+            const kindLabel = 'multiple-choice';
 
             return (
               <article key={check.id}>
@@ -391,7 +394,6 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
                 </div>
                 <CheckRenderer
                   check={check}
-                  language={phase.language}
                   checkResult={result}
                   onResult={handleResult}
                 />
@@ -433,7 +435,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
               )}
             </p>
           </div>
-        ) : allPassed ? (
+        ) : thresholdMet ? (
           <button
             onClick={handleMarkComplete}
             type="button"
@@ -472,15 +474,15 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
               backgroundColor: 'var(--bg-elevated)',
               borderStyle: 'dashed',
             }}
-            aria-label={`Locked: pass all ${totalChecks} checks to unlock`}
+            aria-label={`Locked: pass ${thresholdPct}% of checks to unlock`}
             aria-disabled="true"
           >
             <span aria-hidden="true">[</span>
             <span aria-hidden="true" style={{ color: 'var(--accent-warn)' }}>⊘</span>
             <span>
-              pass all checks to unlock{' '}
+              pass {thresholdPct}% of checks to advance{' '}
               <span style={{ color: 'var(--fg-muted)' }}>
-                ({passedCount}/{totalChecks})
+                ({passedCount}/{totalChecks} — {Math.round(passPct * 100)}%)
               </span>
             </span>
             <span aria-hidden="true">]</span>
