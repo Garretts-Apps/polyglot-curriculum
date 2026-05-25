@@ -33,25 +33,31 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000 in your browser. You'll be prompted for HTTP Basic Auth credentials using the username and password you set in `.env.local`.
+Open http://localhost:3000 in your browser. You'll be redirected to `/login` and prompted for the username and password you set in `.env.local`. On success a signed HTTP-only session cookie (`polyglot_session`) is set for 30 days.
 
 ## Environment variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `BASIC_AUTH_USERNAME` | yes | Username for HTTP Basic Auth gating |
+| `BASIC_AUTH_USERNAME` | yes | Username accepted by the login form |
 | `BASIC_AUTH_PASSWORD` | yes | Strong random password (the app uses constant-time comparison to prevent timing attacks) |
+| `AUTH_SECRET` | yes | 32+ char random string used to sign the session cookie (HS256). Generate with `openssl rand -hex 32` |
 | `KV_REST_API_URL` | no | Vercel KV REST API endpoint (enables cross-device progress sync) |
 | `KV_REST_API_TOKEN` | no | Vercel KV REST API token |
 
+> **Why a signed cookie instead of HTTP Basic Auth?** iOS Safari 17+ flags Basic-Auth-gated sites as "not secure" because the password is base64-encoded on every request. We switched to a login form + HTTP-only signed-cookie session (`jose` HS256) to fix that.
+
 ## Deploying to Vercel
 
-Prerequisites: `pnpm add -g vercel` and `vercel login`. Change `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD` to strong values before deploying.
+Prerequisites: `pnpm add -g vercel` and `vercel login`. Change `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD` to strong values before deploying, and generate a strong `AUTH_SECRET`.
 
 ```bash
 vercel link
 vercel env add BASIC_AUTH_USERNAME production
 vercel env add BASIC_AUTH_PASSWORD production
+# Generate + set a strong cookie signing secret
+AUTH_SECRET=$(openssl rand -hex 32)
+echo "$AUTH_SECRET" | vercel env add AUTH_SECRET production
 # Optional: set up Vercel KV for progress sync
 # vercel kv create polyglot-progress
 vercel --prod
@@ -61,11 +67,13 @@ vercel --prod
 
 ```
 src/
-  app/                 — Next.js App Router pages, layouts, API routes
+  app/                 — Next.js App Router pages, layouts, API routes (incl. /login + /api/auth/*)
   components/          — UI components, sandbox runners, phase views, layout
+  components/auth/     — login form (client component)
   curriculum/          — phase data: one TypeScript file per language (10 levels)
   lib/                 — storage/KV utilities, progress hook, sandbox loaders
-  proxy.ts             — HTTP Basic Auth (username/password check, constant-time comparison)
+  lib/auth.ts          — JWT sign/verify helpers (jose, HS256), cookie + public-path constants
+  proxy.ts             — Cookie-based auth gate (redirects unauthenticated users to /login)
 next.config.ts         — security headers: HSTS, CSP, X-Frame-Options, Referrer-Policy, etc.
 ```
 
@@ -95,7 +103,7 @@ fable.io and dotnetfiddle.net are external services we do not control. If they g
 
 - **No analytics:** no tracking. Two third-party CDN origins are required at runtime — cdn.jsdelivr.net for Pyodide (Python) and esbuild-wasm (TypeScript). CSP restricts script-src to that origin only.
 - **No AI/LLM calls:** all code is real, all sandboxes are public or local.
-- **Single-user, password-protected:** HTTP Basic Auth over HTTPS; constant-time password comparison in `src/proxy.ts`.
+- **Single-user, password-protected:** signed HTTP-only session cookie (HS256 via `jose`) issued after a username/password check; constant-time credential comparison in `src/app/api/auth/login/route.ts`.
 - **Security headers:** HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy set in `next.config.ts` via `headers()`.
 
 ## License

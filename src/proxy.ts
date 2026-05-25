@@ -1,63 +1,56 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { PUBLIC_PATHS, SESSION_COOKIE_NAME, verifySession } from '@/lib/auth';
 
 export const config = {
   // PWA assets (manifest, service worker, app icons, apple-touch-icon) are excluded so
-  // browsers can fetch them without a Basic-Auth round-trip. The install flow is sensitive
-  // to extra 401 challenges on Safari iOS, and these files contain no secrets.
-  // `_next/image` is also excluded so Next.js image optimisation doesn't hit auth on every
-  // resize request.
+  // browsers can fetch them without auth round-trips. The install flow is sensitive
+  // to extra challenges on Safari iOS, and these files contain no secrets.
+  // `_next/image` is also excluded so Next.js image optimisation doesn't hit auth on
+  // every resize request.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|apple-touch-icon.png).*)",
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|apple-touch-icon.png).*)',
   ],
 };
 
-/** Constant-time string comparison safe for edge runtime (no crypto.timingSafeEqual). */
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // Still iterate to avoid length-based timing leak
-    const len = Math.max(a.length, b.length);
-    for (let i = 0; i < len; i++) {
-      void ((a.charCodeAt(i) ?? 0) ^ (b.charCodeAt(i) ?? 0));
-    }
-    return false;
-  }
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= (a.charCodeAt(i) ?? 0) ^ (b.charCodeAt(i) ?? 0);
-  }
-  return diff === 0;
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
-export function proxy(request: NextRequest): NextResponse {
-  const expectedUsername = process.env["BASIC_AUTH_USERNAME"];
-  const expectedPassword = process.env["BASIC_AUTH_PASSWORD"];
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const expectedUsername = process.env['BASIC_AUTH_USERNAME'];
+  const expectedPassword = process.env['BASIC_AUTH_PASSWORD'];
+  const secret = process.env['AUTH_SECRET'];
 
-  if (!expectedUsername || !expectedPassword) {
-    return new NextResponse("Service misconfigured: BASIC_AUTH env vars not set", { status: 503 });
+  // Fail closed if env is misconfigured — same posture as the old basic-auth proxy.
+  if (!expectedUsername || !expectedPassword || !secret || secret.length < 32) {
+    return new NextResponse(
+      'Service misconfigured: BASIC_AUTH_USERNAME, BASIC_AUTH_PASSWORD, and AUTH_SECRET (32+ chars) must be set',
+      { status: 503 },
+    );
   }
 
-  const authHeader = request.headers.get("authorization");
+  const { pathname, search } = request.nextUrl;
 
-  if (authHeader?.startsWith("Basic ")) {
-    const base64 = authHeader.slice("Basic ".length);
-    const decoded = atob(base64);
-    const colonIdx = decoded.indexOf(":");
-    if (colonIdx !== -1) {
-      const username = decoded.slice(0, colonIdx);
-      const password = decoded.slice(colonIdx + 1);
-      if (
-        safeEqual(username, expectedUsername) &&
-        safeEqual(password, expectedPassword)
-      ) {
-        return NextResponse.next();
-      }
+  // Login page + auth endpoints are always public so the user can authenticate.
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (token) {
+    const session = await verifySession(token);
+    if (session) {
+      return NextResponse.next();
     }
   }
 
-  return new NextResponse("Unauthorized", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Polyglot"',
-    },
-  });
+  // No valid session — redirect to /login with `?from=` so we can return after.
+  const loginUrl = new URL('/login', request.url);
+  const from = `${pathname}${search}`;
+  if (from && from !== '/' && from !== '/login') {
+    loginUrl.searchParams.set('from', from);
+  }
+  return NextResponse.redirect(loginUrl);
 }

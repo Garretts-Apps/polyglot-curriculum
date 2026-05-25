@@ -250,6 +250,21 @@ export function SettingsForm() {
         )}
       </section>
 
+      {/* Session — logout */}
+      <section>
+        <h2 className="text-sm font-semibold mb-3">
+          <ShellPrompt minimal command=" exit  # end session" />
+        </h2>
+        <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
+          {'// clears polyglot_session cookie and returns you to /login'}
+        </p>
+        <form action="/api/auth/logout" method="post">
+          <Button type="submit" variant="danger" size="sm">
+            logout
+          </Button>
+        </form>
+      </section>
+
       {/* Version footer */}
       <footer
         className="pt-4 border-t flex items-center justify-between gap-3"
