@@ -5,8 +5,11 @@ import type { Phase, LanguageMeta } from '@/curriculum/types';
 import type { PhaseProgress, CheckResult } from '@/lib/storage';
 import { useProgress } from '@/lib/use-progress';
 import { Markdown } from '@/components/ui/Markdown';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ShellPrompt } from '@/components/ui/ShellPrompt';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
+import { StatusTag } from '@/components/ui/StatusTag';
+import { BlockProgress } from '@/components/ui/BlockProgress';
 import { CheckRenderer } from './CheckRenderer';
 import { NotesEditor } from './NotesEditor';
 
@@ -15,8 +18,40 @@ interface PhaseViewProps {
   langMeta: LanguageMeta;
 }
 
+function paddedLevel(level: number): string {
+  return level.toString().padStart(2, '0');
+}
+
+function slugifyPhaseTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Section header — looks like a shell prompt issuing a man-page style command.
+ * Renders `$ cat README.md` with a subtle accent-tinted underline rule below.
+ */
+function SectionHeader({
+  command,
+  rightSlot,
+}: {
+  command: string;
+  rightSlot?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+      <h2 className="text-sm font-semibold flex items-baseline gap-2">
+        <ShellPrompt minimal command={` ${command}`} />
+      </h2>
+      {rightSlot}
+    </div>
+  );
+}
+
 export function PhaseView({ phase, langMeta }: PhaseViewProps) {
-  const { state, updatePhase } = useProgress();
+  const { state, updatePhase, hydrated } = useProgress();
   const phaseProgress: PhaseProgress | undefined = state.phases[phase.id];
 
   const checkResults = phaseProgress?.checkResults ?? {};
@@ -76,141 +111,414 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   }, [phase.id, phase.language, phase.level, updatePhase]);
 
   const accentVar = langMeta.accentVar;
+  const accentColor = `var(${accentVar})`;
+  const phaseSlug = `${paddedLevel(phase.level)}_${slugifyPhaseTitle(phase.title)}`;
+  const progressFraction = totalChecks > 0 ? passedCount / totalChecks : 0;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 sm:px-8 py-10 space-y-10">
-      {/* Header */}
-      <header>
-        <div
-          className="h-1 w-full rounded-full mb-6"
-          style={{ backgroundColor: `var(${accentVar})` }}
-          aria-hidden="true"
-        />
-        <p className="text-xs font-mono uppercase tracking-widest mb-2" style={{ color: `var(${accentVar})` }}>
-          {langMeta.name} — Phase {phase.level}
-        </p>
-        <h1
-          className="font-serif font-semibold mb-2"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-            letterSpacing: '-0.025em',
-            color: 'var(--fg)',
-          }}
+    <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
+      {/* ─── Phase header ─────────────────────────────────────────────────── */}
+      <header className="mb-10">
+        {/* Path breadcrumb — `~/curriculum/python/03_modules-pip.phase` */}
+        <p
+          className="text-[11px] tracking-wider mb-3 truncate"
+          style={{ color: 'var(--fg-muted)' }}
         >
-          {phase.title}
-        </h1>
-        <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>
-          Estimated time: {phase.timeEstimate}
+          <span style={{ color: 'var(--fg-dim)' }}>~</span>
+          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+          <span>curriculum</span>
+          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+          <span style={{ color: accentColor }}>{langMeta.id}</span>
+          <span style={{ color: 'var(--fg-dim)' }}>/</span>
+          <span style={{ color: 'var(--fg)' }}>{phaseSlug}</span>
+          <span style={{ color: 'var(--fg-dim)' }}>.phase</span>
         </p>
+
+        {/* Big title with blinking cursor */}
+        <h1
+          className="text-2xl sm:text-[2rem] font-semibold leading-[1.15] tracking-tight flex items-center flex-wrap gap-x-2"
+          style={{ color: 'var(--fg)' }}
+        >
+          <span style={{ color: accentColor }}>{phase.title}</span>
+          <TerminalCursor color={accentColor} />
+        </h1>
+
+        {/* Status line — level · time · check progress */}
+        <div
+          className="mt-3 flex items-center gap-x-3 gap-y-2 flex-wrap text-[11px] tabular-nums"
+          style={{ color: 'var(--fg-muted)' }}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span style={{ color: 'var(--fg-dim)' }}>level</span>
+            <span style={{ color: accentColor }}>{paddedLevel(phase.level)}</span>
+          </span>
+          <span style={{ color: 'var(--fg-dim)' }} aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <span style={{ color: 'var(--fg-dim)' }}>time</span>
+            <span style={{ color: 'var(--accent-warn)' }}>{phase.timeEstimate}</span>
+          </span>
+          <span style={{ color: 'var(--fg-dim)' }} aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <span style={{ color: 'var(--fg-dim)' }}>checks</span>
+            <span style={{ color: 'var(--accent-prompt)' }}>{totalChecks}</span>
+          </span>
+          <span style={{ color: 'var(--fg-dim)' }} aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-2">
+            <span style={{ color: 'var(--fg-dim)' }}>progress</span>
+            <BlockProgress
+              value={progressFraction}
+              width={10}
+              color={accentColor}
+              showPercent={false}
+            />
+            <span style={{ color: accentColor }}>
+              {passedCount}/{totalChecks}
+            </span>
+          </span>
+          <span style={{ color: 'var(--fg-dim)' }} aria-hidden="true">·</span>
+          <StatusTag status={phaseProgress?.completed ? 'ok' : allPassed ? 'pass' : 'pending'} />
+        </div>
       </header>
 
-      {/* Intro */}
-      <section>
-        <Markdown content={phase.intro} />
+      {/* ─── Intro / README ───────────────────────────────────────────────── */}
+      <section className="mb-12">
+        <SectionHeader command="cat README.md" />
+        <div
+          className="border pl-4 pr-4 py-4 relative"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--bg-elevated)',
+            borderLeftWidth: '2px',
+            borderLeftColor: accentColor,
+          }}
+        >
+          {/* file-header strip */}
+          <div
+            className="absolute top-0 right-0 px-2 py-0.5 text-[10px] uppercase tracking-widest"
+            style={{
+              color: 'var(--fg-dim)',
+              backgroundColor: 'var(--bg)',
+              borderLeft: '1px solid var(--border)',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            readme.md
+          </div>
+          <Markdown content={phase.intro} className="prose-terminal" />
+        </div>
       </section>
 
-      {/* Topics */}
-      <section>
-        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--fg)' }}>
-          Topics
-        </h2>
-        <ul className="space-y-2">
-          {phase.topics.map((topic, i) => (
-            <li key={i}>
-              <a
-                href={topic.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm underline underline-offset-2 transition-opacity hover:opacity-70"
-                style={{ color: `var(${accentVar})` }}
+      {/* ─── Topics — file listing ────────────────────────────────────────── */}
+      <section className="mb-12">
+        <SectionHeader
+          command="ls topics/"
+          rightSlot={
+            <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-dim)' }}>
+              {phase.topics.length} {phase.topics.length === 1 ? 'file' : 'files'}
+            </span>
+          }
+        />
+        <ul
+          className="border divide-y"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
+        >
+          {phase.topics.map((topic, i) => {
+            const filename = `${slugifyPhaseTitle(topic.label)}.md`;
+            return (
+              <li
+                key={i}
+                style={{ borderColor: 'var(--border)' }}
+                className="border-b last:border-b-0"
               >
-                {topic.label}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-              </a>
-              {topic.note && (
-                <p className="text-xs mt-0.5 ml-0" style={{ color: 'var(--fg-muted)' }}>
-                  {topic.note}
-                </p>
-              )}
-            </li>
-          ))}
+                <a
+                  href={topic.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group grid items-start gap-3 px-3 py-2.5 transition-colors duration-100 hover:bg-[var(--bg-overlay)]"
+                  style={{
+                    gridTemplateColumns: 'auto 1ch 1fr auto',
+                  }}
+                >
+                  {/* file glyph */}
+                  <span
+                    aria-hidden="true"
+                    className="font-mono text-sm select-none pt-0.5"
+                    style={{ color: 'var(--fg-dim)' }}
+                  >
+                    <span className="inline group-hover:hidden">└─</span>
+                    <span className="hidden group-hover:inline" style={{ color: accentColor }}>
+                      ▸─
+                    </span>
+                  </span>
+                  {/* cursor space */}
+                  <span aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p
+                      className="text-sm leading-snug flex items-center gap-1.5"
+                      style={{ color: accentColor }}
+                    >
+                      <span>{filename}</span>
+                    </p>
+                    {topic.note ? (
+                      <p
+                        className="text-[11px] mt-0.5 leading-snug truncate"
+                        style={{ color: 'var(--fg-muted)' }}
+                      >
+                        <span style={{ color: 'var(--fg-dim)' }}>// </span>
+                        {topic.note}
+                      </p>
+                    ) : (
+                      <p
+                        className="text-[11px] mt-0.5 truncate"
+                        style={{ color: 'var(--fg-dim)' }}
+                      >
+                        {topic.url.replace(/^https?:\/\//, '')}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className="font-mono text-xs self-center transition-colors duration-100"
+                    style={{ color: 'var(--fg-dim)' }}
+                  >
+                    <span className="group-hover:hidden">→</span>
+                    <span
+                      className="hidden group-hover:inline"
+                      style={{ color: accentColor }}
+                    >
+                      open ↗
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
-      {/* Deliverable */}
-      <section>
-        <Card elevated className="p-5 border-l-4" style={{ borderLeftColor: `var(${accentVar})` } as React.CSSProperties}>
-          <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: `var(${accentVar})` }}>
-            Deliverable
+      {/* ─── Deliverable — highlighted callout ────────────────────────────── */}
+      <section className="mb-12">
+        <SectionHeader command="cat deliverable.md" />
+        <div
+          className="border-l-2 border-y border-r pl-4 pr-4 py-4 relative"
+          style={{
+            borderLeftColor: 'var(--accent-warn)',
+            borderTopColor: 'var(--border)',
+            borderRightColor: 'var(--border)',
+            borderBottomColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--accent-warn) 5%, var(--bg-elevated))',
+          }}
+        >
+          <p
+            className="text-[10px] uppercase tracking-widest mb-2 inline-flex items-center gap-1"
+            style={{ color: 'var(--accent-warn)' }}
+          >
+            <span aria-hidden="true">▼</span>
+            <span>deliverable</span>
+            <span style={{ color: 'var(--fg-dim)' }}>// build this to graduate the phase</span>
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: 'var(--fg)' }}
+          >
             {phase.deliverable}
           </p>
-        </Card>
-      </section>
-
-      {/* Knowledge checks */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-            Knowledge Checks
-          </h2>
-          <span className="text-xs font-mono" style={{ color: 'var(--fg-muted)' }}>
-            {passedCount}/{totalChecks} passed
-          </span>
-        </div>
-        <div className="space-y-4">
-          {phase.checks.map((check) => (
-            <CheckRenderer
-              key={check.id}
-              check={check}
-              language={phase.language}
-              checkResult={checkResults[check.id]}
-              onResult={handleResult}
-            />
-          ))}
         </div>
       </section>
 
-      {/* Notes */}
-      <section>
-        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--fg)' }}>
-          Notes
-        </h2>
-        <NotesEditor value={notes} onChange={handleNotesChange} />
-      </section>
-
-      {/* Mark complete */}
-      <div className="flex items-center gap-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-        {phaseProgress?.completed ? (
-          <p className="text-sm" style={{ color: '#22c55e' }}>
-            Phase completed
-            {phaseProgress.completedAt && (
-              <span className="ml-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
-                on {new Date(phaseProgress.completedAt).toLocaleDateString()}
+      {/* ─── Knowledge checks — "test cases" ──────────────────────────────── */}
+      <section className="mb-12">
+        <SectionHeader
+          command="run knowledge-checks --verbose"
+          rightSlot={
+            <span
+              className="text-[11px] inline-flex items-center gap-2 tabular-nums"
+              style={{ color: 'var(--fg-muted)' }}
+            >
+              <BlockProgress
+                value={progressFraction}
+                width={6}
+                color="var(--accent-prompt)"
+                showPercent={false}
+              />
+              <span>
+                <span style={{ color: 'var(--accent-prompt)' }}>{passedCount}</span>
+                <span style={{ color: 'var(--fg-dim)' }}>/</span>
+                {totalChecks} pass
               </span>
-            )}
-          </p>
-        ) : (
-          <Button
-            onClick={handleMarkComplete}
-            disabled={!allPassed}
-            variant="primary"
-            size="md"
+            </span>
+          }
+        />
+        <div className="space-y-4">
+          {phase.checks.map((check, idx) => {
+            const result = checkResults[check.id];
+            const checkStatus = result?.status === 'pass'
+              ? 'pass'
+              : result?.status === 'fail'
+                ? 'fail'
+                : 'pending';
+            const kindLabel = check.kind === 'mcq' ? 'multiple-choice' : 'code-task';
+
+            return (
+              <article key={check.id}>
+                {/* Test-case header strip */}
+                <div
+                  className="flex items-center justify-between gap-2 px-3 py-1.5 border border-b-0 text-[11px]"
+                  style={{
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--bg-overlay)',
+                  }}
+                >
+                  <span
+                    className="inline-flex items-center gap-2 tabular-nums"
+                    style={{ color: 'var(--fg-muted)' }}
+                  >
+                    <span style={{ color: 'var(--accent-prompt)' }}>
+                      test/{paddedLevel(idx + 1)}
+                    </span>
+                    <span style={{ color: 'var(--fg-dim)' }}>·</span>
+                    <span style={{ color: 'var(--fg-muted)' }}>{kindLabel}</span>
+                    {result && result.attempts > 1 && (
+                      <>
+                        <span style={{ color: 'var(--fg-dim)' }}>·</span>
+                        <span style={{ color: 'var(--fg-dim)' }}>
+                          attempt #{result.attempts}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <StatusTag status={checkStatus} />
+                </div>
+                <CheckRenderer
+                  check={check}
+                  language={phase.language}
+                  checkResult={result}
+                  onResult={handleResult}
+                />
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─── Notes ─────────────────────────────────────────────────────────── */}
+      <section className="mb-12">
+        <SectionHeader command="vim notes.md" />
+        <NotesEditor value={notes} onChange={handleNotesChange} hydrated={hydrated} />
+      </section>
+
+      {/* ─── Mark complete CTA ─────────────────────────────────────────────── */}
+      <div
+        className="pt-6 mt-2 border-t"
+        style={{ borderColor: 'var(--border)', borderStyle: 'dashed' }}
+      >
+        {phaseProgress?.completed ? (
+          <div
+            className="border px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+            style={{
+              borderColor: 'var(--accent-prompt)',
+              backgroundColor: 'color-mix(in srgb, var(--accent-prompt) 6%, transparent)',
+            }}
           >
-            Mark phase complete
+            <p
+              className="text-sm inline-flex items-center gap-2"
+              style={{ color: 'var(--accent-prompt)' }}
+            >
+              <StatusTag status="ok" />
+              <span>phase committed to your progress log</span>
+              {phaseProgress.completedAt && (
+                <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+                  @ {new Date(phaseProgress.completedAt).toLocaleDateString()}
+                </span>
+              )}
+            </p>
+          </div>
+        ) : allPassed ? (
+          <button
+            onClick={handleMarkComplete}
+            type="button"
+            className={[
+              'pulse-prompt',
+              'w-full px-4 py-3 border font-mono text-sm tracking-wide',
+              'inline-flex items-center justify-center gap-2',
+              'transition-colors duration-150 cursor-pointer',
+              'hover:bg-[var(--accent-prompt)] hover:text-[var(--bg)]',
+              'focus-visible:outline-1 focus-visible:outline-offset-2',
+            ].join(' ')}
+            style={{
+              borderColor: 'var(--accent-prompt)',
+              color: 'var(--accent-prompt)',
+              backgroundColor: 'transparent',
+            }}
+            aria-label={`Mark phase ${phase.title} complete`}
+          >
+            <span aria-hidden="true">[</span>
+            <span aria-hidden="true">▶</span>
+            <span>mark phase complete</span>
+            <span aria-hidden="true">]</span>
+          </button>
+        ) : (
+          <button
+            disabled
+            type="button"
+            className={[
+              'w-full px-4 py-3 border font-mono text-sm tracking-wide',
+              'inline-flex items-center justify-center gap-2',
+              'cursor-not-allowed',
+            ].join(' ')}
+            style={{
+              borderColor: 'var(--border)',
+              color: 'var(--fg-dim)',
+              backgroundColor: 'var(--bg-elevated)',
+              borderStyle: 'dashed',
+            }}
+            aria-label={`Locked: pass all ${totalChecks} checks to unlock`}
+            aria-disabled="true"
+          >
+            <span aria-hidden="true">[</span>
+            <span aria-hidden="true" style={{ color: 'var(--accent-warn)' }}>⊘</span>
+            <span>
+              pass all checks to unlock{' '}
+              <span style={{ color: 'var(--fg-muted)' }}>
+                ({passedCount}/{totalChecks})
+              </span>
+            </span>
+            <span aria-hidden="true">]</span>
+          </button>
+        )}
+
+        {/* Mini-footer help */}
+        <p
+          className="mt-3 text-[10px] inline-flex items-center gap-x-3 gap-y-1 flex-wrap"
+          style={{ color: 'var(--fg-dim)' }}
+        >
+          <span>
+            <span style={{ color: 'var(--fg-muted)' }}>tip:</span> press{' '}
+            <kbd
+              className="px-1 border tabular-nums"
+              style={{ borderColor: 'var(--border)', color: 'var(--fg-muted)' }}
+            >
+              1-9
+            </kbd>{' '}
+            to pick MCQ options, then{' '}
+            <kbd
+              className="px-1 border"
+              style={{ borderColor: 'var(--border)', color: 'var(--fg-muted)' }}
+            >
+              enter
+            </kbd>{' '}
+            to submit
+          </span>
+          <Button
+            as="link"
+            href={`/${langMeta.id}`}
+            variant="ghost"
+            size="sm"
+            bracketed
+          >
+            cd ..
           </Button>
-        )}
-        {!allPassed && !phaseProgress?.completed && (
-          <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>
-            Pass all {totalChecks} checks to unlock
-          </p>
-        )}
+        </p>
       </div>
     </div>
   );

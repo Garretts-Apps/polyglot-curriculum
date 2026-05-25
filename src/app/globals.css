@@ -1,33 +1,47 @@
 @import "tailwindcss";
 
-/* ── Design tokens ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Terminal palette — "polyglot@terminal"
+ * Reference: gh dash, gruvbox-dark, github dark
+ * ────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Background */
-  --bg: #0B0A09;
-  --bg-elevated: #15130F;
+  /* Background layers */
+  --bg: #0a0d12;
+  --bg-elevated: #0f1419;
+  --bg-overlay: #161b22;
 
-  /* Foreground */
-  --fg: #F2EDE4;
-  --fg-muted: #A29C8E;
+  /* Foreground layers (cool greys, github-dark inspired) */
+  --fg: #c9d1d9;
+  --fg-muted: #6e7681;
+  --fg-dim: #484f58;
 
   /* Borders */
-  --border: #2A2620;
-  --border-hover: #403A30;
+  --border: #21262d;
+  --border-active: #30363d;
+  /* Legacy alias used in a few spots */
+  --border-hover: #30363d;
 
-  /* Per-language accent colours */
-  --accent-python: #FFD43B;
-  --accent-csharp: #B392DB;
-  --accent-typescript: #5BA4DB;
-  --accent-rust: #E89B5C;
-  --accent-fsharp: #3A9ECB;
-  --accent-go: #5AC5DB;
+  /* Status accents — terminal-prompt vibe */
+  --accent-prompt: #7ee787;   /* terminal green: prompts, OK */
+  --accent-warn:   #ffa657;   /* amber: warning, pending */
+  --accent-error:  #ff7b72;   /* red: errors, fail */
+  --accent-info:   #79c0ff;   /* blue: info */
 
-  /* Font variables (populated by next/font) */
-  --font-sans: var(--font-sans, system-ui, sans-serif);
-  --font-mono: var(--font-mono, "Courier New", monospace);
-  --font-display: var(--font-display, Georgia, serif);
+  /* Language accents tinted toward terminal palette */
+  --accent-python:     #f0c674;  /* amber-yellow */
+  --accent-csharp:     #b294bb;  /* magenta */
+  --accent-typescript: #81a2be;  /* blue */
+  --accent-rust:       #de935f;  /* orange */
+  --accent-fsharp:     #8abeb7;  /* cyan-pastel */
+  --accent-go:         #5fb3b3;  /* teal */
 
-  /* Spacing scale */
+  /* Font stack — mono everywhere */
+  --font-mono:
+    var(--font-mono-feature, 'JetBrains Mono'),
+    'Berkeley Mono', 'IBM Plex Mono', 'Fira Code',
+    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -39,22 +53,24 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Sharper radii — terminal feel */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
   --radius-full: 9999px;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-mono);
   --font-mono: var(--font-mono);
-  --font-serif: var(--font-display);
+  --font-serif: var(--font-mono);
 }
 
-/* ── Base reset ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Base reset
+ * ────────────────────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -67,68 +83,80 @@ html {
   color-scheme: dark;
   background-color: var(--bg);
   color: var(--fg);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.6;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Subtle dot-grid background — like vim :set colorcolumn */
+  background-image:
+    radial-gradient(circle at 1px 1px,
+      rgba(110, 118, 129, 0.06) 1px,
+      transparent 0);
+  background-size: 24px 24px;
+  background-attachment: fixed;
 }
 
 body {
   min-height: 100dvh;
-  background-color: var(--bg);
+  background-color: transparent;
   color: var(--fg);
+  font-family: var(--font-mono);
+  font-feature-settings: 'liga' 1, 'calt' 1, 'ss01' 1, 'ss02' 1;
 }
 
-/* ── Typography ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Typography — all monospace, no italics
+ * ────────────────────────────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-weight: 600;
   line-height: 1.2;
   color: var(--fg);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  font-style: normal;
 }
 
-h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
-h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
-h3 { font-size: clamp(1.25rem, 2.5vw, 1.75rem); }
-h4 { font-size: 1.25rem; }
+h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); }
+h2 { font-size: clamp(1.125rem, 2.5vw, 1.5rem); }
+h3 { font-size: clamp(1rem, 2vw, 1.125rem); }
+h4 { font-size: 1rem; }
 
 p {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   color: var(--fg);
-  line-height: 1.7;
+  line-height: 1.55;
 }
+
+em, i { font-style: normal; }
 
 a {
   color: inherit;
   text-decoration: none;
-  transition: color 150ms ease, opacity 150ms ease;
-}
-
-a:hover {
-  opacity: 0.8;
+  transition: color 100ms ease;
 }
 
 code, pre, kbd, samp {
   font-family: var(--font-mono);
-  font-size: 0.875em;
+  font-size: 0.95em;
 }
 
 pre {
   background-color: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-left: 2px solid var(--accent-prompt);
+  border-radius: var(--radius-sm);
   padding: var(--space-4);
   overflow-x: auto;
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 code {
   background-color: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.15em 0.4em;
+  padding: 0.1em 0.35em;
+  color: var(--accent-prompt);
 }
 
 pre code {
@@ -136,47 +164,67 @@ pre code {
   border: none;
   padding: 0;
   border-radius: 0;
+  color: inherit;
 }
 
-/* ── Selection ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Selection — inverted block, vim-style
+ * ────────────────────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(255, 212, 59, 0.25);
-  color: var(--fg);
+  background-color: var(--accent-prompt);
+  color: var(--bg);
 }
 
-/* ── Scrollbar (subtle dark) ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Scrollbar
+ * ────────────────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-hover);
-  border-radius: var(--radius-full);
+  background: var(--border-active);
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--fg-muted);
+  background: var(--fg-dim);
+}
+::-webkit-scrollbar-corner {
+  background: var(--bg);
 }
 
-/* ── Tap targets ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Tap targets
+ * ────────────────────────────────────────────────────────────────────────── */
 button,
-a,
 [role="button"],
 input[type="button"],
 input[type="submit"] {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 36px;
 }
 
-/* ── Focus states ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Focus states — terminal-style hard outline
+ * ────────────────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid currentColor;
+  outline: 1px solid var(--accent-prompt);
   outline-offset: 2px;
+  border-radius: 0;
 }
 
-/* ── Utility: visually hidden ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Caret — chunky block cursor in inputs
+ * ────────────────────────────────────────────────────────────────────────── */
+input, textarea, [contenteditable] {
+  caret-color: var(--accent-prompt);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Utilities
+ * ────────────────────────────────────────────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -189,117 +237,335 @@ input[type="submit"] {
   border-width: 0;
 }
 
-/* ── Prose editorial (Markdown component) ── */
-.prose-editorial {
-  font-family: var(--font-sans);
+/* Phosphor glow — subtle, easy on the eyes */
+.glow {
+  text-shadow: 0 0 8px currentColor;
+  opacity: 0.95;
+}
+.glow-soft {
+  text-shadow: 0 0 6px color-mix(in srgb, currentColor 45%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Blinking cursor + typing animations
+ * ────────────────────────────────────────────────────────────────────────── */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  background-color: var(--accent-prompt);
+  vertical-align: text-bottom;
+  margin-left: 0.15em;
+  animation: blink 1.06s steps(2, start) infinite;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-prompt) 60%, transparent);
+}
+
+.cursor-blink--thin {
+  width: 2px;
+  margin-left: 0.1em;
+}
+
+/* Soft pulsing glow used on the "mark complete" CTA when unlocked. */
+@keyframes prompt-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px var(--accent-prompt),
+      0 0 0 0 color-mix(in srgb, var(--accent-prompt) 0%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px var(--accent-prompt),
+      0 0 14px 2px color-mix(in srgb, var(--accent-prompt) 35%, transparent);
+  }
+}
+
+.pulse-prompt {
+  animation: prompt-pulse 2400ms ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * <details> hint toggle — rotate the glyph when expanded
+ * ────────────────────────────────────────────────────────────────────────── */
+.hint-details > summary {
+  list-style: none;
+}
+.hint-details > summary::-webkit-details-marker {
+  display: none;
+}
+.hint-details .hint-glyph {
+  display: inline-block;
+  transition: transform 120ms ease-out;
+}
+.hint-details[open] .hint-glyph {
+  transform: rotate(90deg);
+  color: var(--accent-warn);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Prose — markdown rendered in terminal style
+ * ────────────────────────────────────────────────────────────────────────── */
+.prose-editorial,
+.prose-terminal {
+  font-family: var(--font-mono);
   color: var(--fg);
-  line-height: 1.75;
-  font-size: 1rem;
+  line-height: 1.55;
+  font-size: 0.875rem;
 }
 
 .prose-editorial h1,
 .prose-editorial h2,
 .prose-editorial h3,
-.prose-editorial h4 {
-  font-family: var(--font-display);
+.prose-editorial h4,
+.prose-terminal h1,
+.prose-terminal h2,
+.prose-terminal h3,
+.prose-terminal h4 {
+  font-family: var(--font-mono);
   color: var(--fg);
-  margin-top: 1.75em;
-  margin-bottom: 0.5em;
-  letter-spacing: -0.02em;
+  margin-top: 1.5em;
+  margin-bottom: 0.4em;
+  letter-spacing: -0.01em;
+  font-weight: 600;
 }
 
-.prose-editorial h1 { font-size: 1.875rem; }
-.prose-editorial h2 { font-size: 1.5rem; }
-.prose-editorial h3 { font-size: 1.25rem; }
-.prose-editorial h4 { font-size: 1.125rem; }
-
-.prose-editorial p {
-  margin-bottom: 1em;
+.prose-editorial h1::before,
+.prose-terminal h1::before {
+  content: "# ";
+  color: var(--accent-prompt);
+}
+.prose-editorial h2::before,
+.prose-terminal h2::before {
+  content: "## ";
+  color: var(--accent-prompt);
+}
+.prose-editorial h3::before,
+.prose-terminal h3::before {
+  content: "### ";
+  color: var(--accent-prompt);
+}
+.prose-editorial h4::before,
+.prose-terminal h4::before {
+  content: "#### ";
+  color: var(--accent-prompt);
 }
 
-.prose-editorial a {
-  color: var(--accent-typescript);
+.prose-editorial h1, .prose-terminal h1 { font-size: 1.25rem; }
+.prose-editorial h2, .prose-terminal h2 { font-size: 1.125rem; }
+.prose-editorial h3, .prose-terminal h3 { font-size: 1rem; }
+.prose-editorial h4, .prose-terminal h4 { font-size: 0.9375rem; }
+
+.prose-editorial p,
+.prose-terminal p {
+  margin-bottom: 0.9em;
+}
+
+.prose-editorial a,
+.prose-terminal a {
+  color: var(--accent-info);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent-typescript) 40%, transparent);
+  text-decoration-style: dotted;
+  text-decoration-color: color-mix(in srgb, var(--accent-info) 60%, transparent);
   text-underline-offset: 3px;
-  transition: text-decoration-color 150ms ease;
+  transition: text-decoration-color 100ms ease, color 100ms ease;
 }
 
-.prose-editorial a:hover {
-  text-decoration-color: var(--accent-typescript);
-  opacity: 1;
+.prose-editorial a:hover,
+.prose-terminal a:hover {
+  text-decoration-style: solid;
+  text-decoration-color: var(--accent-info);
+  color: var(--accent-prompt);
 }
 
-.prose-editorial code {
+.prose-editorial code,
+.prose-terminal code {
   font-family: var(--font-mono);
   font-size: 0.875em;
-  background-color: var(--bg-elevated);
+  background-color: var(--bg-overlay);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.15em 0.4em;
+  padding: 0.1em 0.35em;
+  color: var(--accent-prompt);
 }
 
-.prose-editorial pre {
+.prose-editorial pre,
+.prose-terminal pre {
   background-color: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-left: 2px solid var(--accent-prompt);
+  border-radius: var(--radius-sm);
   padding: var(--space-4);
   overflow-x: auto;
-  margin: 1.25em 0;
+  margin: 1em 0;
 }
 
-.prose-editorial pre code {
+.prose-editorial pre code,
+.prose-terminal pre code {
   background: none;
   border: none;
   padding: 0;
   border-radius: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--fg);
 }
 
 .prose-editorial ul,
-.prose-editorial ol {
-  padding-left: 1.5em;
-  margin-bottom: 1em;
+.prose-editorial ol,
+.prose-terminal ul,
+.prose-terminal ol {
+  padding-left: 1.25em;
+  margin-bottom: 0.9em;
+  list-style: none;
 }
 
-.prose-editorial li {
-  margin-bottom: 0.375em;
+.prose-editorial ul > li,
+.prose-terminal ul > li {
+  position: relative;
+}
+.prose-editorial ul > li::before,
+.prose-terminal ul > li::before {
+  content: "•";
+  color: var(--accent-prompt);
+  position: absolute;
+  left: -1em;
 }
 
-.prose-editorial blockquote {
-  border-left: 3px solid var(--border-hover);
+.prose-editorial ol,
+.prose-terminal ol {
+  counter-reset: olcount;
+}
+.prose-editorial ol > li,
+.prose-terminal ol > li {
+  position: relative;
+  counter-increment: olcount;
+}
+.prose-editorial ol > li::before,
+.prose-terminal ol > li::before {
+  content: counter(olcount) ".";
+  color: var(--accent-warn);
+  position: absolute;
+  left: -1.3em;
+}
+
+.prose-editorial li,
+.prose-terminal li {
+  margin-bottom: 0.3em;
+}
+
+.prose-editorial blockquote,
+.prose-terminal blockquote {
+  border-left: 2px solid var(--accent-warn);
   padding-left: 1em;
   margin-left: 0;
   color: var(--fg-muted);
-  font-style: italic;
+  font-style: normal;
+  position: relative;
+}
+.prose-editorial blockquote::before,
+.prose-terminal blockquote::before {
+  content: "> ";
+  position: absolute;
+  left: -0.1em;
+  color: var(--accent-warn);
 }
 
-.prose-editorial hr {
+.prose-editorial hr,
+.prose-terminal hr {
   border: none;
-  border-top: 1px solid var(--border);
-  margin: 2em 0;
+  border-top: 1px dashed var(--border-active);
+  margin: 1.5em 0;
 }
 
-.prose-editorial strong {
-  color: var(--fg);
-  font-weight: 600;
+.prose-editorial strong,
+.prose-terminal strong {
+  color: var(--accent-prompt);
+  font-weight: 700;
 }
 
-.prose-editorial em {
-  font-style: italic;
+.prose-editorial em,
+.prose-terminal em {
+  font-style: normal;
+  color: var(--accent-warn);
 }
 
-/* ── Mobile overrides ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Range slider (TUI style)
+ * ────────────────────────────────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  outline: none;
+  border-radius: 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 18px;
+  background: var(--accent-prompt);
+  cursor: pointer;
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-prompt) 50%, transparent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 18px;
+  background: var(--accent-prompt);
+  cursor: pointer;
+  border: 0;
+  border-radius: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * CodeMirror — make it feel like the rest of the terminal
+ * ────────────────────────────────────────────────────────────────────────── */
+.cm-editor {
+  background: var(--bg-elevated) !important;
+  font-family: var(--font-mono) !important;
+}
+.cm-editor.cm-focused {
+  outline: 1px solid var(--accent-prompt) !important;
+}
+.cm-gutters {
+  background: var(--bg) !important;
+  border-right: 1px solid var(--border) !important;
+  color: var(--fg-dim) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Mobile
+ * ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
+  html { font-size: 14px; }
+  body { font-size: 14px; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.125rem; }
+  h3 { font-size: 1rem; }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Reduced motion — kill animations, no cursor blink
+ * ────────────────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .cursor-blink {
+    animation: none !important;
+    opacity: 1;
   }
 }

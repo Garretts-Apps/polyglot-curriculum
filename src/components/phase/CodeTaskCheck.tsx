@@ -6,12 +6,15 @@ import type { Language } from '@/curriculum/types';
 import type { RunOutcome } from '@/lib/sandbox/types';
 import { Markdown } from '@/components/ui/Markdown';
 
-const sandboxComponents: Record<Language, React.ComponentType<{
-  starterCode: string;
-  expectedOutput?: string;
-  assertions?: string;
-  onResult?: (outcome: RunOutcome) => void;
-}>> = {
+const sandboxComponents: Record<
+  Language,
+  React.ComponentType<{
+    starterCode: string;
+    expectedOutput?: string;
+    assertions?: string;
+    onResult?: (outcome: RunOutcome) => void;
+  }>
+> = {
   python: dynamic(() => import('@/components/sandbox/PythonSandbox'), { ssr: false }),
   typescript: dynamic(() => import('@/components/sandbox/JsSandbox'), { ssr: false }),
   rust: dynamic(() => import('@/components/sandbox/RustSandbox'), { ssr: false }),
@@ -39,31 +42,74 @@ export function CodeTaskCheck({ check, language, onResult }: CodeTaskCheckProps)
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
-      <div className="mb-4">
-        <Markdown content={check.prompt} />
+    <div
+      className="border border-t-0 font-mono"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
+    >
+      {/* Prompt — Task: <markdown> */}
+      <div
+        className="px-4 py-3 border-b grid items-start gap-2"
+        style={{ borderColor: 'var(--border)', gridTemplateColumns: 'auto 1fr' }}
+      >
+        <span
+          className="text-sm font-semibold leading-snug pt-px"
+          style={{ color: 'var(--accent-warn)' }}
+          aria-hidden="true"
+        >
+          ::
+        </span>
+        <div className="min-w-0">
+          <Markdown content={check.prompt} className="prose-terminal" />
+        </div>
       </div>
 
+      {/* Hint — collapsible */}
       {check.hint && (
-        <details className="mb-4">
+        <details
+          className="border-b hint-details"
+          style={{ borderColor: 'var(--border)' }}
+        >
           <summary
-            className="cursor-pointer text-sm select-none"
-            style={{ color: 'var(--fg-muted)' }}
+            className="cursor-pointer text-xs select-none px-4 py-2 inline-flex items-center gap-2 transition-colors duration-100 hover:bg-[var(--bg-overlay)] w-full"
+            style={{ color: 'var(--accent-warn)' }}
           >
-            Show hint
+            <span
+              aria-hidden="true"
+              className="font-mono text-xs hint-glyph"
+              style={{ color: 'var(--fg-dim)' }}
+            >
+              ▶
+            </span>
+            <span>hint</span>
+            <span style={{ color: 'var(--fg-dim)' }} className="text-[10px]">
+              // toggle to reveal
+            </span>
           </summary>
-          <div className="mt-2 rounded-[var(--radius-md)] border border-[var(--border)] p-3 text-sm" style={{ color: 'var(--fg-muted)' }}>
+          <div
+            className="px-4 pb-3 pt-1 border-l-2 mx-3 mb-3 text-sm leading-snug"
+            style={{ borderLeftColor: 'var(--accent-warn)', color: 'var(--fg-muted)' }}
+          >
+            <span
+              style={{ color: 'var(--accent-warn)' }}
+              className="mr-1"
+              aria-hidden="true"
+            >
+              ?
+            </span>
             {check.hint}
           </div>
         </details>
       )}
 
-      <SandboxComponent
-        starterCode={check.starterCode}
-        expectedOutput={check.expectedOutput}
-        assertions={check.assertions}
-        onResult={handleResult}
-      />
+      {/* Sandbox region — has its own internal chrome */}
+      <div className="p-3">
+        <SandboxComponent
+          starterCode={check.starterCode}
+          expectedOutput={check.expectedOutput}
+          assertions={check.assertions}
+          onResult={handleResult}
+        />
+      </div>
     </div>
   );
 }
