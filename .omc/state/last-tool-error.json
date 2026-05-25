@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git add AGENTS.md CLAUDE.md eslint.config.mjs next-env.d.ts next.config.ts package.json pnpm-lock.yaml pnpm-workspace.yaml postcss.config.mjs public/ README.md src/ tsconfig.json tsconfig....",
-  "error": "Exit code 1\nThe following paths are ignored by one of your .gitignore files:\nnext-env.d.ts\ntsconfig.tsbuildinfo\nhint: Use -f if you really want to add them.\nhint: Disable this message with \"git config set advice.addIgnoredFile false\"",
-  "timestamp": "2026-05-25T02:27:14.131Z",
-  "retry_count": 4
+  "tool_input_preview": "{\"command\":\"git pull --rebase origin main && git push origin main\",\"description\":\"Rebase and push to main\"}",
+  "error": "Exit code 128\nerror: cannot pull with rebase: You have unstaged changes.\nerror: Please commit or stash them.",
+  "timestamp": "2026-05-25T03:10:32.216Z",
+  "retry_count": 2
 }
