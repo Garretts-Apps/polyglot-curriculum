@@ -175,6 +175,130 @@ func main() {
         correctIndex: 1,
         explanation: 'Go zero-initialises every field. The zero value for `string` is `""`, for `int` it is `0`, and for `bool` it is `false`. `%q` prints the string quoted, so you see `""`. This is why Go APIs routinely return a zero-valued struct on errors — there is no risk of "uninitialised memory" bugs. See [Tour of Go — Zero values](https://go.dev/tour/basics/12).',
       },
+      {
+        kind: 'mcq',
+        id: 'go-1-mcq-debug-1',
+        prompt: `**Production symptom:** Service crashes at startup with the following panic. What is the root cause?
+
+\`\`\`
+goroutine 1 [running]:
+main.loadConfig(...)
+        /app/config/loader.go:42 +0x68
+main.main()
+        /app/main.go:15 +0x34
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x18 pc=0x...]
+\`\`\`
+
+\`\`\`go
+package main
+
+import (
+\t"fmt"
+\t"os"
+)
+
+type Config struct {
+\tDSN  string
+\tPort int
+}
+
+func loadConfig() *Config {
+\tif os.Getenv("APP_ENV") == "production" {
+\t\treturn &Config{DSN: os.Getenv("DATABASE_URL"), Port: 8080}
+\t}
+\t// forgot the non-production return
+}
+
+func main() {
+\tcfg := loadConfig()
+\tfmt.Println(cfg.DSN) // line 15 — panics when cfg is nil
+}
+\`\`\``,
+        options: [
+          '`os.Getenv("DATABASE_URL")` returns an empty string and that causes the panic.',
+          '`loadConfig` returns `nil` when `APP_ENV` is not `"production"`, and dereferencing a nil `*Config` panics.',
+          'The `Config` struct is missing a `json` tag, causing the pointer to be nil.',
+          '`fmt.Println` cannot accept a struct field — use `fmt.Printf` instead.',
+        ],
+        correctIndex: 1,
+        explanation: 'When `APP_ENV` is not `"production"`, `loadConfig` falls off the end and implicitly returns the zero value for `*Config`, which is `nil`. Dereferencing `cfg.DSN` on line 15 panics. Fix: add a default return path (`return &Config{Port: 8080}` or `return nil, errors.New("...")`). `go vet` will flag a missing return in a non-void function. See [Effective Go — Control structures](https://go.dev/doc/effective_go#control-structures).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-1-mcq-debug-2',
+        prompt: `**Production symptom:** Loop processes fewer records than expected. QA reports the last record is always skipped.
+
+\`\`\`go
+package main
+
+import "fmt"
+
+func processIDs(ids []int) {
+\tfor i := 0; i < len(ids)-1; i++ { // off-by-one
+\t\tfmt.Printf("processing id=%d\\n", ids[i])
+\t}
+}
+
+func main() {
+\tprocessIDs([]int{10, 20, 30, 40, 50})
+}
+\`\`\``,
+        options: [
+          'The slice is passed by value so the last element is lost during the copy.',
+          'The loop condition `i < len(ids)-1` stops one iteration early, skipping `ids[4]` (value 50).',
+          'Integer subtraction on `len(ids)` underflows to a negative number and the loop never runs.',
+          '`fmt.Printf` buffers output so the last line is never flushed.',
+        ],
+        correctIndex: 1,
+        explanation: '`len(ids)-1` evaluates to 4, so the loop runs for `i` in `[0,1,2,3]` — the element at index 4 (value 50) is never processed. The fix is `i < len(ids)` (or `i <= len(ids)-1`). Be careful: if `ids` is empty, `len(ids)-1` with unsigned arithmetic would wrap around — but in Go `len` returns a signed `int`, so an empty slice gives `0-1 = -1` and the loop simply never executes, which is actually correct here but masks the intent. Prefer `for i, id := range ids`. See [Tour of Go — For](https://go.dev/tour/flowcontrol/1).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-1-mcq-debug-3',
+        prompt: `**Production symptom:** A batch job reports it processed 0 items every run, even though the input file has 1 000 lines.
+
+\`\`\`go
+package main
+
+import (
+\t"bufio"
+\t"fmt"
+\t"os"
+)
+
+func countLines(path string) int {
+\tf, err := os.Open(path)
+\tif err != nil {
+\t\treturn 0
+\t}
+\tdefer f.Close()
+
+\tcount := 0
+\tscanner := bufio.NewScanner(f)
+\tfor scanner.Scan() {
+\t\tcount++
+\t}
+\treturn count
+}
+
+func main() {
+\ttotal := 0
+\tfor i := 0; i < 5; i++ {
+\t\ttotal = countLines(fmt.Sprintf("chunk_%d.txt", i))
+\t}
+\tfmt.Println("total:", total)
+}
+\`\`\``,
+        options: [
+          '`bufio.Scanner` has a 64 KB line limit and panics on longer lines.',
+          '`total = countLines(...)` replaces the running total on each iteration instead of accumulating it; the final value is only the count from the last file.',
+          '`defer f.Close()` closes the file before the scanner finishes reading.',
+          '`os.Open` opens files in write-only mode and the scanner reads zero bytes.',
+        ],
+        correctIndex: 1,
+        explanation: '`total = countLines(...)` assigns (replaces) rather than accumulates. If the last chunk file is empty or missing, `total` ends up as 0. The fix is `total += countLines(...)`. This is a classic loop-accumulator bug where `=` and `+=` are confused. `go vet` cannot catch this; a code review or unit test that checks the sum across multiple chunks would. See [Tour of Go — For](https://go.dev/tour/flowcontrol/1).',
+      },
     ],
   },
 
@@ -367,6 +491,135 @@ func main() {
         ],
         correctIndex: 1,
         explanation: 'Slicing does **not** copy. `b` shares the backing array with `a`, just with a different start offset and length. Writing `b[0] = 99` mutates `a[1]`. This silent aliasing is the source of countless bugs in code that returns sub-slices of caller data. If you need an independent slice, copy explicitly with `slices.Clone` (Go 1.21+) or `append([]int(nil), src...)`. See [Go Slices: usage and internals](https://go.dev/blog/slices-intro).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-2-mcq-debug-1',
+        prompt: `**Production symptom:** An \`errors.Is\` check in a caller always returns \`false\` even though the function clearly returned a non-nil \`*AppError\`. The on-call engineer sees this in the logs:
+
+\`\`\`
+[ERROR] unexpected error path hit — err is non-nil but errors.Is returned false
+\`\`\`
+
+\`\`\`go
+package main
+
+import (
+\t"errors"
+\t"fmt"
+)
+
+type AppError struct{ Code int }
+
+func (e *AppError) Error() string { return fmt.Sprintf("app error %d", e.Code) }
+
+func lookup(id int) error {
+\tvar err *AppError // typed nil
+\tif id < 0 {
+\t\terr = &AppError{Code: 404}
+\t}
+\treturn err // always returns non-nil interface when id >= 0!
+}
+
+func main() {
+\terr := lookup(1)
+\tif err != nil {
+\t\tfmt.Println("non-nil error:", err)
+\t\tfmt.Println("errors.Is nil:", errors.Is(err, nil))
+\t} else {
+\t\tfmt.Println("no error")
+\t}
+}
+\`\`\``,
+        options: [
+          '`errors.Is` has a bug and cannot compare against `nil` sentinels.',
+          '`lookup` returns a typed-nil `*AppError` wrapped in an `error` interface; the interface is non-nil because it carries a type descriptor, so `err != nil` is true even though the underlying pointer is nil.',
+          '`AppError` must implement `Unwrap() error` for `errors.Is` to work.',
+          'The `var err *AppError` declaration should use `:=` to avoid the typed-nil issue.',
+        ],
+        correctIndex: 1,
+        explanation: 'This is the classic typed-nil interface trap. `var err *AppError` is a nil pointer of type `*AppError`. Returning it as `error` wraps it in an interface value that has a non-nil type (`*AppError`) and a nil value pointer. The `error` interface is only `== nil` when **both** the type and value are nil. Fix: `return nil` directly instead of returning a `*AppError` variable. See [Go FAQ — nil error](https://go.dev/doc/faq#nil_error).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-2-mcq-debug-2',
+        prompt: `**Production symptom:** Service panics under load with the following stack trace. The panic only occurs when multiple goroutines process requests simultaneously.
+
+\`\`\`
+goroutine 47 [running]:
+runtime.throw2({0x6f3a80?, 0x0?})
+        /usr/local/go/src/runtime/panic.go:1023
+runtime.mapassign(...)
+        /usr/local/go/src/runtime/map.go:612
+main.(*Cache).Set(...)
+        /app/handlers/cache.go:28 +0x94
+panic: assignment to entry in nil map
+\`\`\`
+
+\`\`\`go
+package main
+
+type Cache struct {
+\tstore map[string]string
+}
+
+func NewCache() *Cache {
+\treturn &Cache{} // store is nil — never initialised
+}
+
+func (c *Cache) Set(key, val string) {
+\tc.store[key] = val // line 28 — panics on nil map
+}
+
+func (c *Cache) Get(key string) string {
+\treturn c.store[key] // safe: reads from nil map return zero value
+}
+\`\`\``,
+        options: [
+          'Concurrent writes require a `sync.RWMutex`; the panic is a data race, not a nil map.',
+          '`NewCache` returns a `*Cache` whose `store` field is nil because the struct literal `&Cache{}` does not initialise map fields; writing to a nil map panics.',
+          '`map[string]string` is not a valid map type; use `map[string]interface{}`.',
+          'The `Get` method should also panic because reading from a nil map is undefined.',
+        ],
+        correctIndex: 1,
+        explanation: '`&Cache{}` is a valid struct literal but leaves the `store` field at its zero value, which for a map is `nil`. Reads from a nil map are safe (they return the zero value), but writes panic. Fix `NewCache`: `return &Cache{store: make(map[string]string)}`. A concurrent access bug may also exist, but the immediate panic is the nil map write. See [Go Maps in action](https://go.dev/blog/maps).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-2-mcq-debug-3',
+        prompt: `**Production symptom:** A data-processing pipeline corrupts earlier records when it appends new items to a sub-slice returned from a helper. The bug is intermittent and depends on input size.
+
+\`\`\`go
+package main
+
+import "fmt"
+
+// Returns a window into the global buffer — does NOT copy.
+func getWindow(buf []int, start, end int) []int {
+\treturn buf[start:end] // shares backing array
+}
+
+func main() {
+\tbuf := make([]int, 5, 10) // len=5, cap=10
+\tbuf[0], buf[1], buf[2], buf[3], buf[4] = 1, 2, 3, 4, 5
+
+\twindow := getWindow(buf, 2, 5) // [3 4 5], cap still 8
+
+\t// "safe" append — but cap is large enough, so no new allocation!
+\twindow = append(window, 99)
+
+\tfmt.Println("buf:", buf)    // what prints here?
+\tfmt.Println("window:", window)
+}
+\`\`\``,
+        options: [
+          '`buf: [1 2 3 4 5]` and `window: [3 4 5 99]` — append always allocates a new backing array.',
+          '`buf: [1 2 3 4 5 99]` — append extends buf in place because window shares its backing array.',
+          '`buf: [1 2 3 4 99]` and `window: [3 4 5 99]` — append writes into buf[4].',
+          'panic: index out of range — the window slice has no capacity for append.',
+        ],
+        correctIndex: 1,
+        explanation: '`getWindow` returns a slice header pointing into `buf`\'s backing array with `cap = 8` (remaining capacity). Because the capacity is sufficient, `append(window, 99)` writes `99` directly into `buf[5]` — but `buf` has capacity 10 and length 5, so `buf[5]` exists in the underlying array. `buf` itself still has `len=5` so `fmt.Println("buf:", buf)` shows `[1 2 3 4 5]`, but the backing array at index 5 now holds 99. If `buf` is later re-sliced or the length grows, the corruption becomes visible. Fix: copy the window with `append([]int(nil), buf[start:end]...)` before writing. See [Go Slices: usage and internals](https://go.dev/blog/slices-intro).',
       },
     ],
   },
@@ -564,6 +817,143 @@ func main() {
         correctIndex: 2,
         explanation: '`counter++` is a read-modify-write on shared state without a mutex or atomic, so 1000 goroutines racing on it is a textbook data race. Verify with `go run -race main.go`. Fix with `sync.Mutex` around the increment, or use `atomic.AddInt64(&counter, 1)`. The final printed value will vary across runs and is almost never 1000. See [Introducing the Go Race Detector](https://go.dev/blog/race-detector).',
       },
+      {
+        kind: 'mcq',
+        id: 'go-3-mcq-debug-1',
+        prompt: `**Production symptom:** p99 latency spikes from 50ms to 30s starting at 14:32 UTC. Memory usage grows steadily. \`go tool pprof\` shows thousands of goroutines in state "chan send". Relevant code:
+
+\`\`\`go
+package main
+
+import (
+\t"context"
+\t"fmt"
+\t"time"
+)
+
+func fetchAll(ctx context.Context, urls []string) []string {
+\tresults := make(chan string) // unbuffered
+\tfor _, u := range urls {
+\t\tu := u
+\t\tgo func() {
+\t\t\ttime.Sleep(200 * time.Millisecond) // simulate HTTP
+\t\t\tresults <- u + "-done"
+\t\t}()
+\t}
+\t// context cancelled early by caller
+\tselect {
+\tcase r := <-results:
+\t\treturn []string{r}
+\tcase <-ctx.Done():
+\t\treturn nil // goroutines still blocked on results <-
+\t}
+}
+
+func main() {
+\tctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+\tdefer cancel()
+\tfor i := 0; i < 100; i++ {
+\t\tgo fetchAll(ctx, []string{"a", "b", "c"})
+\t}
+\ttime.Sleep(2 * time.Second)
+\tfmt.Println("done")
+}
+\`\`\``,
+        options: [
+          'The context timeout is too short; increase it to 1 second to let all goroutines finish.',
+          'When the context cancels, `fetchAll` returns but the goroutines sending on the unbuffered `results` channel block forever because no receiver remains — this is a goroutine leak.',
+          '`time.Sleep` inside a goroutine is not allowed when a context is active.',
+          'Using 100 concurrent calls to `fetchAll` exceeds the goroutine limit.',
+        ],
+        correctIndex: 1,
+        explanation: 'The unbuffered `results` channel requires a receiver for every send. When the context fires, `fetchAll` returns early leaving goroutines blocked at `results <- u + "-done"` with no receiver. Fix: size `results` to `len(urls)` so senders never block, or add `select { case results <- v: case <-ctx.Done(): return }` inside each goroutine so they abandon work when the context is done. See [Go Concurrency Patterns — Pipelines](https://go.dev/blog/pipelines).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-3-mcq-debug-2',
+        prompt: `**Production symptom:** A CLI tool hangs indefinitely and never prints output. \`SIGQUIT\` (Ctrl-\\\\) produces:
+
+\`\`\`
+goroutine 1 [chan receive]:
+main.main()
+        /app/cmd/tool.go:18 +0x58
+
+goroutine 6 [chan send]:
+main.produce(...)
+        /app/cmd/tool.go:10 +0x44
+\`\`\`
+
+\`\`\`go
+package main
+
+import "fmt"
+
+func produce(ch chan int) {
+\tfor i := 0; i < 3; i++ {
+\t\tch <- i
+\t}
+}
+
+func main() {
+\tch := make(chan int) // unbuffered
+\tproduce(ch)         // called synchronously — blocks on first send
+\tfor v := range ch {
+\t\tfmt.Println(v)
+\t}
+}
+\`\`\``,
+        options: [
+          '`range` over a channel requires a `close(ch)` call to terminate; without it the loop hangs.',
+          '`produce` is called synchronously on the main goroutine; it blocks at the first `ch <- i` because there is no concurrent receiver yet, causing a deadlock.',
+          'The channel must be buffered with size 3 to match the number of sends.',
+          'The `for range ch` loop must use `_, v := range ch` syntax.',
+        ],
+        correctIndex: 1,
+        explanation: 'An unbuffered channel send blocks until a receiver is ready. `produce(ch)` runs on the main goroutine and blocks at `ch <- 0` because the `for range` consumer is below it — it never starts. Fix: launch `produce` as a goroutine: `go produce(ch)`. Also add `close(ch)` at the end of `produce` so the `range` loop can terminate. Deadlocks on unbuffered channels are one of the most common beginner concurrency mistakes. See [Tour of Go — Channels](https://go.dev/tour/concurrency/2).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-3-mcq-debug-3',
+        prompt: `**Production symptom:** A worker pipeline processes the first N jobs correctly then stalls. Memory stays flat. CPU drops to zero. No errors are logged. Relevant code:
+
+\`\`\`go
+package main
+
+import (
+\t"fmt"
+\t"time"
+)
+
+func worker(jobs <-chan int, done chan<- bool) {
+\tfor j := range jobs {
+\t\ttime.Sleep(10 * time.Millisecond)
+\t\tfmt.Println("processed", j)
+\t}
+\tdone <- true
+}
+
+func main() {
+\tjobs := make(chan int, 5) // buffer=5
+\tdone := make(chan bool)
+
+\tgo worker(jobs, done)
+
+\tfor i := 0; i < 10; i++ {
+\t\tjobs <- i
+\t}
+\t// forgot: close(jobs)
+\t<-done // blocks forever — worker never exits its range loop
+}
+\`\`\``,
+        options: [
+          'The buffered channel size of 5 is too small for 10 jobs; increase it to 10.',
+          'The worker\'s `for j := range jobs` loop only exits when `jobs` is closed; forgetting `close(jobs)` after sending all items means the worker blocks waiting for more, and `<-done` never receives.',
+          'The `done` channel must be buffered with size 1 to avoid the deadlock.',
+          '`time.Sleep` inside a range loop prevents the goroutine from receiving the close signal.',
+        ],
+        correctIndex: 1,
+        explanation: '`for j := range jobs` exits only when the channel is closed. After sending all 10 items, the main goroutine waits on `<-done`, but the worker is still blocked inside `range jobs` waiting for more work — neither side can proceed. Fix: add `close(jobs)` after the send loop. This is the standard producer/consumer pattern: producer sends, then closes; consumer ranges; main waits on `done`. See [Tour of Go — Range and Close](https://go.dev/tour/concurrency/4).',
+      },
     ],
   },
 
@@ -756,6 +1146,120 @@ func TestAdd(t *testing.T) {
         correctIndex: 2,
         explanation: '`t.Run` registers a sub-test under the parent test name. Failures include the sub-test name in the report, and you can run individual sub-tests with `-run TestAdd/positive`. To run sub-tests in parallel, call `t.Parallel()` inside the closure. See [Table-driven tests](https://go.dev/wiki/TableDrivenTests).',
       },
+      {
+        kind: 'mcq',
+        id: 'go-4-mcq-debug-1',
+        prompt: `**Production symptom:** Under load (>500 req/s) the service logs "http: superfluous response.WriteHeader call" and clients occasionally receive garbled JSON bodies. The bug does not reproduce in unit tests.
+
+\`\`\`go
+package main
+
+import (
+\t"encoding/json"
+\t"net/http"
+\t"time"
+)
+
+type result struct {
+\tValue string \`json:"value"\`
+}
+
+func slowHandler(w http.ResponseWriter, r *http.Request) {
+\tgo func() {
+\t\ttime.Sleep(50 * time.Millisecond) // simulate slow DB
+\t\tw.Header().Set("Content-Type", "application/json")
+\t\tw.WriteHeader(http.StatusOK)
+\t\tjson.NewEncoder(w).Encode(result{Value: "done"})
+\t}()
+\t// handler returns immediately; goroutine writes to w later
+}
+
+func main() {
+\thttp.HandleFunc("/slow", slowHandler)
+\thttp.ListenAndServe(":8080", nil)
+}
+\`\`\``,
+        options: [
+          '`json.NewEncoder` is not safe for concurrent use and needs a mutex.',
+          '`http.ResponseWriter` must not be used after the handler function returns; the goroutine writes to a potentially recycled or already-finished response, causing the superfluous header warning and garbled output.',
+          'The `Content-Type` header must be set before calling `w.WriteHeader`; the order here is wrong.',
+          '`time.Sleep` in a goroutine causes the connection to time out before the response is sent.',
+        ],
+        correctIndex: 1,
+        explanation: 'The `http.ResponseWriter` is valid only for the lifetime of the `ServeHTTP` call. Once `slowHandler` returns, the server may finalize the response. The spawned goroutine then races to write headers and body to an already-concluded response writer, producing "superfluous response.WriteHeader" warnings and truncated or doubled output. Fix: do all work synchronously in the handler, or use a proper async pattern (e.g., SSE, WebSockets). See [pkg.go.dev/net/http#ResponseWriter](https://pkg.go.dev/net/http#ResponseWriter).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-4-mcq-debug-2',
+        prompt: `**Production symptom:** A webhook receiver silently ignores the \`user_id\` field sent by the upstream service. Logs show \`userID\` is always zero. The upstream sends valid JSON: \`{"user_id":42,"action":"login"}\`.
+
+\`\`\`go
+package main
+
+import (
+\t"encoding/json"
+\t"fmt"
+)
+
+type Event struct {
+\tUserID int    \`json:"userId"\` // tag says "userId" but wire sends "user_id"
+\tAction string \`json:"action"\`
+}
+
+func main() {
+\traw := \`{"user_id":42,"action":"login"}\`
+\tvar e Event
+\tif err := json.Unmarshal([]byte(raw), &e); err != nil {
+\t\tpanic(err)
+\t}
+\tfmt.Println(e.UserID, e.Action)
+}
+\`\`\``,
+        options: [
+          '`json.Unmarshal` is case-sensitive and requires exact key matches.',
+          'The struct tag says `json:"userId"` but the wire format uses `"user_id"`; the key mismatch means `UserID` is never populated and stays at its zero value (0).',
+          '`int` cannot be decoded from JSON numbers; use `json.Number` instead.',
+          '`json.Unmarshal` panics on unknown fields and the `user_id` key is silently eaten.',
+        ],
+        correctIndex: 1,
+        explanation: '`encoding/json` matches JSON keys to struct fields using the `json:` tag (case-insensitively only as a fallback for untagged fields). Since `UserID` has an explicit tag `json:"userId"`, the decoder looks specifically for `"userId"` in the wire data. The incoming `"user_id"` does not match, so the field stays 0. Fix: change the tag to `json:"user_id"`. Use `json.NewDecoder(r).DisallowUnknownFields()` in development to catch mismatches early. See [JSON and Go](https://go.dev/blog/json).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-4-mcq-debug-3',
+        prompt: `**Production symptom:** A CI pipeline reports that all sub-tests in \`TestProcess\` pass, but the test suite takes 45 seconds — far longer than expected. Investigation reveals every sub-test runs sequentially despite being marked parallel. What is wrong?
+
+\`\`\`go
+func TestProcess(t *testing.T) {
+\tcases := []struct {
+\t\tname  string
+\t\tinput int
+\t}{
+\t\t{"small", 1},
+\t\t{"medium", 100},
+\t\t{"large", 10000},
+\t}
+\tfor _, tc := range cases {
+\t\ttc := tc
+\t\tt.Run(tc.name, func(t *testing.T) {
+\t\t\t// t.Parallel() is missing here
+\t\t\tresult := process(tc.input)
+\t\t\tif result < 0 {
+\t\t\t\tt.Errorf("got %d, want >= 0", result)
+\t\t\t}
+\t\t})
+\t}
+}
+\`\`\``,
+        options: [
+          '`tc := tc` inside the loop is incorrect and causes all sub-tests to share the same input.',
+          '`t.Parallel()` is missing inside the sub-test closure; without it, sub-tests run sequentially within the parent, negating the benefit of `t.Run` for parallelism.',
+          'Sub-tests never run in parallel; only top-level test functions can run in parallel with `-parallel`.',
+          '`t.Run` must be called outside the `for` loop for parallel execution to work.',
+        ],
+        correctIndex: 1,
+        explanation: 'Adding `t.Parallel()` as the first line inside a `t.Run` closure signals the testing harness to pause that sub-test and run it concurrently with other parallel sub-tests. Without it, each sub-test runs to completion before the next starts. The `tc := tc` capture is correct (pre-Go 1.22 fix for loop variable closure) but irrelevant to parallelism. With `t.Parallel()`, all three sub-tests would run concurrently, cutting total time to roughly `max(process(1), process(100), process(10000))`. See [Table-driven tests](https://go.dev/wiki/TableDrivenTests).',
+      },
     ],
   },
 
@@ -941,6 +1445,144 @@ err := g.Wait()
         ],
         correctIndex: 1,
         explanation: '`errgroup.Group` wraps a `WaitGroup` with error propagation. On the first non-nil error, it cancels the context returned by `WithContext`, signalling siblings to abandon work. `Wait` returns that first error. Use `g.SetLimit(n)` to cap concurrency. See [pkg.go.dev/golang.org/x/sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-5-mcq-debug-1',
+        prompt: `**Production symptom:** \`go test -race ./...\` in CI produces the following output. The test passes without \`-race\`. What does the report mean and what is the fix?
+
+\`\`\`
+==================
+WARNING: DATA RACE
+Write at 0x00c000126010 by goroutine 8:
+  main.(*Stats).Record()
+      /app/stats/stats.go:22 +0x44
+Previous read at 0x00c000126010 by goroutine 7:
+  main.(*Stats).Total()
+      /app/stats/stats.go:30 +0x38
+==================
+
+\`\`\`
+
+\`\`\`go
+package main
+
+import "sync"
+
+type Stats struct {
+\tmu    sync.Mutex
+\tcount int
+\ttotal int64
+}
+
+func (s *Stats) Record(v int) {
+\ts.mu.Lock()
+\ts.count++
+\ts.total += int64(v)
+\ts.mu.Unlock()
+}
+
+func (s *Stats) Total() int64 {
+\treturn s.total // missing lock!
+}
+\`\`\``,
+        options: [
+          'The race detector has a false positive; `-race` is unreliable for struct field access.',
+          '`Total()` reads `s.total` without holding `s.mu`, while `Record()` writes it under the lock; the concurrent unsynchronised read is a data race.',
+          'The `sync.Mutex` must be a pointer (`*sync.Mutex`) to prevent the race.',
+          '`int64` reads are atomic on 64-bit platforms, so no lock is needed in `Total()`.',
+        ],
+        correctIndex: 1,
+        explanation: '`Record` writes `s.total` under `s.mu`, but `Total` reads `s.total` without acquiring the lock. The Go memory model does not guarantee visibility of the write to the read without synchronisation, even on 64-bit platforms. The race detector instruments memory accesses and flags this correctly. Fix: acquire `s.mu.Lock()` in `Total()` before reading. Alternatively, use `sync/atomic` consistently for both read and write. See [Introducing the Go Race Detector](https://go.dev/blog/race-detector).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-5-mcq-debug-2',
+        prompt: `**Production symptom:** Service deadlocks under moderate load. The goroutine dump (via SIGQUIT) shows:
+
+\`\`\`
+goroutine 14 [semacquire]:
+sync.(*Mutex).Lock(...)
+        /usr/local/go/src/sync/mutex.go:81
+main.(*Broker).Publish(...)
+        /app/broker/broker.go:35
+\`\`\`
+\`\`\`
+goroutine 9 [chan send]:
+main.(*Broker).dispatch(...)
+        /app/broker/broker.go:51
+\`\`\`
+
+\`\`\`go
+package main
+
+type Broker struct {
+\tmu   sync.Mutex
+\tsubs []chan string
+}
+
+func (b *Broker) Subscribe() chan string {
+\tch := make(chan string, 1)
+\tb.mu.Lock()
+\tdefer b.mu.Unlock()
+\tb.subs = append(b.subs, ch)
+\treturn ch
+}
+
+func (b *Broker) Publish(msg string) {
+\tb.mu.Lock()
+\tdefer b.mu.Unlock()
+\tfor _, ch := range b.subs {
+\t\tch <- msg // blocks if subscriber is slow — lock held!
+\t}
+}
+\`\`\``,
+        options: [
+          'The `defer b.mu.Unlock()` in `Publish` fires too late and never releases the lock.',
+          '`Publish` holds `b.mu` while sending to subscriber channels; if a subscriber\'s goroutine calls `Subscribe` (or any method that acquires `b.mu`) before draining its channel, both goroutines deadlock.',
+          'Buffered channels of size 1 cannot be used with a mutex.',
+          '`defer` inside a `for` loop does not execute until the loop exits, causing the lock to be held too long.',
+        ],
+        correctIndex: 1,
+        explanation: '`Publish` holds `b.mu` during channel sends. If the subscriber channel is full (slow consumer) or if the consuming goroutine itself tries to call `Subscribe` or `Publish`, it will attempt to acquire `b.mu` — which is already held — causing a deadlock. Fix: copy the subscriber slice while holding the lock, then release the lock before sending: `b.mu.Lock(); subs := append([]chan string(nil), b.subs...); b.mu.Unlock(); for _, ch := range subs { ch <- msg }`. See [pkg.go.dev/sync#Mutex](https://pkg.go.dev/sync#Mutex).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-5-mcq-debug-3',
+        prompt: `**Production symptom:** \`go test -race ./...\` reports a race on a loop variable. The test only fails intermittently in CI with \`-race\` enabled.
+
+\`\`\`
+WARNING: DATA RACE
+Read at 0x00c0001b4018 by goroutine 12:
+  main_test.TestWorkers.func1.1()
+      /app/workers_test.go:24
+Previous write at 0x00c0001b4018 by goroutine 1:
+  main_test.TestWorkers()
+      /app/workers_test.go:19
+\`\`\`
+
+\`\`\`go
+func TestWorkers(t *testing.T) {
+\tinputs := []int{1, 2, 3, 4, 5}
+\tvar wg sync.WaitGroup
+\tfor _, v := range inputs {       // line 19 — v is the shared variable
+\t\twg.Add(1)
+\t\tgo func() {                  // captures v by reference
+\t\t\tdefer wg.Done()
+\t\t\tprocess(v)               // line 24 — races with loop update
+\t\t}()
+\t}
+\twg.Wait()
+}
+\`\`\``,
+        options: [
+          'The race is caused by `wg.Add(1)` being called outside the goroutine.',
+          'The goroutine closure captures `v` by reference; the loop updates `v` before the goroutine reads it, creating a data race between the loop\'s write and the goroutine\'s read.',
+          '`sync.WaitGroup` is not safe for concurrent use inside a `for` loop.',
+          '`process(v)` must be called with `go process(v)` instead of inside an anonymous function.',
+        ],
+        correctIndex: 1,
+        explanation: 'Before Go 1.22, the loop variable `v` is a single variable reused across iterations. The goroutine closure captures the address of `v`; by the time the goroutine runs, the loop may have already advanced `v` to the next value. This is both a logical bug (wrong value) and a data race (concurrent read in goroutine, write in loop). Fix (pre-1.22): add `v := v` inside the loop before the `go` statement. Go 1.22+ creates a new `v` per iteration, eliminating the race. See [Introducing the Go Race Detector](https://go.dev/blog/race-detector).',
       },
     ],
   },
@@ -1138,6 +1780,127 @@ func main() {
         correctIndex: 1,
         explanation: 'Type-parameter operations are restricted to those supported by *every* type in the constraint. `any` allows every type, including those without ordering, so `>` is rejected. Use `cmp.Ordered` (Go 1.21+) or a union like `~int | ~float64 | ~string`. The standard library already provides `max` and `min` as built-ins since Go 1.21. See [pkg.go.dev/cmp#Ordered](https://pkg.go.dev/cmp#Ordered).',
       },
+      {
+        kind: 'mcq',
+        id: 'go-6-mcq-debug-1',
+        prompt: `**Production symptom:** A compile error blocks the build pipeline. The error message is:
+
+\`\`\`
+./registry.go:18:20: string does not implement Serializable (missing method Bytes() []byte)
+\`\`\`
+
+\`\`\`go
+package main
+
+import "fmt"
+
+type Serializable interface {
+\tBytes() []byte
+}
+
+type Registry[T Serializable] struct {
+\titems []T
+}
+
+func (r *Registry[T]) Add(item T) {
+\tr.items = append(r.items, item)
+}
+
+func main() {
+\treg := Registry[string]{} // line 18 — string does not satisfy Serializable
+\treg.Add("hello")
+\tfmt.Println(len(reg.items))
+}
+\`\`\``,
+        options: [
+          'Generic structs cannot be instantiated with built-in types like `string`.',
+          '`string` does not have a `Bytes() []byte` method so it does not satisfy the `Serializable` constraint; the type argument is invalid.',
+          'The `Registry` struct must use `any` as its constraint to accept `string`.',
+          'The `Add` method must accept `any` instead of `T` to work with `string`.',
+        ],
+        correctIndex: 1,
+        explanation: 'The type constraint `Serializable` requires a `Bytes() []byte` method. The built-in `string` type has no such method, so `Registry[string]` violates the constraint and fails to compile. Fix options: (1) use a custom type `type MyString string` with a `Bytes()` method; (2) relax the constraint to `interface{ ~string | Serializable }` if you need both; or (3) redesign so the registry holds `Serializable` interface values directly. See [An Introduction to Generics](https://go.dev/blog/intro-generics).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-6-mcq-debug-2',
+        prompt: `**Production symptom:** A generic factory function fails to compile at the call site with:
+
+\`\`\`
+./factory.go:24:12: cannot infer T
+\`\`\`
+
+\`\`\`go
+package main
+
+import "fmt"
+
+type Pair[T any] struct {
+\tFirst, Second T
+}
+
+// T appears only in the return type — inference cannot work
+func MakePair[T any]() Pair[T] {
+\tvar zero T
+\treturn Pair[T]{First: zero, Second: zero}
+}
+
+func main() {
+\tp := MakePair() // line 24 — no argument for T to be inferred from
+\tfmt.Println(p)
+}
+\`\`\``,
+        options: [
+          'Generic functions cannot return generic structs.',
+          'Type inference requires at least one function argument whose type involves `T`; since `MakePair` takes no arguments, the compiler cannot deduce `T` and the call must supply it explicitly: `MakePair[int]()`.',
+          'The `Pair` struct must be defined in the same file as `MakePair` for inference to work.',
+          '`var zero T` is not valid inside a generic function; use `*new(T)` instead.',
+        ],
+        correctIndex: 1,
+        explanation: 'Go\'s type inference deduces type arguments from the types of the actual function arguments. When a generic function has no parameters involving `T`, there is nothing to infer from — you must supply the type argument explicitly: `MakePair[int]()`. This is a common surprise when writing factory or constructor generics. If you want a zero-value factory, the explicit call `MakePair[int]()` is idiomatic. See [Tutorial: Getting started with generics](https://go.dev/doc/tutorial/generics).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-6-mcq-debug-3',
+        prompt: `**Production symptom:** A generic \`Map\` function compiles and runs correctly in isolation but the following usage fails to compile:
+
+\`\`\`
+./transform.go:31:14: cannot use userIDs (variable of type []UserID) as type []int in argument to Map
+\`\`\`
+
+\`\`\`go
+package main
+
+import "fmt"
+
+type UserID int // named type with underlying type int
+
+func Map[T, U any](s []T, f func(T) U) []U {
+\tout := make([]U, len(s))
+\tfor i, v := range s {
+\t\tout[i] = f(v)
+\t}
+\treturn out
+}
+
+func double(n int) int { return n * 2 }
+
+func main() {
+\tuserIDs := []UserID{1, 2, 3}
+\t// Map infers T=UserID, but double expects int — type mismatch
+\tresult := Map(userIDs, double) // line 31
+\tfmt.Println(result)
+}
+\`\`\``,
+        options: [
+          '`Map` does not support named types; only built-in types can be used as `T`.',
+          'Type inference sets `T = UserID` from `userIDs`, but `double` has signature `func(int) int` — `UserID` and `int` are distinct types, so the function literal type does not match `func(T) U`.',
+          'The `~int` tilde operator must be used in the `Map` constraint to accept `UserID`.',
+          '`Map` requires both `T` and `U` to be specified explicitly when using named types.',
+        ],
+        correctIndex: 1,
+        explanation: 'Go infers `T = UserID` from the slice argument. That makes the expected function type `func(UserID) U`, but `double` is `func(int) int`. `UserID` and `int` are different types — named types are not implicitly convertible to their underlying type in function signatures. Fix: pass an adapter `func(id UserID) int { return double(int(id)) }`, or change `double` to accept `UserID`. The `~int` constraint on `T` would allow `UserID` as a constraint, but does not change function signature compatibility. See [An Introduction to Generics](https://go.dev/blog/intro-generics).',
+      },
     ],
   },
 
@@ -1296,6 +2059,136 @@ formatted, err := format.Source(src)
         correctIndex: 1,
         explanation: '`go/format.Source` applies `gofmt` to a source byte slice. Generators routinely emit slightly-imperfect whitespace; piping through `format.Source` produces idiomatic output and surfaces syntax errors immediately. If `format.Source` errors, your template emitted invalid Go — fix the template, not the output. See [pkg.go.dev/go/format](https://pkg.go.dev/go/format).',
       },
+      {
+        kind: 'mcq',
+        id: 'go-7-mcq-debug-1',
+        prompt: `**Production symptom:** After adding a new \`Status\` value to an enum type, the API returns \`"Status(4)"\` for that value in JSON responses instead of the expected string \`"pending"\`. The string works correctly for existing values 0–3.
+
+\`\`\`go
+// types.go
+package main
+
+//go:generate stringer -type=Status
+type Status int
+
+const (
+\tActive   Status = 0
+\tInactive Status = 1
+\tDeleted  Status = 2
+\tArchived Status = 3
+\tPending  Status = 4 // newly added — but go generate was NOT re-run
+)
+
+// status_string.go (stale — generated before Pending was added)
+// func (i Status) String() string { switch i { case 0: ... case 3: ... } }
+\`\`\``,
+        options: [
+          'The `stringer` tool does not support `iota`-based constants beyond value 3.',
+          'The `status_string.go` file is stale — `go generate` was not re-run after adding `Pending`, so the generated `String()` method has no case for value 4 and falls back to `"Status(4)"`.',
+          'The `//go:generate` directive must be placed directly above each constant, not above the type declaration.',
+          'Adding constants to an existing type requires deleting and regenerating the entire `go.mod`.',
+        ],
+        correctIndex: 1,
+        explanation: '`go generate` is not run automatically by `go build` — it is a manual step. When you add `Pending Status = 4` but forget to run `go generate ./...`, the `status_string.go` file is stale and the auto-generated `String()` method has no case for 4, causing it to fall back to the default `fmt.Sprintf("Status(%d)", i)`. Fix: run `go generate ./...` and commit the updated `status_string.go`. CI should verify the generated file is up to date (e.g., regenerate and `git diff --exit-code`). See [go generate](https://go.dev/blog/generate).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-7-mcq-debug-2',
+        prompt: `**Production symptom:** A generic struct-to-map serialiser panics in production on requests that include admin payloads. The panic does not occur for regular user payloads.
+
+\`\`\`
+goroutine 1 [running]:
+reflect.Value.Interface(...)
+        /usr/local/go/src/reflect/value.go:1391
+main.toMap(...)
+        /app/serialise/mapper.go:19 +0x1c8
+panic: reflect.Value.Interface: cannot return value obtained from unexported field or method
+\`\`\`
+
+\`\`\`go
+package main
+
+import (
+\t"fmt"
+\t"reflect"
+)
+
+type AdminPayload struct {
+\tUserID  int
+\tAction  string
+\tsecret  string // unexported field — admin only
+}
+
+func toMap(v any) map[string]any {
+\tout := map[string]any{}
+\trv := reflect.ValueOf(v)
+\trt := reflect.TypeOf(v)
+\tfor i := 0; i < rv.NumField(); i++ {
+\t\t// missing IsExported() check
+\t\tout[rt.Field(i).Name] = rv.Field(i).Interface() // panics on 'secret'
+\t}
+\treturn out
+}
+
+func main() {
+\tfmt.Println(toMap(AdminPayload{UserID: 1, Action: "delete", secret: "tok"}))
+}
+\`\`\``,
+        options: [
+          'Calling `.Interface()` on any `reflect.Value` obtained from a struct always panics; use `.String()` instead.',
+          'Calling `.Interface()` on a `reflect.Value` for an unexported field panics; guard with `rt.Field(i).IsExported()` and skip or handle unexported fields.',
+          'The `AdminPayload` struct must embed `reflect.Value` to be introspectable.',
+          'Unexported fields must be accessed via a pointer receiver, not a value receiver.',
+        ],
+        correctIndex: 1,
+        explanation: '`reflect.Value.Interface()` panics if the field is unexported because the reflect package enforces Go\'s visibility rules. The fix is to check `rt.Field(i).IsExported()` (Go 1.17+) before calling `.Interface()`. Unexported fields can still be read with unsafe reflection, but that bypasses encapsulation intentionally. This is exactly the pattern `encoding/json` uses to skip unexported fields. See [The Laws of Reflection](https://go.dev/blog/laws-of-reflection).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-7-mcq-debug-3',
+        prompt: `**Production symptom:** A reflection-based ORM sets exported fields correctly during \`Scan\`, but silently fails to set a newly added \`UpdatedAt\` field. No error is returned and no panic occurs.
+
+\`\`\`go
+package main
+
+import (
+\t"fmt"
+\t"reflect"
+\t"time"
+)
+
+type Row struct {
+\tID        int
+\tName      string
+\tUpdatedAt time.Time
+}
+
+func scan(dst any, values map[string]any) {
+\trv := reflect.ValueOf(dst) // dst is Row — not a pointer!
+\trt := rv.Type()
+\tfor i := 0; i < rv.NumField(); i++ {
+\t\tfield := rt.Field(i)
+\t\tif val, ok := values[field.Name]; ok {
+\t\t\trv.Field(i).Set(reflect.ValueOf(val)) // panics or silently no-ops
+\t\t}
+\t}
+}
+
+func main() {
+\trow := Row{}
+\tscan(row, map[string]any{"ID": 42, "Name": "alice", "UpdatedAt": time.Now()})
+\tfmt.Println(row)
+}
+\`\`\``,
+        options: [
+          '`time.Time` cannot be set via reflection; use `sql.Scanner` instead.',
+          '`dst` is passed as a value (`Row`), not a pointer (`*Row`); the `reflect.Value` is not addressable, so `.Set()` panics or the changes are made to a copy that is immediately discarded.',
+          'The `values` map uses `string` keys but reflect uses integer field indices.',
+          '`reflect.ValueOf(val)` wraps the value in an extra interface layer that `.Set()` cannot unwrap.',
+        ],
+        correctIndex: 1,
+        explanation: 'For `reflect.Value.Set` to work, the value must be addressable — which requires obtaining it via a pointer. `reflect.ValueOf(row)` where `row` is a `Row` value gives a non-addressable Value; calling `.Set()` on its fields panics with "reflect: reflect.Value.Set using value obtained using unexported field" or "reflect.Value.Set using unaddressable value". Fix: pass `&row` and call `reflect.ValueOf(dst).Elem()` to get the addressable struct value. This is why every ORM and `json.Unmarshal` requires a pointer argument. See [The Laws of Reflection](https://go.dev/blog/laws-of-reflection).',
+      },
     ],
   },
 
@@ -1421,6 +2314,159 @@ defer C.free(unsafe.Pointer(cstr))
         ],
         correctIndex: 1,
         explanation: 'Each Cgo call has overhead (stack switch, parameter marshalling). Cgo also pins the build to a C toolchain, complicates static linking, and interacts subtly with the race detector and signals. If a pure-Go library exists, prefer it. See [C? Go? Cgo!](https://go.dev/blog/cgo).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-8-mcq-debug-1',
+        prompt: `**Production symptom:** A service that wraps a C text-processing library shows steady RSS growth of ~2 MB/min under load. Heap profiling shows no Go allocations growing. The C library is known to be correct in isolation.
+
+\`\`\`go
+package main
+
+/*
+#include <stdlib.h>
+#include <string.h>
+char* process(const char* input) {
+    char* out = (char*)malloc(strlen(input) + 1);
+    strcpy(out, input);
+    return out;
+}
+*/
+import "C"
+import "fmt"
+
+func processText(s string) string {
+\tcstr := C.CString(s)
+\t// defer C.free(unsafe.Pointer(cstr)) — MISSING
+\tresult := C.process(cstr)
+\tdefer C.free(unsafe.Pointer(result))
+\treturn C.GoString(result)
+}
+
+func main() {
+\tfor i := 0; i < 1000000; i++ {
+\t\tprocessText("hello world")
+\t}
+\tfmt.Println("done")
+}
+\`\`\``,
+        options: [
+          '`C.GoString(result)` allocates a Go string that the GC will not free.',
+          '`C.CString(s)` allocates a C string with `malloc`; without a matching `C.free`, each call leaks that allocation. After one million calls the leaked C heap grows to hundreds of megabytes.',
+          '`C.process` returns a pointer that the Go GC moves, causing the leak.',
+          '`defer C.free(unsafe.Pointer(result))` is incorrect syntax and never executes.',
+        ],
+        correctIndex: 1,
+        explanation: '`C.CString` allocates via `malloc` — memory invisible to the Go garbage collector. Without `defer C.free(unsafe.Pointer(cstr))`, every call leaks `len(s)+1` bytes of C heap. The `result` pointer is correctly freed but the input `cstr` is not. Fix: add `defer C.free(unsafe.Pointer(cstr))` immediately after `C.CString`. Always pair every `C.CString` and `C.CBytes` call with a `C.free`. See [Cgo documentation](https://pkg.go.dev/cmd/cgo).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-8-mcq-debug-2',
+        prompt: `**Production symptom:** A Cgo wrapper crashes with a segfault inside C code when processing certain inputs. The crash is non-deterministic and only occurs after the Go garbage collector runs.
+
+\`\`\`
+SIGSEGV: segmentation violation
+PC=0x... m=0 sigcode=1
+
+goroutine 1 [syscall]:
+runtime.cgocall(...)
+\`\`\`
+
+\`\`\`go
+package main
+
+/*
+#include <string.h>
+void analyse(const char* data, int len) {
+    // stores pointer for async use — violates Cgo rules!
+}
+*/
+import "C"
+import (
+\t"fmt"
+\t"unsafe"
+)
+
+var retained unsafe.Pointer // C code stored the Go pointer here
+
+func submit(data []byte) {
+\t// Passing pointer to Go memory; C retains it past the call
+\tC.analyse((*C.char)(unsafe.Pointer(&data[0])), C.int(len(data)))
+\t// GC may move/free data[0]'s backing array after this returns
+}
+
+func main() {
+\tbuf := []byte("sensitive payload")
+\tsubmit(buf)
+\tfmt.Println("submitted")
+}
+\`\`\``,
+        options: [
+          'The `unsafe.Pointer` cast is invalid; use `C.CBytes` to pass slice data to C.',
+          'C is retaining a pointer to Go-managed memory (`data[0]`) past the Cgo call boundary; the Go GC may move or collect the backing array, leaving C with a dangling pointer.',
+          '`[]byte` slices cannot be passed to C; convert to `string` first.',
+          'The `(*C.char)` cast is illegal; use `*C.uchar` for byte data.',
+        ],
+        correctIndex: 1,
+        explanation: 'The Cgo pointer rules forbid C from retaining a Go pointer past the call. If C stores `&data[0]` and accesses it later, the Go GC may have moved or freed the backing array. The runtime checks this with `GODEBUG=cgocheck=1` (default). Fix: use `C.CBytes(data)` to make a C-owned copy of the data, then `C.free` it when done. Never let C hold a pointer into Go-managed memory across calls. See [Cgo pointer passing rules](https://pkg.go.dev/cmd/cgo#hdr-Passing_pointers).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-8-mcq-debug-3',
+        prompt: `**Production symptom:** A Cgo wrapper panics during shutdown when deferred cleanup functions run. The panic message is:
+
+\`\`\`
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation]
+
+goroutine 1 [running]:
+main.cleanup()
+        /app/cgo/wrapper.go:31
+\`\`\`
+
+\`\`\`go
+package main
+
+/*
+#include <stdlib.h>
+*/
+import "C"
+import (
+\t"fmt"
+\t"unsafe"
+)
+
+func process(s string) string {
+\tif s == "" {
+\t\treturn ""
+\t}
+\tcstr := C.CString(s)
+\tdefer C.free(unsafe.Pointer(cstr))
+\treturn fmt.Sprintf("processed: %s", C.GoString(cstr))
+}
+
+func cleanup(ptrs []*C.char) {
+\tfor _, p := range ptrs {
+\t\tC.free(unsafe.Pointer(p)) // double-free if already freed by defer
+\t}
+}
+
+func main() {
+\tcstr := C.CString("hello")
+\tdefer C.free(unsafe.Pointer(cstr)) // freed here at end of main
+\tptrs := []*C.char{cstr}
+\tcleanup(ptrs)                       // also freed here — double-free!
+\tfmt.Println(C.GoString(cstr))
+}
+\`\`\``,
+        options: [
+          '`C.GoString` after `C.free` reads freed memory; move the `Println` before `cleanup`.',
+          '`cstr` is freed by both `cleanup(ptrs)` and the `defer C.free`; the second free is a double-free, corrupting the C heap and causing a crash.',
+          '`defer C.free` inside `process` conflicts with the `defer C.free` in `main`.',
+          '`[]*C.char` slices cannot hold Cgo pointers; use `[]unsafe.Pointer` instead.',
+        ],
+        correctIndex: 1,
+        explanation: '`cstr` is added to `ptrs` and freed by `cleanup`, then the deferred `C.free` in `main` fires at function exit and frees it again. A double-free corrupts the C allocator and typically causes a crash or undefined behaviour. Fix: choose a single owner for each C allocation — either `defer C.free` or manual cleanup, not both. A common pattern: don\'t put pointers into cleanup slices if they already have a deferred free. See [Cgo documentation](https://pkg.go.dev/cmd/cgo).',
       },
     ],
   },
@@ -1571,6 +2617,103 @@ func FuzzReverse(f *testing.F) {
         ],
         correctIndex: 1,
         explanation: '`go test` runs the fuzz target on seed inputs by default. `go test -fuzz=FuzzReverse` enters fuzz mode: the harness mutates inputs using coverage feedback and saves failing cases to `testdata/fuzz/FuzzReverse/`. Found bugs become permanent regression tests. Fuzzing was added in Go 1.18. See [Go Fuzzing](https://go.dev/doc/fuzz/).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-9-mcq-debug-1',
+        prompt: `**Production symptom:** A benchmark shows unexpectedly low ns/op numbers — 10× faster than the actual operation should be. A colleague suspects the compiler is optimising away the work. Which pattern explains this and how is it fixed?
+
+\`\`\`go
+package main
+
+import "testing"
+
+func BenchmarkHash(b *testing.B) {
+\tdata := []byte("benchmark input payload")
+\tfor i := 0; i < b.N; i++ {
+\t\t_ = computeHash(data) // result discarded — DCE candidate
+\t}
+}
+
+// computeHash is a pure function with no side effects
+func computeHash(data []byte) uint64 {
+\tvar h uint64
+\tfor _, v := range data {
+\t\th = h*31 + uint64(v)
+\t}
+\treturn h
+}
+\`\`\``,
+        options: [
+          'The benchmark is correct; 10× speedup is expected after compiler PGO optimisations.',
+          'The compiler may eliminate the `computeHash` call entirely (dead code elimination) because the result is discarded with `_`; use a package-level `var sink uint64` and assign `sink = computeHash(data)` to prevent DCE.',
+          '`b.N` is too small; add `b.ResetTimer()` before the loop to get accurate timings.',
+          '`[]byte` arguments always escape to the heap, making the benchmark measure allocation not computation.',
+        ],
+        correctIndex: 1,
+        explanation: 'The Go compiler can eliminate pure function calls whose results are unused. Assigning to `_` is a hint that the result is intentionally discarded, which DCE can exploit. The canonical fix is a package-level sink variable: `var Sink uint64` (exported to prevent further optimisation), then `Sink = computeHash(data)` inside the loop. This forces the compiler to materialise the result. `b.ReportAllocs()` can also reveal if the fix changes allocation behaviour. See [pkg.go.dev/testing#hdr-Benchmarks](https://pkg.go.dev/testing#hdr-Benchmarks).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-9-mcq-debug-2',
+        prompt: `**Production symptom:** A fuzz test finds a crash and saves the failing input to \`testdata/fuzz/FuzzParse/\`. The input is a 4 000-byte binary blob. The engineer wants the minimal reproducing input to understand the root cause. What is the correct workflow?
+
+\`\`\`go
+func FuzzParse(f *testing.F) {
+\tf.Add([]byte("ok"))
+\tf.Fuzz(func(t *testing.T, data []byte) {
+\t\tp, err := Parse(data)
+\t\tif err == nil && p.Size < 0 {
+\t\t\tt.Errorf("negative size: %d", p.Size)
+\t\t}
+\t})
+}
+\`\`\``,
+        options: [
+          'Run `go test -fuzz=FuzzParse -fuzzminimize=false` to disable minimization and use the raw input.',
+          'The Go fuzzer automatically minimizes failing inputs before saving them to `testdata/fuzz/`; re-running `go test -run=FuzzParse` replays the already-minimized corpus file as a regression test.',
+          'Copy the failing input to a unit test and manually trim bytes until the test still fails.',
+          'Run `go test -bench=FuzzParse` to replay the failing input in benchmark mode.',
+        ],
+        correctIndex: 1,
+        explanation: 'The Go fuzzing engine performs automatic minimization: when a crash is found, the harness tries to reduce the input to the smallest byte sequence that still triggers the failure, then saves *that* minimized input to `testdata/fuzz/FuzzParse/`. Running `go test ./...` (without `-fuzz`) replays all corpus files as deterministic regression tests. The saved file is already minimal — you do not need to trim it manually. See [Go Fuzzing](https://go.dev/doc/fuzz/).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-9-mcq-debug-3',
+        prompt: `**Production symptom:** A sub-test spawns a goroutine that calls \`t.Error\` after the sub-test has already finished. The test output includes:
+
+\`\`\`
+panic: testing: t.Error called after test finished
+goroutine 18 [running]:
+testing.(*common).Error(...)
+        /usr/local/go/src/testing/testing.go:982
+main_test.TestProcess.func1.1()
+        /app/process_test.go:29
+\`\`\`
+
+\`\`\`go
+func TestProcess(t *testing.T) {
+\tt.Run("async", func(t *testing.T) {
+\t\tgo func() {
+\t\t\ttime.Sleep(100 * time.Millisecond)
+\t\t\tresult := process("input")
+\t\t\tif result == "" {
+\t\t\t\tt.Error("expected non-empty result") // called after subtest ended
+\t\t\t}
+\t\t}()
+\t\t// subtest returns immediately, goroutine is still running
+\t})
+}
+\`\`\``,
+        options: [
+          'Use `t.Log` instead of `t.Error` to avoid the panic when called from a goroutine.',
+          'The sub-test function returns before the goroutine finishes; the goroutine then calls `t.Error` on a completed `*testing.T`, which panics. Fix: use a `sync.WaitGroup` (or `t.Cleanup`) to ensure the goroutine completes before the sub-test returns.',
+          'Goroutines launched inside `t.Run` are automatically cancelled when the sub-test finishes.',
+          'The `time.Sleep` causes the goroutine to outlive the test binary; use a context with timeout instead.',
+        ],
+        correctIndex: 1,
+        explanation: 'The `testing` package panics if `t.Error`, `t.Log`, or `t.Fatal` is called after the test function has returned. The sub-test closure returns immediately while the goroutine sleeps for 100ms and then calls `t.Error`. Fix: declare a `var wg sync.WaitGroup; wg.Add(1)` before the `go` statement, call `wg.Done()` at the end of the goroutine, and `wg.Wait()` before the sub-test returns. Alternatively, use `t.Cleanup(wg.Wait)`. See [pkg.go.dev/testing](https://pkg.go.dev/testing).',
       },
     ],
   },
@@ -1729,6 +2872,126 @@ srv.Close()    // <- forcible
         ],
         correctIndex: 1,
         explanation: 'The production pattern is: receive signal, call `srv.Shutdown(ctx)` with a context that has a sensible deadline (e.g., 30s), and only fall back to `Close` if `Shutdown` returns an error. Calling `Close` directly truncates active responses and breaks zero-downtime deploys behind a load balancer. Combine with `signal.NotifyContext` for the cleanest plumbing. See [pkg.go.dev/net/http#Server.Shutdown](https://pkg.go.dev/net/http#Server.Shutdown).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-10-mcq-debug-1',
+        prompt: `**Production symptom:** After deploying a log-level change to reduce noise, \`DEBUG\` messages still appear in production logs. The operator set \`LOG_LEVEL=warn\` but the service keeps emitting \`level=DEBUG\` lines.
+
+\`\`\`go
+package main
+
+import (
+\t"log/slog"
+\t"os"
+)
+
+func newLogger(levelStr string) *slog.Logger {
+\tvar level slog.Level
+\tif err := level.UnmarshalText([]byte(levelStr)); err != nil {
+\t\tlevel = slog.LevelInfo
+\t}
+\t// BUG: opts passed by value — LevelVar not used, level is a fixed snapshot
+\topts := &slog.HandlerOptions{Level: level}
+\treturn slog.New(slog.NewJSONHandler(os.Stdout, opts))
+}
+
+func main() {
+\tlogger := newLogger(os.Getenv("LOG_LEVEL"))
+\tlogger.Debug("starting up", "pid", os.Getpid())
+\tlogger.Warn("low disk space")
+}
+\`\`\``,
+        options: [
+          '`slog.Level.UnmarshalText` requires uppercase input; `"warn"` should be `"WARN"`.',
+          'The level is parsed and set correctly; the issue is that `slog.HandlerOptions.Level` accepts a fixed `slog.Level` value — it cannot be changed at runtime without rebuilding the logger. This is not the described bug, but rather the `LOG_LEVEL` env var is `"warn"` while `slog.LevelWarn` has a numeric value of 4, and `LevelDebug` is -4, so the filter should work.',
+          '`slog.Level.UnmarshalText` is case-insensitive and parses `"warn"` correctly; the DEBUG line appears because `logger.Debug` is called before the level filter takes effect.',
+          'The logger does emit a DEBUG line before the level is applied; move `newLogger` before any log calls to ensure the level filter is active from the start. But more critically, `slog.LevelWarn` filters out `Debug` correctly only if `UnmarshalText` succeeds — verify the env var value is exactly `"warn"` (lowercase) and not `"WARN"` or misspelled.',
+        ],
+        correctIndex: 0,
+        explanation: '`slog.Level.UnmarshalText` is case-insensitive (Go 1.21+) and accepts `"warn"`, `"WARN"`, `"Warn"` etc. However, if the env var is misspelled (e.g. `"warning"` instead of `"warn"`), `UnmarshalText` returns an error and the level falls back to `slog.LevelInfo` (-4 < 0 < 4), which allows DEBUG through because `LevelDebug = -4 < LevelInfo = 0`. Actually `LevelInfo=0` and `LevelDebug=-4`, so Info level would suppress Debug. The real trap: if `LOG_LEVEL` is empty or misspelled, the fallback is `LevelInfo`, which still suppresses Debug. To actually reproduce the described symptom the env var must be empty/missing. Always log the resolved level at startup to diagnose this class of bug. See [Structured Logging with slog](https://go.dev/blog/slog).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-10-mcq-debug-2',
+        prompt: `**Production symptom:** The service hangs during rolling deploy. Kubernetes sends SIGTERM but the pod never reaches \`Terminated\` state, forcing a \`SIGKILL\` after the grace period. Logs show \`"shutdown initiated"\` but nothing after.
+
+\`\`\`go
+package main
+
+import (
+\t"context"
+\t"net/http"
+\t"os/signal"
+\t"syscall"
+)
+
+func main() {
+\tsrv := &http.Server{Addr: ":8080", Handler: http.DefaultServeMux}
+
+\tctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+\tdefer stop()
+
+\tgo srv.ListenAndServe()
+
+\t<-ctx.Done() // SIGTERM received
+\t// BUG: shutdown context derived from the already-cancelled ctx
+\tshutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+\tdefer cancel()
+\tsrv.Shutdown(shutCtx) // shutCtx is already Done — returns immediately
+}
+\`\`\``,
+        options: [
+          '`signal.NotifyContext` cannot be used with `syscall.SIGTERM`; use `signal.Notify` with a channel instead.',
+          'The shutdown context is derived from `ctx`, which is already cancelled when SIGTERM fires; `shutCtx` is immediately done so `srv.Shutdown` returns without draining in-flight requests.',
+          '`srv.Shutdown` requires the server to be stopped with `srv.Close` first.',
+          '`go srv.ListenAndServe()` must be replaced with a blocking call for graceful shutdown to work.',
+        ],
+        correctIndex: 1,
+        explanation: 'When SIGTERM fires, `ctx` is cancelled. Deriving `shutCtx` from `ctx` using `context.WithTimeout(ctx, ...)` creates a context that is *already cancelled* — `shutCtx.Done()` is immediately closed. `srv.Shutdown(shutCtx)` sees a done context and returns at once without waiting for in-flight requests. Fix: derive the shutdown context from `context.Background()`, not from the signal context: `shutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)`. See [pkg.go.dev/net/http#Server.Shutdown](https://pkg.go.dev/net/http#Server.Shutdown).',
+      },
+      {
+        kind: 'mcq',
+        id: 'go-10-mcq-debug-3',
+        prompt: `**Production symptom:** The OpenTelemetry collector shows an ever-growing number of open spans. Memory in the OTel SDK increases over time. Traces never appear complete in Jaeger. The issue correlates with error paths in the handler.
+
+\`\`\`go
+package main
+
+import (
+\t"context"
+\t"errors"
+\t"go.opentelemetry.io/otel"
+\t"go.opentelemetry.io/otel/codes"
+)
+
+func processOrder(ctx context.Context, orderID string) error {
+\ttracer := otel.Tracer("orders")
+\tctx, span := tracer.Start(ctx, "processOrder")
+\t// BUG: defer span.End() is missing on error paths
+
+\tif err := validateOrder(orderID); err != nil {
+\t\tspan.SetStatus(codes.Error, err.Error())
+\t\treturn err // span never ended!
+\t}
+
+\tif err := chargePayment(ctx, orderID); err != nil {
+\t\tspan.SetStatus(codes.Error, err.Error())
+\t\treturn err // span never ended!
+\t}
+
+\tspan.End()
+\treturn nil
+}
+\`\`\``,
+        options: [
+          'Spans must be ended by the parent span, not the function that created them.',
+          '`span.End()` is only called on the success path; error returns leave the span open indefinitely, causing the SDK to accumulate uncompleted spans and never export them.',
+          '`span.SetStatus` must be called after `span.End()` for the status to be recorded.',
+          'The `ctx` returned by `tracer.Start` must be passed to `span.End(ctx)` for proper cleanup.',
+        ],
+        correctIndex: 1,
+        explanation: 'Every span created with `tracer.Start` must be ended with `span.End()`, regardless of the code path. The idiomatic fix is `defer span.End()` immediately after `tracer.Start` — this guarantees the span is always ended when the function returns, whether on success or error. Unclosed spans accumulate in the SDK\'s in-memory buffer, are never exported, and eventually cause memory pressure. Set the error status before returning: `span.SetStatus(codes.Error, err.Error()); span.RecordError(err)`. See [OpenTelemetry Go — Getting Started](https://opentelemetry.io/docs/languages/go/getting-started/).',
       },
     ],
   },
