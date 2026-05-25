@@ -1,4 +1,4 @@
-import { Phase } from './types';
+import type { Phase } from './types';
 
 export const csharpPhases: Phase[] = [
   {
@@ -7,7 +7,7 @@ export const csharpPhases: Phase[] = [
     level: 1,
     title: 'C# Fundamentals',
     timeEstimate: '6-8 hours',
-    intro: `C# is a strongly-typed, multi-paradigm language that runs on .NET. In this phase you will write your first programs using top-level statements (introduced in C# 9), explore the built-in value and reference types, control flow constructs, and methods. You will also learn how namespaces and the \`using\` directive organise code, and how to interact with the console for basic I/O.\n\nBy the end of this phase you should be comfortable writing small self-contained programs, understanding the difference between value types (\`int\`, \`bool\`, \`struct\`) and reference types (\`string\`, \`class\`), and calling static methods from the .NET base class library.`,
+    intro: `C# is a strongly-typed, multi-paradigm language that runs on .NET. In this phase you will write your first programs using **top-level statements** (introduced in C# 9 and refined through C# 12), explore the built-in value and reference types, control flow, and methods. You will also learn how file-scoped namespaces and \`using\` directives organise code, and how to interact with the console for basic I/O.\n\nThe deliverable is a real local CLI you build with \`dotnet new console\` and run with \`dotnet run\`. By the end you should be comfortable writing small self-contained programs, distinguishing value types (\`int\`, \`bool\`, \`struct\`) from reference types (\`string\`, \`class\`), and calling static methods from the .NET base class library.`,
     topics: [
       {
         label: 'Tour of C#',
@@ -37,43 +37,60 @@ export const csharpPhases: Phase[] = [
       },
     ],
     deliverable:
-      'Write a top-level-statement program that reads a name and birth year from the console, calculates the user\'s age, and prints a greeting with string interpolation. Include at least one helper method that returns a value.',
+      'Build locally: a `greet` CLI using top-level statements that takes a name argument (and optional birth year), prints a personalized greeting with the current timestamp via `DateTime.Now`, and uses at least one helper method that returns a string.',
     checks: [
       {
         kind: 'mcq',
         id: 'csharp-1-mcq-1',
-        prompt: 'Which keyword declares a variable whose type is inferred by the compiler but is still statically typed?',
+        prompt: 'Which keyword declares a variable whose type is inferred by the compiler but remains statically typed?',
         options: ['dynamic', 'var', 'object', 'let'],
         correctIndex: 1,
-        explanation: '`var` triggers type inference at compile time — the type is fixed after inference, unlike `dynamic` which defers resolution to runtime.',
+        explanation: '`var` triggers compile-time type inference — the variable type is fixed once inferred. `dynamic` defers resolution to runtime (no compile-time checking), `object` is the universal reference type that requires casting, and `let` is not a C# keyword for variable declaration (it exists only inside LINQ query syntax).',
       },
       {
         kind: 'mcq',
         id: 'csharp-1-mcq-2',
-        prompt: 'What is the default value of an unassigned `int` field in a class?',
-        options: ['null', 'undefined', '0', '-1'],
+        prompt: 'What is the default value of an unassigned `int` field declared at class scope?',
+        options: ['null', 'undefined', '0', 'It is a compile-time error to leave it unassigned'],
         correctIndex: 2,
-        explanation: 'Value-type fields are zero-initialised by the runtime. `int` has a default of `0`.',
+        explanation: 'Value-type fields are zero-initialised by the runtime when an instance is constructed. `int` defaults to `0`. Reference-type fields default to `null`. Local variables, by contrast, must be definitely assigned before use.',
       },
       {
-        kind: 'code',
-        id: 'csharp-1-code-1',
-        prompt: 'Write a C# program (top-level statements) that prints the numbers 1 through 5, each on its own line, using a `for` loop.',
-        starterCode: `for (int i = 1; i <= 5; i++)
-{
-    Console.WriteLine(i);
-}`,
-        expectedOutput: `1\n2\n3\n4\n5`,
-        hint: 'Use `Console.WriteLine` inside a `for` loop. The loop variable starts at 1 and increments until it exceeds 5.',
+        kind: 'mcq',
+        id: 'csharp-1-mcq-3',
+        prompt: `What does the following C# 12 program print?\n\n\`\`\`csharp\nusing System;\n\nstring Greet(string name) => $"Hello, {name}!";\nConsole.WriteLine(Greet("World"));\n\`\`\``,
+        options: ['Hello, {name}!', 'Hello, World!', 'Hello, name!', 'Compile error: top-level statements cannot define local functions'],
+        correctIndex: 1,
+        explanation: 'Top-level statements support local functions, and `$"..."` is an interpolated string — `{name}` is replaced by the value of `name`. The expression-bodied lambda `=> $"Hello, {name}!"` returns the formatted string, so the program prints `Hello, World!`.',
       },
       {
-        kind: 'code',
-        id: 'csharp-1-code-2',
-        prompt: 'Define a static method `Greet(string name)` that returns the string `"Hello, {name}!"` using string interpolation, then print the result for the name "World".',
-        starterCode: `static string Greet(string name) => $"Hello, {name}!";
-Console.WriteLine(Greet("World"));`,
-        expectedOutput: 'Hello, World!',
-        hint: 'Use the `$"..."` interpolation syntax and an expression-bodied method (`=>`).',
+        kind: 'mcq',
+        id: 'csharp-1-mcq-4',
+        prompt: `What does this program print?\n\n\`\`\`csharp\nusing System;\n\nfor (int i = 1; i <= 5; i++)\n{\n    if (i == 3) continue;\n    Console.Write(i);\n}\n\`\`\``,
+        options: ['12345', '1245', '123', '12'],
+        correctIndex: 1,
+        explanation: '`continue` skips the rest of the loop body for that iteration but does NOT terminate the loop (that is `break`). When `i == 3` the `Console.Write` is skipped, so output is `1245`. Notice `Console.Write` does not append a newline, unlike `Console.WriteLine`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-1-mcq-5',
+        prompt: `Which line contains a compile error?\n\n\`\`\`csharp\nusing System;\n\nint a = 10;          // line 1\nconst int b = 20;    // line 2\nb = 25;              // line 3\nConsole.WriteLine(a + b);  // line 4\n\`\`\``,
+        options: ['line 1', 'line 2', 'line 3', 'line 4'],
+        correctIndex: 2,
+        explanation: '`const` declares a compile-time constant that cannot be reassigned. Line 3 attempts to reassign `b`, which the compiler rejects with CS0131 ("The left-hand side of an assignment must be a variable"). For values that should be set once at runtime, use `readonly` on a field instead.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-1-mcq-6',
+        prompt: 'Which statement about value types and reference types in C# is correct?',
+        options: [
+          'All structs are reference types because they inherit from System.Object',
+          'Value types (struct, int, bool) store their data directly; reference types (class, string, arrays) store a reference to heap-allocated data',
+          'Strings are value types because they are immutable',
+          'Reference types are always faster than value types',
+        ],
+        correctIndex: 1,
+        explanation: 'Value types live where they are declared (stack for locals, inline for fields). Reference types live on the managed heap and variables hold a reference. `string` is a reference type despite being immutable — immutability is orthogonal to value/reference semantics. Performance depends on size, allocation patterns and copy cost — neither is universally faster.',
       },
     ],
   },
@@ -83,7 +100,7 @@ Console.WriteLine(Greet("World"));`,
     level: 2,
     title: 'Object-Oriented Programming',
     timeEstimate: '8-10 hours',
-    intro: `C# was designed as an object-oriented language and its OOP support is comprehensive. In this phase you will learn to define classes and structs, use constructors, properties, and indexers, apply access modifiers, implement interfaces, and build inheritance hierarchies. You will also encounter polymorphism in practice through virtual/override methods and interface dispatch.\n\nPay special attention to the difference between classes (heap-allocated reference semantics) and structs (stack-friendly value semantics). Modern C# also introduces \`record\` types, which you will preview here and deepen in Phase 4.`,
+    intro: `C# was designed as an object-oriented language and its OOP support is comprehensive. In this phase you will define classes and structs, use constructors (including **primary constructors** added in C# 12), properties, indexers, access modifiers, interfaces, and inheritance hierarchies. You will exercise polymorphism through \`virtual\`/\`override\` and interface dispatch.\n\nPay special attention to the difference between classes (heap-allocated reference semantics) and structs (value semantics, often stack-allocated). Modern C# also introduces \`record\` types, previewed here and deepened in Phase 4. The deliverable is a runnable inventory CLI using \`System.CommandLine\` so you exercise OOP modelling in a real local program.`,
     topics: [
       {
         label: 'Classes and objects',
@@ -109,9 +126,13 @@ Console.WriteLine(Greet("World"));`,
         label: 'Polymorphism',
         url: 'https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/object-oriented/polymorphism',
       },
+      {
+        label: 'Primary constructors (C# 12)',
+        url: 'https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/tutorials/primary-constructors',
+      },
     ],
     deliverable:
-      'Model a simple bank account system: an abstract `Account` base class with `Deposit`/`Withdraw` virtual methods, a `SavingsAccount` subclass that overrides `Withdraw` to enforce a minimum balance, and an `ITransactionLog` interface implemented by both. Demonstrate polymorphic dispatch via a `List<Account>`.',
+      'Build locally: an `inventory` CLI with a `Product` record (Id, Name, decimal Price), an in-memory `List<Product>`, and `add`, `list`, `find` subcommands implemented via `System.CommandLine`. Include an abstract `Account`-style hierarchy in a separate file to practice virtual/override dispatch.',
     checks: [
       {
         kind: 'mcq',
@@ -119,34 +140,57 @@ Console.WriteLine(Greet("World"));`,
         prompt: 'Which access modifier makes a member visible to all types in the same assembly but not to external assemblies?',
         options: ['private', 'protected', 'internal', 'public'],
         correctIndex: 2,
-        explanation: '`internal` restricts visibility to the declaring assembly. `protected` is for subclass access, `private` for the type itself, and `public` for everyone.',
+        explanation: '`internal` restricts visibility to the declaring assembly (DLL or EXE). `protected` is for subclass access (regardless of assembly), `private` is for the declaring type itself (and nested types), and `public` is unrestricted. Use `internal` for implementation details that need to be shared across a project but kept out of the public API.',
       },
       {
         kind: 'mcq',
         id: 'csharp-2-mcq-2',
-        prompt: 'What keyword must a base-class method be marked with to allow derived classes to override it?',
+        prompt: 'What keyword must a base-class method carry to allow derived classes to override it?',
         options: ['abstract', 'virtual', 'override', 'new'],
         correctIndex: 1,
-        explanation: '`virtual` signals that a method participates in polymorphic dispatch and may be overridden. `abstract` also allows overriding but additionally requires it (and cannot have a body).',
+        explanation: '`virtual` signals that a method participates in polymorphic dispatch and may be overridden. `abstract` also allows overriding but additionally requires it (and the method has no body). `override` is the keyword on the derived method, not the base. `new` hides a base method without polymorphism — usually a mistake.',
       },
       {
-        kind: 'code',
-        id: 'csharp-2-code-1',
-        prompt: 'Define an interface `IShape` with a `double Area()` method, then implement it in a `Circle` class that accepts a radius in its constructor. Print the area of a circle with radius 5 (use `Math.PI`).',
-        starterCode: `using System;
-
-interface IShape { double Area(); }
-
-class Circle : IShape
-{
-    private readonly double _radius;
-    public Circle(double radius) => _radius = radius;
-    public double Area() => Math.PI * _radius * _radius;
-}
-
-Console.WriteLine(new Circle(5).Area().ToString("F2"));`,
-        expectedOutput: '78.54',
-        hint: 'Use `Math.PI` and format with `"F2"` for two decimal places.',
+        kind: 'mcq',
+        id: 'csharp-2-mcq-3',
+        prompt: `What does this program print?\n\n\`\`\`csharp\nusing System;\n\nclass Animal\n{\n    public virtual string Speak() => "...";\n}\n\nclass Dog : Animal\n{\n    public override string Speak() => "Woof";\n}\n\nAnimal a = new Dog();\nConsole.WriteLine(a.Speak());\n\`\`\``,
+        options: ['...', 'Woof', 'Animal', 'Compile error: cannot assign Dog to Animal'],
+        correctIndex: 1,
+        explanation: 'This is classic polymorphic dispatch. The static type is `Animal` but the runtime type is `Dog`. Because `Speak` is `virtual`/`override`, the CLR resolves the call to `Dog.Speak()` via the method table, printing `Woof`. If `Dog.Speak` had used `new` instead of `override`, the static type would have won and you would have seen `...`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-2-mcq-4',
+        prompt: `What does this C# 12 code print?\n\n\`\`\`csharp\nusing System;\n\nclass Circle(double radius)\n{\n    public double Area() => Math.PI * radius * radius;\n}\n\nConsole.WriteLine(new Circle(5).Area().ToString("F2"));\n\`\`\``,
+        options: ['25.00', '78.54', '31.42', 'Compile error: class cannot have parameters'],
+        correctIndex: 1,
+        explanation: 'C# 12 added primary constructors on classes: `Circle(double radius)` is a constructor parameter that is in scope throughout the body. `Math.PI * 5 * 5` ≈ 78.5398 and `"F2"` formats with two decimal places → `78.54`. Primary constructor parameters are NOT auto-properties on a `class` (they are on `record`s) — they are captured fields used by instance members.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-2-mcq-5',
+        prompt: 'Which combination correctly enforces "the base class cannot be instantiated, derived classes MUST provide an implementation"?',
+        options: [
+          '`virtual` method on a `sealed` base class',
+          '`abstract` method on an `abstract` base class',
+          '`override` method on a regular class',
+          '`new` method that hides a base method',
+        ],
+        correctIndex: 1,
+        explanation: 'An `abstract` class cannot be instantiated directly. An `abstract` method has no body and forces non-abstract derived classes to provide an `override`. `sealed` does the opposite (prevents inheritance). `new` hides without polymorphism. The pair `abstract class` + `abstract method` is the canonical way to express a required extension point.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-2-mcq-6',
+        prompt: `Which line is the bug?\n\n\`\`\`csharp\nusing System;\nusing System.Collections.Generic;\n\nstruct Point\n{\n    public int X;\n    public int Y;\n}\n\nvar p = new Point { X = 1, Y = 2 };\nvar list = new List<Point> { p };\nlist[0].X = 99;                              // line A\nConsole.WriteLine(list[0].X);                // line B\n\`\`\``,
+        options: [
+          'Line A compiles and updates the list — the program prints 99',
+          'Line A is a compile error because `list[0]` returns a copy of the struct, not a reference',
+          'Line B throws at runtime',
+          'Line A and Line B both compile and print 1',
+        ],
+        correctIndex: 1,
+        explanation: 'For value types stored in a `List<T>`, the indexer returns a *copy*. Mutating a field on that copy is meaningless, so the compiler emits CS1612 ("Cannot modify the return value of List<Point>.this[int] because it is not a variable"). With `class Point`, line A would compile and the program would print `99`. This is one of the classic gotchas of mutable structs — prefer immutable structs or use a record/class.',
       },
     ],
   },
@@ -156,7 +200,7 @@ Console.WriteLine(new Circle(5).Area().ToString("F2"));`,
     level: 3,
     title: 'Collections, LINQ, Generics & Async',
     timeEstimate: '10-12 hours',
-    intro: `This phase covers the pillars of practical day-to-day C# development. You will work with the generic collections in \`System.Collections.Generic\` (\`List<T>\`, \`Dictionary<TKey,TValue>\`, \`HashSet<T>\`), write LINQ queries in both method-chain and query-expression syntax, and create your own generic classes and methods. Exception handling with \`try/catch/finally\` and custom exception types is also covered here.\n\nThe phase closes with an introduction to the \`async\`/\`await\` model and \`Task<T>\` — C#'s high-level abstraction over asynchronous I/O — so that subsequent phases can build on it naturally.`,
+    intro: `This phase covers the pillars of practical day-to-day C# development. You will work with generic collections in \`System.Collections.Generic\` (\`List<T>\`, \`Dictionary<TKey,TValue>\`, \`HashSet<T>\`), write LINQ queries in both method-chain and query-expression syntax, and create your own generic classes and methods. Exception handling with \`try/catch/finally\` and custom exception types is also covered.\n\nThe phase closes with an introduction to \`async\`/\`await\` and \`Task<T>\` — C#'s high-level abstraction over asynchronous I/O. The deliverable is a runnable word-frequency CLI you build and test locally.`,
     topics: [
       {
         label: 'Generic collections overview',
@@ -184,7 +228,7 @@ Console.WriteLine(new Circle(5).Area().ToString("F2"));`,
       },
     ],
     deliverable:
-      'Build a word-frequency analyser: read a text file asynchronously, split into words, use LINQ to produce a `Dictionary<string, int>` of frequencies, then print the top 10 words sorted by count descending. Wrap file-not-found in a custom `FileProcessingException`.',
+      'Build locally: a `wordcount` console app that reads a UTF-8 text file asynchronously with `File.ReadAllLinesAsync`, uses LINQ to compute a `Dictionary<string,int>` of word frequencies, prints the top 10 sorted descending, and wraps `FileNotFoundException` in a custom `FileProcessingException`.',
     checks: [
       {
         kind: 'mcq',
@@ -192,7 +236,7 @@ Console.WriteLine(new Circle(5).Area().ToString("F2"));`,
         prompt: 'Which LINQ method returns the first element satisfying a predicate, throwing if none is found?',
         options: ['FirstOrDefault', 'SingleOrDefault', 'First', 'Find'],
         correctIndex: 2,
-        explanation: '`First(predicate)` throws `InvalidOperationException` when no match exists. `FirstOrDefault` returns `null`/default instead.',
+        explanation: '`First(predicate)` throws `InvalidOperationException` when no match exists. `FirstOrDefault` returns `default(T)` (null for reference types) instead. `Single`/`SingleOrDefault` enforce exactly-one and throw if more than one matches. `Find` is a List<T>-only method (not LINQ) that returns default if missing.',
       },
       {
         kind: 'mcq',
@@ -205,20 +249,44 @@ Console.WriteLine(new Circle(5).Area().ToString("F2"));`,
           'Converts a Task to a synchronous result',
         ],
         correctIndex: 1,
-        explanation: '`await` suspends the enclosing async method without blocking the underlying thread. The runtime resumes execution after the awaited task finishes.',
+        explanation: '`await` registers a continuation and returns control to the caller without blocking the thread. The runtime resumes the method after the awaited task completes. Calling `.Result` or `.Wait()` would block the thread — and can deadlock in UI/ASP.NET contexts.',
       },
       {
-        kind: 'code',
-        id: 'csharp-3-code-1',
-        prompt: 'Use LINQ to filter a list of integers, keeping only even numbers, double each, then print them space-separated on one line.',
-        starterCode: `using System;
-using System.Linq;
-
-int[] numbers = { 1, 2, 3, 4, 5, 6, 7, 8 };
-var result = numbers.Where(n => n % 2 == 0).Select(n => n * 2);
-Console.WriteLine(string.Join(" ", result));`,
-        expectedOutput: '4 8 12 16',
-        hint: 'Chain `.Where()` and `.Select()` before passing to `string.Join`.',
+        kind: 'mcq',
+        id: 'csharp-3-mcq-3',
+        prompt: `What does this LINQ query print?\n\n\`\`\`csharp\nusing System;\nusing System.Linq;\n\nint[] numbers = [1, 2, 3, 4, 5, 6, 7, 8];\nvar result = numbers.Where(n => n % 2 == 0).Select(n => n * 2);\nConsole.WriteLine(string.Join(" ", result));\n\`\`\``,
+        options: ['2 4 6 8', '4 8 12 16', '1 3 5 7', '4 8 12 16 20 24 28 32'],
+        correctIndex: 1,
+        explanation: '`Where(n => n % 2 == 0)` keeps the even numbers `{2,4,6,8}`. `Select(n => n * 2)` doubles each → `{4,8,12,16}`. `string.Join(" ", …)` joins with single spaces. Note the new C# 12 collection-expression literal `[1, 2, …]` which compiles to an `int[]`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-3-mcq-4',
+        prompt: `What does this program print (each line on its own row)?\n\n\`\`\`csharp\nusing System;\nusing System.Linq;\n\nstring[] words = ["apple", "banana", "avocado", "blueberry", "cherry"];\nvar grouped = words.GroupBy(w => w[0]).OrderBy(g => g.Key);\nforeach (var g in grouped)\n    Console.WriteLine($"{g.Key}:{g.Count()}");\n\`\`\``,
+        options: [
+          'a:2 then b:2 then c:1',
+          'a:3 then b:2 then c:1',
+          'apple:1 then banana:1 then avocado:1 then blueberry:1 then cherry:1',
+          'a:2 b:2 c:1 (single line)',
+        ],
+        correctIndex: 0,
+        explanation: '`GroupBy(w => w[0])` groups by the first character. `apple`/`avocado` → `a` (2), `banana`/`blueberry` → `b` (2), `cherry` → `c` (1). `OrderBy(g => g.Key)` sorts alphabetically. `Console.WriteLine` writes one line per iteration. So three lines: `a:2`, `b:2`, `c:1`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-3-mcq-5',
+        prompt: `What is the result of awaiting this method?\n\n\`\`\`csharp\nusing System;\nusing System.Threading.Tasks;\n\nasync Task<int> ComputeAsync()\n{\n    var a = Task.FromResult(10);\n    var b = Task.FromResult(32);\n    return await a + await b;\n}\n\nConsole.WriteLine(await ComputeAsync());\n\`\`\``,
+        options: ['10', '32', '42', 'Compile error: cannot await in expression position'],
+        correctIndex: 2,
+        explanation: '`await` is an expression and may appear inside larger expressions. `await a` yields 10, `await b` yields 32, the sum is 42. Top-level statements may use `await` directly when the entry point is async. `Task.FromResult` creates an already-completed task with a known value — useful for stubbing.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-3-mcq-6',
+        prompt: `Which generic constraint will the compiler accept on this method so that \`a.CompareTo(b)\` resolves?\n\n\`\`\`csharp\nstatic T Max<T>(T a, T b) where T : ??? => a.CompareTo(b) > 0 ? a : b;\n\`\`\``,
+        options: ['where T : class', 'where T : IComparable<T>', 'where T : new()', 'where T : struct'],
+        correctIndex: 1,
+        explanation: '`IComparable<T>` exposes `CompareTo(T)`. Without the constraint the compiler does not know `T` has a `CompareTo` method. `class`/`struct` only restrict reference vs value categories, and `new()` requires a parameterless constructor — none of these expose ordering. (Note: the `>` operator itself is not callable on generic `T` without the C# 11 static abstract `INumber<T>` constraint.)',
       },
     ],
   },
@@ -228,7 +296,7 @@ Console.WriteLine(string.Join(" ", result));`,
     level: 4,
     title: 'Modern C# — Records, Patterns & Minimal APIs',
     timeEstimate: '10-12 hours',
-    intro: `C# 8 through 12 introduced a wave of syntax improvements that make code more expressive and safer. In this phase you will master nullable reference types (NRTs) and the null-forgiving operator, positional \`record\` types with value equality and non-destructive mutation via \`with\`, \`init\`-only properties, file-scoped namespaces, and the rich pattern-matching expressions (\`switch\` expression, positional patterns, list patterns).\n\nYou will also write your first unit tests with xUnit and build a minimal ASP.NET Core API — a few lines that expose a JSON endpoint — to see how the platform integrates with modern C# idioms.`,
+    intro: `C# 8 through 12 introduced a wave of syntax improvements that make code more expressive and safer. In this phase you will master nullable reference types (NRTs), positional \`record\` types with value equality and \`with\`-expressions, \`init\`-only properties, file-scoped namespaces, and pattern-matching expressions (\`switch\` expression, property/positional/list patterns).\n\nYou will also write xUnit tests and stand up a minimal ASP.NET Core API. The deliverable is a real local \`todo\` CLI that flips into HTTP server mode via a sub-command.`,
     topics: [
       {
         label: 'Nullable reference types',
@@ -256,7 +324,7 @@ Console.WriteLine(string.Join(" ", result));`,
       },
     ],
     deliverable:
-      'Create a minimal ASP.NET Core API with two endpoints: `GET /todos` (returns a list of `record Todo(int Id, string Title, bool Done)`) and `POST /todos` (adds one). Write xUnit tests for a pure helper that validates a Todo title (no empty strings, max 120 chars).',
+      'Build locally: a `todo` CLI with JSON persistence using `System.Text.Json`. The CLI accepts `add`, `list`, `done` subcommands. A `todo serve` subcommand starts a minimal ASP.NET Core API exposing `GET /todos` and `POST /todos`. Cover a `TitleValidator` helper with xUnit tests (empty rejection, 120-char cap).',
     checks: [
       {
         kind: 'mcq',
@@ -266,34 +334,55 @@ Console.WriteLine(string.Join(" ", result));`,
           'Setting the property at any time',
           'Setting the property only during object initialization (constructor or object initializer)',
           'Setting the property only from derived classes',
-          'Making the property readonly at compile time',
+          'Making the property thread-safe automatically',
         ],
         correctIndex: 1,
-        explanation: '`init` restricts mutation to the object-initializer phase, enabling immutable-by-default objects while still supporting concise initializer syntax.',
+        explanation: '`init` restricts mutation to the object-initializer phase. After construction, the property is effectively read-only. This enables immutable-by-default objects while still permitting concise `new Foo { X = 1, Y = 2 }` initialization. `init` underpins `record` non-destructive mutation.',
       },
       {
         kind: 'mcq',
         id: 'csharp-4-mcq-2',
-        prompt: 'Given `record Point(int X, int Y);`, which expression creates a new record that is identical to `p` except `X` is 10?',
+        prompt: 'Given `record Point(int X, int Y);`, which expression creates a new record identical to `p` except `X` is 10?',
         options: ['p.X = 10', 'p with { X = 10 }', 'new Point(10, p.Y)', 'p.Clone(X: 10)'],
         correctIndex: 1,
-        explanation: '`with` expressions perform non-destructive mutation on records — a new instance is created with the specified properties replaced.',
+        explanation: '`with` expressions perform non-destructive mutation on records — a copy is created with the specified properties replaced. `new Point(10, p.Y)` also works but is verbose and breaks when the record adds fields; `p.X = 10` fails because record positional properties are `init`-only.',
       },
       {
-        kind: 'code',
-        id: 'csharp-4-code-1',
-        prompt: 'Declare a positional record `record Shape(string Kind, double Size)`, then use a `switch` expression to return "big" if Size > 100, otherwise "small". Print the result for `new Shape("circle", 150)`.',
-        starterCode: `record Shape(string Kind, double Size);
-
-Shape s = new Shape("circle", 150);
-string label = s switch
-{
-    { Size: > 100 } => "big",
-    _ => "small"
-};
-Console.WriteLine(label);`,
-        expectedOutput: 'big',
-        hint: 'Property patterns inside a `switch` expression use `{ PropertyName: pattern }` syntax.',
+        kind: 'mcq',
+        id: 'csharp-4-mcq-3',
+        prompt: `What does this program print?\n\n\`\`\`csharp\nusing System;\n\nrecord Shape(string Kind, double Size);\n\nShape s = new("circle", 150);\nstring label = s switch\n{\n    { Size: > 100 } => "big",\n    { Size: > 10 } => "medium",\n    _ => "small"\n};\nConsole.WriteLine(label);\n\`\`\``,
+        options: ['small', 'medium', 'big', 'Compile error: switch expression is not exhaustive'],
+        correctIndex: 2,
+        explanation: 'The `switch` expression evaluates arms top-to-bottom. The first matching arm wins. `{ Size: > 100 }` matches because `Size == 150 > 100`, so `label = "big"`. The `_` discard pattern guarantees exhaustiveness so the compiler is satisfied.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-4-mcq-4',
+        prompt: `Which line(s) emit a nullable-reference-type warning when \`#nullable enable\` is in effect?\n\n\`\`\`csharp\n#nullable enable\nusing System;\n\nstring? maybe = null;          // line 1\nstring definite = maybe;       // line 2\nConsole.WriteLine(definite.Length);  // line 3\n\`\`\``,
+        options: ['line 1 only', 'line 2 only', 'lines 2 and 3', 'line 3 only'],
+        correctIndex: 2,
+        explanation: 'Line 1 is fine — `string?` opts in to null. Line 2 assigns a possibly-null value to a non-nullable target → CS8600. Line 3 dereferences a value the compiler now considers possibly-null → CS8602. To fix, null-check or use `maybe!` if you can prove non-null. Line 1 alone never produces a warning.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-4-mcq-5',
+        prompt: `What does this list-pattern match print?\n\n\`\`\`csharp\nusing System;\n\nint[] xs = [1, 2, 3, 4];\nstring desc = xs switch\n{\n    [] => "empty",\n    [var only] => $"one: {only}",\n    [_, _, ..] => "two or more",\n};\nConsole.WriteLine(desc);\n\`\`\``,
+        options: ['empty', 'one: 1', 'two or more', 'Compile error: list patterns require IList<T>'],
+        correctIndex: 2,
+        explanation: 'C# 11 list patterns allow matching on the structure of a collection. `[]` is empty, `[var only]` binds the single element, `[_, _, ..]` requires at least two elements where `..` is the rest (slice). The array has four elements → matches the third arm.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-4-mcq-6',
+        prompt: 'Records and classes differ in several ways. Which statement is FALSE?',
+        options: [
+          'Records provide value-based equality by default; classes use reference equality unless you override `Equals`',
+          'Records can be declared with positional syntax `record Foo(int X)` that auto-generates init-only properties',
+          'Records support `with` expressions for non-destructive mutation; classes do not (without explicit clone code)',
+          'Records are stored on the stack like structs; classes are stored on the heap',
+        ],
+        correctIndex: 3,
+        explanation: 'Records are reference types by default and live on the heap exactly like classes. They differ only in *behaviour* (equality, ToString, with-expression support, primary constructor semantics). For stack-allocated value semantics use `record struct`. The other three statements are accurate.',
       },
     ],
   },
@@ -303,7 +392,7 @@ Console.WriteLine(label);`,
     level: 5,
     title: 'Advanced .NET — Spans, Generics & IAsyncEnumerable',
     timeEstimate: '14-16 hours',
-    intro: `This phase moves into APIs that unlock low-allocation, high-throughput code. \`Span<T>\` and \`ReadOnlySpan<T>\` let you slice arrays and stack memory without heap allocations. \`ArrayPool<T>\` is the standard way to rent and return reusable buffers. You will also explore \`IAsyncEnumerable<T>\` for streaming async sequences and get an introduction to Roslyn source generators — compile-time code generation that eliminates reflection overhead.\n\nThese tools are widely used in frameworks like ASP.NET Core and System.Text.Json. Understanding them helps you write code that performs well even under load.`,
+    intro: `This phase moves into APIs that unlock low-allocation, high-throughput code. \`Span<T>\` and \`ReadOnlySpan<T>\` let you slice arrays and stack memory without heap allocations. \`ArrayPool<T>\` lets you rent and return reusable buffers. You will also explore \`IAsyncEnumerable<T>\` for streaming async sequences and meet incremental source generators — compile-time code generation that replaces reflection.\n\nThese tools are everywhere in ASP.NET Core and System.Text.Json. The deliverable is a CSV parser CLI built and run locally with \`dotnet run\` that exposes a streaming async API.`,
     topics: [
       {
         label: 'Span<T> and Memory<T>',
@@ -327,7 +416,7 @@ Console.WriteLine(label);`,
       },
     ],
     deliverable:
-      'Write a CSV parser that uses `ReadOnlySpan<char>` to parse lines without allocating substrings. Expose an `IAsyncEnumerable<string[]>` that reads lines asynchronously from a `StreamReader`. Benchmark allocations with dotnet-counters or a simple stopwatch comparison vs a naive `string.Split` version.',
+      'Build locally: a `csvparse` CLI that streams rows from a CSV file via `IAsyncEnumerable<string[]>`. The parser walks the line as `ReadOnlySpan<char>` (no substring allocations) and rents reusable buffers from `ArrayPool<char>`. Add a `--bench` flag that compares throughput vs a naive `string.Split` baseline.',
     checks: [
       {
         kind: 'mcq',
@@ -336,11 +425,11 @@ Console.WriteLine(label);`,
         options: [
           'It is a value type and value types cannot be fields',
           'It is a ref struct and ref structs may only live on the stack',
-          'It requires unsafe context',
+          'It requires an unsafe context',
           'It does not implement IDisposable',
         ],
         correctIndex: 1,
-        explanation: '`Span<T>` is a `ref struct`. The compiler forbids ref structs from appearing on the heap (e.g., as class fields, boxed, or captured by lambdas) to guarantee their stack lifetime.',
+        explanation: '`Span<T>` is a `ref struct`. Ref structs cannot be boxed, captured by lambdas, used as type arguments, or stored on the heap (which includes class fields). This guarantees the underlying memory (stack frame, fixed array, etc.) outlives every reference into it.',
       },
       {
         kind: 'mcq',
@@ -348,22 +437,49 @@ Console.WriteLine(label);`,
         prompt: 'Which generic constraint ensures a type parameter has a public parameterless constructor?',
         options: ['where T : struct', 'where T : new()', 'where T : class', 'where T : default'],
         correctIndex: 1,
-        explanation: '`new()` constrains T to types that have a public parameterless constructor, allowing `new T()` inside the generic body.',
+        explanation: '`new()` constrains T to types with a public parameterless constructor, enabling `new T()` inside the generic body. `struct` constraint also implies `new()` because all structs have one. `class` only restricts to reference types. `default` is a relatively new (C# 9) constraint that means "T may be any type, including nullable".',
       },
       {
-        kind: 'code',
-        id: 'csharp-5-code-1',
-        prompt: 'Use `ReadOnlySpan<char>` to count the number of comma characters in a string without allocating any substrings.',
-        starterCode: `using System;
-
-string csv = "alpha,beta,gamma,delta";
-ReadOnlySpan<char> span = csv.AsSpan();
-int count = 0;
-foreach (char c in span)
-    if (c == ',') count++;
-Console.WriteLine(count);`,
-        expectedOutput: '3',
-        hint: '`string.AsSpan()` returns a `ReadOnlySpan<char>` that can be iterated without heap allocation.',
+        kind: 'mcq',
+        id: 'csharp-5-mcq-3',
+        prompt: `What does this program print?\n\n\`\`\`csharp\nusing System;\n\nstring csv = "alpha,beta,gamma,delta";\nReadOnlySpan<char> span = csv.AsSpan();\nint count = 0;\nforeach (char c in span)\n    if (c == ',') count++;\nConsole.WriteLine(count);\n\`\`\``,
+        options: ['3', '4', '5', '0'],
+        correctIndex: 0,
+        explanation: '`string.AsSpan()` returns a `ReadOnlySpan<char>` over the original string memory — zero allocation. The string contains three commas (between alpha/beta, beta/gamma, gamma/delta). The foreach iterates char-by-char and counts them.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-5-mcq-4',
+        prompt: `What does this async-stream program print first when consumed lazily?\n\n\`\`\`csharp\nusing System;\nusing System.Collections.Generic;\nusing System.Threading.Tasks;\n\nstatic async IAsyncEnumerable<int> CountAsync()\n{\n    for (int i = 1; i <= 3; i++)\n    {\n        Console.WriteLine($"yield {i}");\n        yield return i;\n        await Task.Yield();\n    }\n}\n\nawait foreach (var n in CountAsync())\n{\n    Console.WriteLine($"consume {n}");\n    if (n == 2) break;\n}\n\`\`\``,
+        options: [
+          'yield 1, yield 2, yield 3, then consume 1, consume 2',
+          'yield 1, consume 1, yield 2, consume 2 (then break)',
+          'consume 1, consume 2, consume 3',
+          'yield 1, consume 1, yield 2, consume 2, yield 3, consume 3',
+        ],
+        correctIndex: 1,
+        explanation: 'Async iterators are *pull-based*: the producer yields one value, the consumer prints it, then asks for the next. The loop breaks after `n == 2`, so `yield 3` never executes. Output interleaves yield/consume pairs and stops at the break.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-5-mcq-5',
+        prompt: `Which line is INCORRECT?\n\n\`\`\`csharp\nusing System;\nusing System.Buffers;\n\nchar[] buf = ArrayPool<char>.Shared.Rent(1024);  // line A\nSpan<char> span = buf.AsSpan(0, 100);            // line B\nbuf = null;                                       // line C\nArrayPool<char>.Shared.Return(buf);               // line D\n\`\`\``,
+        options: ['line A', 'line B', 'line C', 'line D'],
+        correctIndex: 3,
+        explanation: 'After `buf = null` (line C), line D passes `null` to `Return`, throwing `ArgumentNullException`. The correct pattern is to keep the array reference, return it (often in a `finally` block), and only THEN drop the reference. Lines A and B are idiomatic. Line C alone is harmless but invalidates line D.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-5-mcq-6',
+        prompt: 'A method takes `Span<byte>` and a method takes `Memory<byte>`. Which statement is correct?',
+        options: [
+          'They are interchangeable — every `Span<byte>` is convertible to `Memory<byte>` and vice versa',
+          '`Span<byte>` is for synchronous, stack-bound APIs; `Memory<byte>` is heap-storable and can survive async boundaries',
+          '`Memory<byte>` is a subtype of `Span<byte>`',
+          '`Span<byte>` always owns its buffer; `Memory<byte>` never does',
+        ],
+        correctIndex: 1,
+        explanation: '`Span<T>` is a `ref struct` (stack-only, cannot cross `await`). `Memory<T>` is a regular struct that holds a reference plus offset/length — it can live on the heap and be stored as a field, so it works across async boundaries. Inside a synchronous method, call `memory.Span` to convert. Neither owns its buffer; both are views.',
       },
     ],
   },
@@ -373,7 +489,7 @@ Console.WriteLine(count);`,
     level: 6,
     title: 'Performance, Advanced Async & Thread-Safe Patterns',
     timeEstimate: '16-18 hours',
-    intro: `Writing fast C# means understanding where time goes. BenchmarkDotNet provides the gold standard for micro-benchmarks with statistical rigour and hardware-counter support. Profiling tools (dotnet-trace, dotnet-counters, Visual Studio Profiler) show you the real bottlenecks in running applications.\n\nOn the async side, \`ValueTask<T>\` avoids the \`Task\` allocation when the hot path completes synchronously — critical in tight server loops. \`System.Threading.Channels.Channel<T>\` is the idiomatic producer-consumer pipeline primitive. You will also implement common thread-safe patterns: double-checked locking, \`Interlocked\` operations, \`ConcurrentDictionary\`, and the \`lock\` statement vs \`SemaphoreSlim\` for async contexts.`,
+    intro: `Writing fast C# means understanding where time and allocations go. BenchmarkDotNet is the de facto micro-benchmark harness with statistical rigour and hardware-counter support. Profiling tools (\`dotnet-trace\`, \`dotnet-counters\`, Visual Studio Profiler) reveal real bottlenecks in running services.\n\nOn the async side, \`ValueTask<T>\` avoids the \`Task\` allocation on the synchronous hot path. \`System.Threading.Channels.Channel<T>\` is the idiomatic producer-consumer pipeline primitive. You will also study thread-safe patterns: \`Interlocked\`, \`ConcurrentDictionary\`, and why \`lock\` cannot guard \`await\`. The deliverable is a runnable producer/consumer pipeline CLI with BenchmarkDotNet integration.`,
     topics: [
       {
         label: 'BenchmarkDotNet — getting started',
@@ -397,7 +513,7 @@ Console.WriteLine(count);`,
       },
     ],
     deliverable:
-      'Implement a bounded producer-consumer pipeline using `Channel<T>`. One producer generates 1000 integers; two consumer tasks read from the channel and accumulate results into a `ConcurrentBag<int>`. Verify the total with an assertion. Add a BenchmarkDotNet benchmark comparing `Channel<T>` throughput vs `ConcurrentQueue<T>` with manual `SpinWait`.',
+      'Build locally: a `pipeline-bench` CLI that runs a bounded `Channel<int>` producer/consumer (1 producer × 1000 messages, 2 consumers accumulating into a `ConcurrentBag<int>`). Verify the sum invariant, then publish BenchmarkDotNet comparisons against a `ConcurrentQueue<int>` + `SpinWait` baseline.',
     checks: [
       {
         kind: 'mcq',
@@ -410,41 +526,67 @@ Console.WriteLine(count);`,
           'When the method has multiple await points',
         ],
         correctIndex: 1,
-        explanation: '`ValueTask<T>` avoids a heap allocation on the synchronous fast path. However, if the task is frequently awaited more than once or stored, `Task<T>` is safer and simpler.',
+        explanation: '`ValueTask<T>` avoids a heap allocation on the synchronous fast path (e.g., cached reads). However it has consumption rules: a `ValueTask` instance must only be awaited once and must not be stored unless via `.AsTask()`. For multi-await/long-lived async, `Task<T>` is simpler and safer.',
       },
       {
         kind: 'mcq',
         id: 'csharp-6-mcq-2',
-        prompt: 'Why is `lock` unsuitable for protecting an `await` expression inside the guarded block?',
+        prompt: 'What does the C# compiler do when it sees `await` inside the body of a `lock` statement?',
         options: [
-          'The compiler forbids await inside a lock statement',
-          'The thread that releases the lock after resumption may differ from the thread that acquired it, violating the lock contract',
-          'Lock only works with value types',
-          'await cannot be used with synchronisation primitives',
+          'Allows it but emits a runtime warning',
+          'Emits compile error CS1996 — await cannot appear inside a lock statement',
+          'Silently rewrites to SemaphoreSlim',
+          'Accepts it without comment',
         ],
         correctIndex: 1,
-        explanation: 'After resuming from `await`, the continuation may run on a different thread. The `lock` statement ties acquisition and release to a single thread — a mismatch that can deadlock. Use `SemaphoreSlim.WaitAsync` instead.',
+        explanation: 'The compiler emits CS1996 ("Cannot await in the body of a lock statement"). The underlying reason is a threading mismatch — after resumption the continuation may run on a different thread, and `lock` (Monitor.Enter/Exit) is thread-affine. Use `SemaphoreSlim.WaitAsync` for async-friendly mutual exclusion.',
       },
       {
-        kind: 'code',
-        id: 'csharp-6-code-1',
-        prompt: 'Use `Interlocked.Increment` to safely count iterations across simulated concurrent increments, then print the result.',
-        starterCode: `using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-int counter = 0;
-Task[] tasks = new Task[10];
-for (int i = 0; i < 10; i++)
-    tasks[i] = Task.Run(() =>
-    {
-        for (int j = 0; j < 100; j++)
-            Interlocked.Increment(ref counter);
-    });
-Task.WaitAll(tasks);
-Console.WriteLine(counter);`,
-        expectedOutput: '1000',
-        hint: '`Interlocked.Increment` performs atomic increment — no race condition regardless of thread interleaving.',
+        kind: 'mcq',
+        id: 'csharp-6-mcq-3',
+        prompt: `What is the printed result?\n\n\`\`\`csharp\nusing System;\nusing System.Threading;\nusing System.Threading.Tasks;\n\nint counter = 0;\nTask[] tasks = new Task[10];\nfor (int i = 0; i < 10; i++)\n    tasks[i] = Task.Run(() =>\n    {\n        for (int j = 0; j < 100; j++)\n            Interlocked.Increment(ref counter);\n    });\nTask.WaitAll(tasks);\nConsole.WriteLine(counter);\n\`\`\``,
+        options: ['Always less than 1000 due to a race condition', 'Exactly 1000', 'Exactly 100', 'Non-deterministic — could be anywhere from 1 to 1000'],
+        correctIndex: 1,
+        explanation: '`Interlocked.Increment` is an atomic compare-and-swap loop, so concurrent increments do not lose updates. 10 tasks × 100 increments = exactly 1000 every run. Using `counter++` instead would yield a value ≤ 1000 because the read-modify-write is not atomic.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-6-mcq-4',
+        prompt: `Which line is the bug in this Channel<T> producer?\n\n\`\`\`csharp\nusing System.Threading.Channels;\n\nvar channel = Channel.CreateBounded<int>(10);      // line A\nfor (int i = 0; i < 100; i++)\n    channel.Writer.TryWrite(i);                     // line B\nchannel.Writer.Complete();                          // line C\nawait foreach (var item in channel.Reader.ReadAllAsync())\n    Console.WriteLine(item);                        // line D\n\`\`\``,
+        options: [
+          'Line A — bounded channels are not allowed',
+          'Line B — `TryWrite` silently drops items when the channel is full; should use `WriteAsync` to back-pressure',
+          'Line C — must not call Complete before reading',
+          'Line D — ReadAllAsync requires CancellationToken',
+        ],
+        correctIndex: 1,
+        explanation: '`Channel.CreateBounded<int>(10)` caps the channel at 10 items. `TryWrite` returns `false` (and discards the value!) when full. With 100 items and no reader yet, you lose most of them. The correct pattern is `await channel.Writer.WriteAsync(i)` which suspends the producer until space is available — true back-pressure.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-6-mcq-5',
+        prompt: 'A BenchmarkDotNet report shows method A: `Mean = 150 ns, Allocated = 32 B`. Method B: `Mean = 220 ns, Allocated = 0 B`. Under sustained load (millions of calls/s), which is generally better and why?',
+        options: [
+          'Method A — it is faster, allocations are negligible',
+          'Method B — zero allocations avoid GC pressure that becomes the bottleneck at scale, often making the slower wall-clock method faster overall',
+          'They are equivalent — only `Mean` matters',
+          'Method A — `Allocated` is a benchmark artefact and is misleading',
+        ],
+        correctIndex: 1,
+        explanation: 'At million-calls/s scale, even 32 bytes per call becomes tens of MB/s of allocation, triggering frequent gen-0 GCs that pause every thread and pollute CPU caches. A slightly slower zero-allocation path often wins under steady-state load. This is why `Span<T>`, struct enumerators, and `ArrayPool` exist in hot paths.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-6-mcq-6',
+        prompt: 'Which API would you choose to swap two integers atomically, returning the *original* value of the location?',
+        options: [
+          '`Interlocked.CompareExchange(ref a, b, expected)`',
+          '`Interlocked.Exchange(ref a, b)`',
+          '`Interlocked.Add(ref a, b)`',
+          '`Volatile.Write(ref a, b)`',
+        ],
+        correctIndex: 1,
+        explanation: '`Interlocked.Exchange(ref location, value)` atomically writes `value` to `location` and returns the previous content. `CompareExchange` is conditional (writes only if current value matches `expected`). `Add` increments. `Volatile.Write` is just a memory barrier and returns void.',
       },
     ],
   },
@@ -454,7 +596,7 @@ Console.WriteLine(counter);`,
     level: 7,
     title: 'Entity Framework Core & Dependency Injection',
     timeEstimate: '18-20 hours',
-    intro: `Entity Framework Core is the standard ORM for .NET. Beyond basic CRUD you will explore compiled queries (eliminating per-call expression-tree compilation), interceptors (auditing, soft-delete), the change tracker (tracking vs no-tracking queries, \`AsNoTracking()\`), and convention configuration via \`IEntityTypeConfiguration<T>\`. You will also learn how to write and run migrations in CI/CD pipelines.\n\nDependency injection is first-class in .NET. This phase covers the built-in \`Microsoft.Extensions.DependencyInjection\` container — registering services (\`AddScoped\`, \`AddTransient\`, \`AddSingleton\`), constructor injection, the options pattern (\`IOptions<T>\`), and how to test services by substituting fakes.`,
+    intro: `Entity Framework Core is the standard ORM for .NET. Beyond basic CRUD you will explore compiled queries (eliminating per-call expression-tree compilation), interceptors (audit/soft-delete), the change tracker (\`AsNoTracking\`), and convention configuration via \`IEntityTypeConfiguration<T>\`. You will also run migrations as part of a CLI workflow.\n\nDependency injection is first-class in .NET. This phase covers \`Microsoft.Extensions.DependencyInjection\` — \`AddScoped\`/\`AddTransient\`/\`AddSingleton\`, constructor injection, the options pattern (\`IOptions<T>\`), and how to swap fakes in tests. The deliverable is a local SQLite-backed bookmarks API.`,
     topics: [
       {
         label: 'EF Core getting started',
@@ -482,7 +624,7 @@ Console.WriteLine(counter);`,
       },
     ],
     deliverable:
-      'Build a SQLite-backed blog API using EF Core. Implement a `SoftDeleteInterceptor` that sets a `DeletedAt` timestamp instead of removing rows. Register `BlogService` via DI with `AddScoped`. Write a compiled query for fetching posts by author. Cover the service layer with xUnit tests using an in-memory SQLite context.',
+      'Build locally: a `bookmarks` API backed by EF Core + SQLite with full CRUD, a `SlowQueryInterceptor : DbCommandInterceptor` that logs commands exceeding 50ms, an `IBookmarkService` registered `AddScoped`, an `EF.CompileQuery` for "find by tag", and integration tests using `WebApplicationFactory<Program>` against an in-memory SQLite connection.',
     checks: [
       {
         kind: 'mcq',
@@ -495,36 +637,62 @@ Console.WriteLine(counter);`,
           'It enables query splitting for collections',
         ],
         correctIndex: 1,
-        explanation: 'For read-only workloads, skipping change tracking avoids allocating identity-map entries and snapshot copies, improving throughput and reducing GC pressure.',
+        explanation: 'For read-only workloads, skipping change tracking avoids allocating identity-map entries and snapshot copies, dramatically reducing GC pressure and CPU. The trade-off is that the returned entities are detached — calling `SaveChanges` will not persist mutations to them.',
       },
       {
         kind: 'mcq',
         id: 'csharp-7-mcq-2',
-        prompt: 'Which DI lifetime should a `DbContext` typically be registered with in an ASP.NET Core application?',
-        options: ['Singleton', 'Transient', 'Scoped', 'Pooled'],
+        prompt: 'Which DI lifetime should a `DbContext` typically use in an ASP.NET Core application?',
+        options: ['Singleton', 'Transient', 'Scoped', 'Pooled (replaces Scoped)'],
         correctIndex: 2,
-        explanation: '`DbContext` holds state (change tracker, open transaction) that must not be shared across requests. `Scoped` creates one instance per HTTP request — the correct lifetime. `AddDbContextPool` offers pooling at the infrastructure level while preserving the scoped contract.',
+        explanation: '`DbContext` holds state (change tracker, open transaction) that must not be shared across requests. `Scoped` creates one instance per HTTP request — the correct lifetime. `AddDbContextPool` adds pooling at the infrastructure level *while preserving* the Scoped contract — it is an optimisation, not a different lifetime.',
       },
       {
-        kind: 'code',
-        id: 'csharp-7-code-1',
-        prompt: 'Show a minimal compiled query that fetches a `User` by email from a `DbContext`. Paste the method signature and `EF.CompileQuery` call (no database required — just the pattern).',
-        starterCode: `using System.Linq;
-using Microsoft.EntityFrameworkCore;
-
-// Imagine: class AppDb : DbContext { public DbSet<User> Users => Set<User>(); }
-// record User(int Id, string Email);
-
-// Compiled query — evaluated once, reused many times
-static readonly Func<AppDb, string, User?> GetByEmail =
-    EF.CompileQuery((AppDb db, string email) =>
-        db.Users.SingleOrDefault(u => u.Email == email));
-
-// Usage:
-// User? user = GetByEmail(db, "alice@example.com");
-Console.WriteLine("Compiled query defined.");`,
-        expectedOutput: 'Compiled query defined.',
-        hint: '`EF.CompileQuery` accepts a lambda that will be compiled once to a SQL command. Call the returned delegate like a regular function.',
+        kind: 'mcq',
+        id: 'csharp-7-mcq-3',
+        prompt: 'Why does registering a `DbContext` as `Singleton` typically break an ASP.NET Core app?',
+        options: [
+          'Singleton services cannot be injected into controllers',
+          'A single DbContext instance shared by concurrent requests has shared mutable state (change tracker, connection) and will throw "A second operation was started on this context" or corrupt data',
+          'EF Core forbids the Singleton lifetime at registration time',
+          'Singleton DbContexts cannot be disposed',
+        ],
+        correctIndex: 1,
+        explanation: 'A `DbContext` is not thread-safe. Concurrent requests would race on the change tracker and on the single open connection. EF Core throws `InvalidOperationException: A second operation was started on this context before a previous operation completed`. Use `Scoped` (or `IDbContextFactory` for explicit construction).',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-7-mcq-4',
+        prompt: `Which compiled query pattern is correct?\n\n\`\`\`csharp\n// option A\nstatic readonly Func<AppDb, string, User?> GetByEmail =\n    EF.CompileQuery((AppDb db, string email) =>\n        db.Users.SingleOrDefault(u => u.Email == email));\n\n// option B\nstatic readonly Func<AppDb, string, User?> GetByEmail =\n    (db, email) => db.Users.SingleOrDefault(u => u.Email == email);\n\n// option C\nstatic readonly User? GetByEmail =\n    EF.CompileQuery((AppDb db, string email) =>\n        db.Users.SingleOrDefault(u => u.Email == email));\n\`\`\``,
+        options: ['Only option A', 'Only option B', 'Options A and B (both work)', 'Only option C'],
+        correctIndex: 0,
+        explanation: 'Option A is correct: `EF.CompileQuery` returns a delegate that takes the context and any query parameters. Option B is a regular lambda — it recompiles the expression tree on every call (no compile-query optimisation). Option C is invalid because `GetByEmail` cannot be a `User?` and equal a delegate at the same time.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-7-mcq-5',
+        prompt: 'A `SaveChangesInterceptor` on a `DbContext` is the cleanest place to implement which of the following?',
+        options: [
+          'Connection pooling',
+          'Automatic auditing — stamping `CreatedAt`/`UpdatedAt` on entities marked Added/Modified before the SQL is generated',
+          'Defining entity-to-table mappings',
+          'Throttling concurrent HTTP requests',
+        ],
+        correctIndex: 1,
+        explanation: '`SaveChangesInterceptor.SavingChanges` runs after the change tracker has detected modifications but before SQL execution — the perfect hook to mutate audit columns. Connection pooling lives in `Microsoft.Data.Sqlite`/SqlClient, mappings live in `IEntityTypeConfiguration<T>`, and HTTP throttling is unrelated to EF.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-7-mcq-6',
+        prompt: 'Given the registration `services.AddSingleton<IFoo, Foo>();` and `services.AddScoped<IBar, Bar>();` and `Foo` accepts `IBar` in its constructor — what happens at runtime?',
+        options: [
+          'Works fine — Singleton can consume Scoped',
+          'On the first resolution, the DI container throws `InvalidOperationException` (when validated on scope) because a Singleton would capture a Scoped instance for the app lifetime — a "captive dependency"',
+          'IBar is silently replaced with a fresh transient',
+          'Compile-time error',
+        ],
+        correctIndex: 1,
+        explanation: 'This is the classic *captive dependency* bug. A Singleton survives the whole app; the Scoped service it captures would outlive its intended scope — defeating the per-request lifetime contract. With scope validation enabled (default in Development), the container throws on resolution. Fix by injecting `IServiceScopeFactory` or making Foo Scoped.',
       },
     ],
   },
@@ -534,14 +702,14 @@ Console.WriteLine("Compiled query defined.");`,
     level: 8,
     title: 'Advanced ASP.NET Core — Middleware, Auth, gRPC & SignalR',
     timeEstimate: '20-22 hours',
-    intro: `ASP.NET Core's middleware pipeline is a chain of delegates where each component can inspect, short-circuit, or enrich the request/response. This phase walks through building custom middleware, writing \`IAuthorizationHandler\` implementations for policy-based auth, and leveraging \`ApiController\` conventions (automatic model validation, ProblemDetails responses) alongside minimal APIs.\n\nYou will also implement real-time features with SignalR and explore gRPC streaming (server-streaming and bidirectional). Understanding these primitives lets you build production-grade services rather than just toy demos.`,
+    intro: `ASP.NET Core's middleware pipeline is a chain of delegates where each component can inspect, short-circuit, or enrich the request/response. This phase walks through writing custom middleware, implementing \`IAuthorizationHandler\` for policy-based authorization, and leveraging \`[ApiController]\` conventions alongside minimal APIs.\n\nYou will also implement real-time features with SignalR and explore gRPC streaming (server-streaming and bidirectional). The deliverable is a runnable real-time notification service combining all four primitives.`,
     topics: [
       {
         label: 'ASP.NET Core middleware',
         url: 'https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/',
       },
       {
-        label: 'Policy-based authorisation',
+        label: 'Policy-based authorization',
         url: 'https://learn.microsoft.com/en-us/aspnet/core/security/authorization/policies',
       },
       {
@@ -562,7 +730,7 @@ Console.WriteLine("Compiled query defined.");`,
       },
     ],
     deliverable:
-      'Build a real-time notification service: an ASP.NET Core app with a custom request-timing middleware (logs elapsed ms to ILogger), a `[RequireRole("admin")]` policy protecting a management endpoint, a SignalR hub that broadcasts notifications to all connected clients, and a gRPC service with server-streaming for live event feeds.',
+      'Build locally: a `notifications` ASP.NET Core app combining (1) a `TimingMiddleware` that logs elapsed ms via `ILogger`, (2) a `RequireRolePolicy` protecting an `/admin` endpoint, (3) a SignalR `NotificationsHub` broadcasting to all clients, and (4) a gRPC `EventFeed` service with server-streaming. Wire everything into a single `Program.cs`.',
     checks: [
       {
         kind: 'mcq',
@@ -575,12 +743,12 @@ Console.WriteLine("Compiled query defined.");`,
           'Starts a new background thread for the next component',
         ],
         correctIndex: 1,
-        explanation: '`next(context)` invokes the next delegate in the middleware chain. Middleware can run code before and after this call, enabling both inbound and outbound processing.',
+        explanation: '`next(context)` invokes the next delegate in the middleware chain. Middleware can run code BEFORE and AFTER this call, enabling both inbound (request) and outbound (response) processing. Not calling `next` short-circuits the pipeline — useful for auth/blocking middleware.',
       },
       {
         kind: 'mcq',
         id: 'csharp-8-mcq-2',
-        prompt: 'What is the primary advantage of using `[ApiController]` on a controller class?',
+        prompt: 'What is the primary advantage of `[ApiController]` on a controller class?',
         options: [
           'Enables MVC view rendering',
           'Automatically returns HTTP 400 with ProblemDetails when model validation fails, without manual ModelState checks',
@@ -588,34 +756,59 @@ Console.WriteLine("Compiled query defined.");`,
           'Disables routing for the controller',
         ],
         correctIndex: 1,
-        explanation: '`[ApiController]` opts into several API-specific behaviours including automatic `ModelState` validation and `ProblemDetails` (RFC 9457) error responses — eliminating repetitive `if (!ModelState.IsValid)` checks.',
+        explanation: '`[ApiController]` opts into API conventions: automatic `ModelState` validation → 400 ProblemDetails (RFC 9457), implicit `[FromBody]`/`[FromQuery]` parameter binding, and attribute routing requirement. This eliminates repetitive `if (!ModelState.IsValid) return BadRequest()` patterns.',
       },
       {
-        kind: 'code',
-        id: 'csharp-8-code-1',
-        prompt: 'Write the skeleton of a custom ASP.NET Core middleware class that logs the elapsed time of each request to the console and calls the next middleware.',
-        starterCode: `using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-
-public class TimingMiddleware
-{
-    private readonly RequestDelegate _next;
-    public TimingMiddleware(RequestDelegate next) => _next = next;
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        var sw = Stopwatch.StartNew();
-        await _next(context);
-        sw.Stop();
-        Console.WriteLine($"{context.Request.Path} took {sw.ElapsedMilliseconds}ms");
-    }
-}
-// Registration (in Program.cs): app.UseMiddleware<TimingMiddleware>();
-Console.WriteLine("Middleware defined.");`,
-        expectedOutput: 'Middleware defined.',
-        hint: 'Store `RequestDelegate` in the constructor, then `await _next(context)` in `InvokeAsync`. Measure time before and after the call.',
+        kind: 'mcq',
+        id: 'csharp-8-mcq-3',
+        prompt: `When no exception is thrown, what does this middleware do?\n\n\`\`\`csharp\nusing System.Diagnostics;\nusing Microsoft.AspNetCore.Http;\nusing Microsoft.Extensions.Logging;\n\npublic class TimingMiddleware\n{\n    private readonly RequestDelegate _next;\n    public TimingMiddleware(RequestDelegate next) => _next = next;\n\n    public async Task InvokeAsync(HttpContext context, ILogger<TimingMiddleware> log)\n    {\n        var sw = Stopwatch.StartNew();\n        await _next(context);\n        sw.Stop();\n        log.LogInformation("{Path} took {Ms}ms", context.Request.Path, sw.ElapsedMilliseconds);\n    }\n}\n\`\`\``,
+        options: [
+          'Logs once per request AFTER the rest of the pipeline executes',
+          'Logs once per request BEFORE the rest of the pipeline executes',
+          'Logs only on errors',
+          'Logs only for the first request and caches the result',
+        ],
+        correctIndex: 0,
+        explanation: 'The middleware starts the stopwatch, awaits the rest of the pipeline (controllers, etc.), then stops and logs. Code before `_next` is the inbound phase; code after is the outbound phase. This pattern is the canonical "around" timing/metrics middleware.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-8-mcq-4',
+        prompt: 'In policy-based authorization, where is the business rule for "user must own this resource" best expressed?',
+        options: [
+          'A custom `IAuthorizationFilter` that runs before model binding',
+          'An `IAuthorizationHandler<TRequirement, TResource>` paired with `AuthorizationRequirement`, invoked by `IAuthorizationService.AuthorizeAsync(user, resource, "Policy")`',
+          'Inline `if (User.Id != post.OwnerId)` checks in every endpoint',
+          'A claim added at login time',
+        ],
+        correctIndex: 1,
+        explanation: 'Resource-based authorization is the canonical pattern: an `IAuthorizationHandler<TRequirement, TResource>` gets the user AND the loaded resource and decides. Call `_authz.AuthorizeAsync(User, resource, "MustOwn")` from the endpoint. This centralises the policy, enables reuse, and keeps endpoints thin.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-8-mcq-5',
+        prompt: 'SignalR vs gRPC server-streaming for real-time push to browsers — which is the right default and why?',
+        options: [
+          'gRPC — it is always faster than WebSockets',
+          'SignalR — it auto-negotiates the best transport (WebSocket → SSE → long polling) and has a first-class JavaScript client; gRPC-Web is more limited in browsers and lacks streaming over HTTP/1.1',
+          'They are interchangeable — pick by personal preference',
+          'gRPC — SignalR is deprecated',
+        ],
+        correctIndex: 1,
+        explanation: 'For browser-to-server push, SignalR is the natural choice: transport negotiation, automatic reconnect, hubs/groups, and a stable JS client. gRPC-Web exists but server-streaming over HTTP/1.1 is restricted and bidirectional streaming requires HTTP/2 + special server config — better suited to service-to-service.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-8-mcq-6',
+        prompt: 'Why does `app.UseAuthentication()` need to be called BEFORE `app.UseAuthorization()` in `Program.cs`?',
+        options: [
+          'Because `UseAuthorization` populates `HttpContext.User`, which authentication consumes',
+          'Because authentication establishes who the user is (`HttpContext.User`) and authorization decides what they may do — order matters because authorization reads what authentication wrote',
+          'Order does not matter — these are equivalent calls',
+          'Because both share the same internal state and the second overwrites the first',
+        ],
+        correctIndex: 1,
+        explanation: 'Middleware runs in registration order. `UseAuthentication` parses tokens/cookies and sets `HttpContext.User`. `UseAuthorization` then evaluates policies against that user. Reversing the order means authorization sees an unauthenticated user → 401 even for valid requests.',
       },
     ],
   },
@@ -625,7 +818,7 @@ Console.WriteLine("Middleware defined.");`,
     level: 9,
     title: 'Roslyn Analyzers, Source Generators & AOT',
     timeEstimate: '22-25 hours',
-    intro: `Roslyn, the .NET compiler platform, exposes full access to the compilation pipeline. In this phase you will write a diagnostic analyzer that flags a custom code smell, pair it with a code fix, and author an incremental source generator that eliminates boilerplate at compile time. You will also learn to write diagnostic suppressors for third-party false positives.\n\nThe second half of the phase covers Native AOT (Ahead-of-Time) compilation (\`PublishAot\`) and trimming. AOT produces self-contained native binaries with faster startup and lower memory, but imposes restrictions — no runtime reflection, no dynamic code generation. You will learn to annotate your code correctly, use source-generated JSON serialisation (\`System.Text.Json\` source gen), and verify AOT compatibility.`,
+    intro: `Roslyn, the .NET compiler platform, exposes the full compilation pipeline. In this phase you will write a diagnostic analyzer that flags a custom code smell, pair it with a code fix, and author an incremental source generator that eliminates boilerplate at compile time. You will also write diagnostic suppressors for third-party false positives.\n\nThe second half covers Native AOT (\`PublishAot\`) and trimming. AOT produces native binaries with faster startup and lower memory, but imposes restrictions — no runtime reflection, no dynamic IL. The deliverable is a packaged NuGet analyzer you can use in any .NET project.`,
     topics: [
       {
         label: 'Writing a Roslyn diagnostic analyzer',
@@ -653,7 +846,7 @@ Console.WriteLine("Middleware defined.");`,
       },
     ],
     deliverable:
-      'Create an analyzer `DEMO001` that warns when `string.Concat` is called with more than three arguments (prefer interpolation), plus a code fix that rewrites the call to an interpolated string. Add an incremental source generator that reads `[GenerateToString]` attributes and emits `ToString()` overrides. Publish a minimal console app with `PublishAot=true` and verify the binary starts in under 50ms.',
+      'Build locally: a Roslyn analyzer + code-fix NuGet that warns (`AWAIT001`) when a library project calls `await someTask` without `ConfigureAwait(false)` and offers a fix that inserts it. Add an incremental source generator that emits `ToString()` overrides for any class decorated with `[GenerateToString]`. Package via `dotnet pack` and reference from a separate test project to verify the diagnostic fires.',
     checks: [
       {
         kind: 'mcq',
@@ -666,39 +859,72 @@ Console.WriteLine("Middleware defined.");`,
           'Only C# 12+ syntax is supported in AOT',
         ],
         correctIndex: 1,
-        explanation: 'Native AOT produces native machine code with all types resolved statically. Dynamic assembly loading would require a JIT and IL interpretation infrastructure that is deliberately excluded from AOT binaries.',
+        explanation: 'Native AOT produces native machine code with all types resolved statically. Dynamic assembly loading would require a JIT and IL interpretation infrastructure that is deliberately excluded. Code that needs to ship in an AOT binary must avoid `Assembly.Load`, `Type.GetType("...")`, `Activator.CreateInstance` of unknown types, and reflection-driven serializers — use source generation instead.',
       },
       {
         kind: 'mcq',
         id: 'csharp-9-mcq-2',
         prompt: 'In an incremental source generator, why should you prefer `IncrementalValueProvider` pipelines over `GeneratorExecutionContext.Compilation`?',
         options: [
-          'IncrementalValueProvider pipelines support more file types',
-          'They cache intermediate results, so only changed syntax nodes trigger regeneration, avoiding full recompilation on every keystroke',
+          'They support more file types',
+          'They cache intermediate results, so only changed syntax nodes trigger regeneration — avoiding full re-runs on every keystroke',
           'They are required by the Roslyn API in .NET 8+',
           'They allow async operations inside the generator',
         ],
         correctIndex: 1,
-        explanation: 'Incremental generators were introduced precisely to fix the performance problems of V1 generators — caching at each pipeline stage means the generator only re-runs the stages affected by a change.',
+        explanation: 'Incremental generators were introduced specifically to fix the perf problems of V1 (`ISourceGenerator`). Each pipeline stage memoizes its output keyed by input equality, so unchanged inputs reuse cached results. The result is sub-100ms re-generation in the IDE on each keystroke.',
       },
       {
-        kind: 'code',
-        id: 'csharp-9-code-1',
-        prompt: 'Use `System.Text.Json` source generation to serialise a record without runtime reflection. Define a `JsonSerializerContext`, then serialise and print a `Person` record.',
-        starterCode: `using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
-record Person(string Name, int Age);
-
-[JsonSerializable(typeof(Person))]
-partial class AppJsonContext : JsonSerializerContext { }
-
-Person p = new("Alice", 30);
-string json = JsonSerializer.Serialize(p, AppJsonContext.Default.Person);
-Console.WriteLine(json);`,
-        expectedOutput: '{"Name":"Alice","Age":30}',
-        hint: 'Decorate a `partial class` that extends `JsonSerializerContext` with `[JsonSerializable(typeof(T))]`. Pass the generated `TypeInfo` to `JsonSerializer.Serialize`.',
+        kind: 'mcq',
+        id: 'csharp-9-mcq-3',
+        prompt: `What does this program print when AOT-compiled?\n\n\`\`\`csharp\nusing System;\nusing System.Text.Json;\nusing System.Text.Json.Serialization;\n\nrecord Person(string Name, int Age);\n\n[JsonSerializable(typeof(Person))]\npartial class AppJsonContext : JsonSerializerContext { }\n\nPerson p = new("Alice", 30);\nstring json = JsonSerializer.Serialize(p, AppJsonContext.Default.Person);\nConsole.WriteLine(json);\n\`\`\``,
+        options: [
+          '`{"Name":"Alice","Age":30}`',
+          '`{"name":"alice","age":30}`',
+          '`Person { Name = Alice, Age = 30 }`',
+          'Runtime error: AOT cannot serialize records',
+        ],
+        correctIndex: 0,
+        explanation: 'The `JsonSerializerContext` source generator emits a `TypeInfo<Person>` at compile time. Calling `AppJsonContext.Default.Person` selects the generated metadata — no reflection. The default `JsonNamingPolicy` is PascalCase, matching the C# property names. AOT happily uses this path; the reflection-based `JsonSerializer.Serialize(p)` overload would warn or fail.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-9-mcq-4',
+        prompt: 'You write an analyzer rule. Which method must be overridden on `DiagnosticAnalyzer` to register the rule and its callbacks?',
+        options: [
+          '`SupportedDiagnostics` only',
+          '`Initialize(AnalysisContext)` — call `RegisterSyntaxNodeAction` / `RegisterSymbolAction` etc. here, AFTER `EnableConcurrentExecution` and `ConfigureGeneratedCodeAnalysis`',
+          '`Execute(GeneratorContext)`',
+          '`OnCompilationEnd(Compilation)`',
+        ],
+        correctIndex: 1,
+        explanation: '`Initialize` is the entry point. Best practice is to immediately call `context.EnableConcurrentExecution()` and `context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`, then register actions (syntax node, symbol, semantic model, etc.). `SupportedDiagnostics` exposes the descriptors but does not wire callbacks.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-9-mcq-5',
+        prompt: 'Your AOT-published app uses `JsonSerializer.Serialize(obj)` with no source generator. The publish warns `IL2026: RequiresUnreferencedCode`. What is the consequence?',
+        options: [
+          'Build fails — publish will not produce a binary',
+          'Build succeeds but at runtime the serializer cannot discover trimmed properties; output may be incomplete or throw `NotSupportedException`',
+          'The warning is purely informational and there are no runtime effects',
+          'The warning means C# 12 is not enabled',
+        ],
+        correctIndex: 1,
+        explanation: 'IL2026 means the trimmer cannot statically determine which members the reflection-based API needs to keep. The trimmed binary may have shaved off properties the serializer would have written, producing wrong JSON or runtime exceptions. The fix is the source-generated `JsonSerializerContext` overload, which the trimmer DOES understand.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-9-mcq-6',
+        prompt: 'You ship an analyzer with `DiagnosticSeverity.Warning`. A team using your NuGet wants to make it an error in CI but suppress it for legacy files. What is the cleanest way?',
+        options: [
+          'Modify the analyzer to read an env var',
+          'Use `.editorconfig`: set `dotnet_diagnostic.AWAIT001.severity = error` globally and `[*Legacy*.cs] dotnet_diagnostic.AWAIT001.severity = none` for legacy files',
+          'Suppress with `#pragma warning disable AWAIT001` in every file',
+          'Add a `[SuppressMessage]` attribute on every offending member',
+        ],
+        correctIndex: 1,
+        explanation: '`.editorconfig` is the canonical Roslyn-aware config: severities are set per-rule and overridable per-file-pattern using INI-style sections like `[*Legacy*.cs]`. This keeps the analyzer DLL config-free and lets every team tune severity without touching code. `#pragma` and `SuppressMessage` are point fixes; environment variables are non-idiomatic.',
       },
     ],
   },
@@ -708,7 +934,7 @@ Console.WriteLine(json);`,
     level: 10,
     title: '.NET Internals — GC, JIT, Unsafe Code & Native AOT',
     timeEstimate: '25-30 hours',
-    intro: `This final phase dives into how the .NET runtime works under the hood. You will learn how the generational garbage collector (Server GC vs Workstation GC, LOH, POH) impacts allocation strategies, how to tune GC settings, and how to use GC events via EventPipe to diagnose pressure. On the execution side, you will explore JIT compilation, tiered compilation, and AOT, understanding when each applies and how to read disassembly output with dotnet-disasm or SharpLab.\n\nThe unsafe half of the phase covers raw pointer arithmetic, \`fixed\` statements, \`stackalloc\`, \`Unsafe.As\`, and P/Invoke for calling native libraries. You will also publish a final Native AOT binary, annotate all reflection-using APIs with \`[DynamicallyAccessedMembers]\`, and measure cold-start time. These skills underpin .NET library authorship and high-performance service development.`,
+    intro: `This final phase dives into how the .NET runtime works under the hood. You will learn how the generational garbage collector (Server vs Workstation, LOH, POH) influences allocation strategy, how to tune GC settings, and how to use \`dotnet-counters\` and EventPipe to diagnose pressure. On the execution side you will explore JIT compilation, tiered compilation, dynamic PGO, and Native AOT, and learn to read disassembly with SharpLab or \`dotnet-disasm\`.\n\nThe unsafe half covers raw pointer arithmetic, \`fixed\` statements, \`stackalloc\`, \`Unsafe.As\`, and P/Invoke. The deliverable is a fully AOT-compiled native CLI tool with sub-50ms cold start — proof you can ship a tiny self-contained .NET binary.`,
     topics: [
       {
         label: 'GC internals — workstation vs server, LOH, POH',
@@ -736,64 +962,75 @@ Console.WriteLine(json);`,
       },
     ],
     deliverable:
-      'Write a native interop layer that calls `strlen` from libc (or kernel32 on Windows) via P/Invoke, and implement a safe wrapper that returns a `ReadOnlySpan<byte>` over the native buffer using `MemoryMarshal`. Publish with `PublishAot=true`, measure startup time, and write a GC analysis report showing gen-0/1/2 collection counts under load using `dotnet-counters monitor`.',
+      'Build locally: an AOT-compiled native CLI tool (`PublishAot=true`, `TrimMode=full`) that calls `strlen` from libc (or `msvcrt`) via `[LibraryImport]`, wraps the buffer in a `ReadOnlySpan<byte>`, and prints the result. Verify cold-start under 50ms with `hyperfine`. Produce a `GcReport` showing gen-0/1/2 collection counts under load using `dotnet-counters monitor`.',
     checks: [
       {
         kind: 'mcq',
         id: 'csharp-10-mcq-1',
         prompt: 'What is the Pinned Object Heap (POH) introduced in .NET 5?',
         options: [
-          'A heap segment for objects pinned with GCHandle',
-          'A dedicated heap region for pinned objects that avoids fragmenting the regular generation heaps',
+          'A heap segment for objects pinned with GCHandle — created on demand',
+          'A dedicated heap region for pinned allocations that avoids fragmenting the regular gen-0/1/2 heaps',
           'The Large Object Heap renamed',
           'An off-heap region for native memory allocations',
         ],
         correctIndex: 1,
-        explanation: 'The POH was introduced to solve GC fragmentation caused by pinned buffers scattering across gen-0/1 heaps. Pinned objects are segregated into their own heap so the main generational heaps remain compact.',
+        explanation: 'The POH solves a long-standing fragmentation problem: when buffers are pinned for P/Invoke or socket I/O, the regular generational heaps cannot compact around them. By segregating pinned objects (via `GC.AllocateArray<T>(length, pinned: true)`) into the POH, the rest of the heap stays compact and the GC stays fast.',
       },
       {
         kind: 'mcq',
         id: 'csharp-10-mcq-2',
-        prompt: 'What does `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]` communicate to the trimmer?',
+        prompt: 'What does `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]` on a parameter communicate to the trimmer?',
         options: [
-          'The annotated parameter or field may be used to reflectively invoke public constructors; the trimmer must preserve them',
-          'Public constructors are excluded from trimming',
-          'The type must be serializable',
-          'The annotated type is AOT-incompatible',
+          'The parameter may be used to reflectively invoke public constructors; the trimmer must preserve them in the passed type',
+          'Public constructors are excluded from trimming for ALL types in the program',
+          'The annotated parameter must be a serializable type',
+          'The annotated parameter is incompatible with AOT',
         ],
         correctIndex: 0,
-        explanation: 'This attribute is a contract between caller and trimmer: it warns the trimmer to keep public constructors of the annotated type, preventing them from being removed during publish-time tree-shaking.',
+        explanation: 'This attribute is a *contract* between the caller and the trimmer. It tells the trimmer: "whatever Type flows through this parameter, keep its public constructors". The flow-analysis engine then warns if a caller passes a type that the trimmer cannot guarantee preservation for. This is how reflection-using APIs become trim-safe.',
       },
       {
-        kind: 'code',
-        id: 'csharp-10-code-1',
-        prompt: 'Use `stackalloc` to allocate a 4-element `Span<int>` on the stack, fill it with squares (0,1,4,9), then print each value.',
-        starterCode: `using System;
-
-Span<int> squares = stackalloc int[4];
-for (int i = 0; i < squares.Length; i++)
-    squares[i] = i * i;
-foreach (int v in squares)
-    Console.WriteLine(v);`,
-        expectedOutput: `0\n1\n4\n9`,
-        hint: '`stackalloc` allocates on the stack and can be converted to `Span<T>` without `unsafe` context in modern C#.',
+        kind: 'mcq',
+        id: 'csharp-10-mcq-3',
+        prompt: `What does this program print (space-separated on one line)?\n\n\`\`\`csharp\nusing System;\n\nSpan<int> squares = stackalloc int[4];\nfor (int i = 0; i < squares.Length; i++)\n    squares[i] = i * i;\nforeach (int v in squares)\n    Console.Write(v + " ");\n\`\`\``,
+        options: ['0 1 2 3', '0 1 4 9', '1 4 9 16', 'Compile error: stackalloc requires unsafe'],
+        correctIndex: 1,
+        explanation: '`stackalloc int[4]` allocates 16 bytes on the stack and can be assigned to `Span<int>` without `unsafe` in modern C#. The loop writes squares: `0*0=0`, `1*1=1`, `2*2=4`, `3*3=9`. `Console.Write` joins them with " " producing `0 1 4 9 `.',
       },
       {
-        kind: 'code',
-        id: 'csharp-10-code-2',
-        prompt: 'Demonstrate a minimal P/Invoke declaration for `abs` from the C runtime (libc on Linux/macOS, msvcrt on Windows) and call it with -42.',
-        starterCode: `using System;
-using System.Runtime.InteropServices;
-
-static partial class NativeMethods
-{
-    [LibraryImport("libc", EntryPoint = "abs")]
-    public static partial int Abs(int value);
-}
-
-Console.WriteLine(NativeMethods.Abs(-42));`,
-        expectedOutput: '42',
-        hint: '`[LibraryImport]` (C# 11+) is the source-generated, AOT-friendly replacement for `[DllImport]`. On Windows replace `"libc"` with `"msvcrt"`.',
+        kind: 'mcq',
+        id: 'csharp-10-mcq-4',
+        prompt: `What does this P/Invoke call print on Linux/macOS?\n\n\`\`\`csharp\nusing System;\nusing System.Runtime.InteropServices;\n\nstatic partial class NativeMethods\n{\n    [LibraryImport("libc", EntryPoint = "abs")]\n    public static partial int Abs(int value);\n}\n\nConsole.WriteLine(NativeMethods.Abs(-42));\n\`\`\``,
+        options: ['-42', '42', '0', 'Throws DllNotFoundException'],
+        correctIndex: 1,
+        explanation: '`[LibraryImport]` (C# 11+) is the source-generated, AOT-friendly replacement for `[DllImport]`. The `static partial` declaration lets the generator emit the marshalling stub. `libc`\'s `abs(-42)` returns 42. On Windows you would use `"msvcrt"` instead of `"libc"`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-10-mcq-5',
+        prompt: 'A method spends 95% of its time inside a hot loop. The runtime has tiered compilation enabled. Which statement is most accurate?',
+        options: [
+          'The JIT compiles the method to optimized code immediately at first call',
+          'The first call uses Tier-0 (fast, minimal-opt) machine code; once the method has run enough, the runtime triggers Tier-1 re-compilation with full optimizations and (with dynamic PGO) profile-driven inlining',
+          'Tiered compilation has no effect — JIT output is identical at every call',
+          'Tier-1 is only used for AOT-compiled methods',
+        ],
+        correctIndex: 1,
+        explanation: 'Tiered compilation starts methods at Tier-0 to minimize startup latency, then promotes hot methods to Tier-1 with full optimisations. With dynamic PGO (default in .NET 8+), profile counters guide devirtualisation and inlining. AOT bypasses this entirely — code is pre-compiled once with full optimisations.',
+      },
+      {
+        kind: 'mcq',
+        id: 'csharp-10-mcq-6',
+        prompt: 'A `byte[]` instance that exceeds 85,000 bytes is allocated. Which heap does it land in by default and why?',
+        options: [
+          'Gen-0 — small allocations always start there',
+          'The Large Object Heap (LOH) — objects ≥ 85,000 bytes skip gen-0 because copying them during gen-0 compaction would be too expensive; LOH is collected only on gen-2 collections',
+          'The Pinned Object Heap — only because byte arrays are pinnable',
+          'Off-heap — managed allocations cannot exceed 85,000 bytes',
+        ],
+        correctIndex: 1,
+        explanation: 'The LOH threshold has been 85,000 bytes since .NET Framework 1.0. Large objects skip generational promotion (they would be too costly to copy) and live until a gen-2 (full) collection finds them unreachable. LOH is NOT compacted by default — long-running services that churn LOH should use `ArrayPool<T>` or set `<GCLargeObjectHeapCompactionMode>` to occasionally compact.',
       },
     ],
   },

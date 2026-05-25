@@ -7,7 +7,7 @@ export const fsharpPhases: Phase[] = [
     level: 1,
     title: 'F# Fundamentals — let, Inference, Pipelines',
     timeEstimate: '4-6 hours',
-    intro: `F# is a functional-first language on .NET. Unlike C# or Java, you rarely write types explicitly — the compiler infers them from usage. The \`let\` keyword binds a name to a value (immutable by default), and the pipe operator \`|>\` threads data through a chain of functions in a readable left-to-right style.\n\nIn this phase you will write your first F# bindings, discover how immutability shapes code structure, build simple functions, and pipe data through transformation chains. Everything runs in the F# REPL at [fable.io/repl](https://fable.io/repl) — paste code, click **Run**, and observe the output in the right panel.`,
+    intro: `F# is a functional-first language on .NET. Unlike C# or Java, you rarely write types explicitly — the compiler infers them from usage. The \`let\` keyword binds a name to a value (immutable by default), and the pipe operator \`|>\` threads data through a chain of functions in a readable left-to-right style.\n\nIn this phase you will write your first F# bindings, discover how immutability shapes code structure, build simple functions, and pipe data through transformation chains. Work locally with \`dotnet fsi\` (the F# Interactive REPL) or as a \`.fsx\` script — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and you are ready.`,
     topics: [
       {
         label: 'F# Language Overview (learn.microsoft.com)',
@@ -35,7 +35,7 @@ export const fsharpPhases: Phase[] = [
       },
     ],
     deliverable:
-      'A working F# script (`.fsx`) containing at least five `let` bindings, two helper functions composed via `|>`, and a pipeline that transforms a list of numbers.',
+      'Build locally: a `greet.fsx` script that takes a name argument and prints a greeting + timestamp.',
     checks: [
       {
         kind: 'mcq',
@@ -50,7 +50,7 @@ export const fsharpPhases: Phase[] = [
         ],
         correctIndex: 1,
         explanation:
-          '`let` bindings in F# are immutable by default. To allow mutation you must explicitly write `let mutable x = 42`. This immutability-first approach reduces accidental state bugs.',
+          '`let` bindings in F# are immutable by default. To allow mutation you must explicitly write `let mutable x = 42`. See learn.microsoft.com/fsharp let bindings reference.',
       },
       {
         kind: 'mcq',
@@ -68,23 +68,64 @@ export const fsharpPhases: Phase[] = [
           '`|>` passes the left-hand value as the last argument to the right-hand function. `5 |> double |> addOne` reads as "take 5, double it, then add one" — identical semantics to `addOne (double 5)` but in natural reading order.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-1-code-1',
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-3',
         prompt:
-          'Open [fable.io/repl](https://fable.io/repl), paste the starter code, and click **Run**. You should see:\n```\n41\n```\nThe pipeline squares each number in the list (`[1;4;9;16;25]`), keeps only those above 10 (`[16;25]`), and sums the rest (`16 + 25 = 41`). Confirm the output matches, then mark as reviewed.',
-        starterCode: `let numbers = [1; 2; 3; 4; 5]
-
-let double x = x * 2
-let isAboveTen x = x > 10
-
-let result =
-    numbers
-    |> List.map (fun x -> x * x)   // square each: [1;4;9;16;25]
-    |> List.filter isAboveTen       // keep >10: [16;25]
-    |> List.sum                     // sum: 41
-
-printfn "%d" result`,
-        hint: 'Read the pipeline top-to-bottom: `List.map (fun x -> x * x)` squares each element, `List.filter isAboveTen` keeps only values greater than 10, and `List.sum` adds the survivors. Make sure you are on fable.io/repl (Fable 4 / F# 8).',
+          'What does this F# script print?\n```fsharp\nlet numbers = [1; 2; 3; 4; 5]\nlet result =\n    numbers\n    |> List.map (fun x -> x * x)\n    |> List.filter (fun x -> x > 10)\n    |> List.sum\nprintfn "%d" result\n```',
+        options: [
+          '`15`  (sum of `[1;2;3;4;5]`)',
+          '`55`  (sum of squares `[1;4;9;16;25]`)',
+          '`41`  (sum of squares > 10, i.e. `16 + 25`)',
+          '`[16; 25]`',
+        ],
+        correctIndex: 2,
+        explanation:
+          'The pipeline squares each value to `[1;4;9;16;25]`, keeps only `[16;25]` (values > 10), and `List.sum` returns `41`. See fsharpforfunandprofit.com on pipelines.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-4',
+        prompt:
+          'Given `let add x y = x + y`, what type does the F# compiler infer?',
+        options: [
+          '`int * int -> int` (takes a tuple)',
+          '`int -> int -> int` (curried, two arguments)',
+          '`obj -> obj -> obj` (generic object)',
+          '`unit -> int`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'F# functions are curried by default. `add` has type `int -> int -> int`: a function taking an `int` and returning a function from `int` to `int`. The compiler picks `int` because `+` defaults to `int` when no other constraint is present.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-5',
+        prompt:
+          'What does this F# program print when run via `dotnet fsi`?\n```fsharp\nlet greet name =\n    sprintf "Hello, %s!" name\n\nlet names = ["Ada"; "Grace"; "Linus"]\nnames\n|> List.map greet\n|> List.iter (printfn "%s")\n```',
+        options: [
+          '`Hello, Ada!`, `Hello, Grace!`, `Hello, Linus!` on three separate lines',
+          '`Hello, Ada! Hello, Grace! Hello, Linus!` on one line',
+          'A single line `["Hello, Ada!"; "Hello, Grace!"; "Hello, Linus!"]`',
+          'Compilation error: `sprintf` is not curried',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`List.map greet` produces a list of three formatted strings; `List.iter (printfn "%s")` prints each on its own line because `printfn` appends a newline. `sprintf` is fully curried — `sprintf "Hello, %s!"` is a function `string -> string`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-6',
+        prompt:
+          'Which statement about F# `let` bindings inside a function body is true?',
+        options: [
+          'They are hoisted to module scope at runtime',
+          'They are lexically scoped — the binding is visible only from its declaration to the end of the enclosing block',
+          'They are dynamically scoped — visible to any function called from inside',
+          'They behave like JavaScript `var` and leak out of `if`/`for` blocks',
+        ],
+        correctIndex: 1,
+        explanation:
+          'F# uses lexical scoping with indentation-defined blocks. A `let` binding is visible from the point of declaration until the indentation level drops below the enclosing scope. See learn.microsoft.com/fsharp on let bindings.',
       },
     ],
   },
@@ -95,7 +136,7 @@ printfn "%d" result`,
     level: 2,
     title: 'Records, Discriminated Unions & Pattern Matching',
     timeEstimate: '5-7 hours',
-    intro: `F#'s type system is where its expressiveness really shines. **Records** are lightweight named tuples with structural equality and copy-and-update syntax (\`{ record with field = newValue }\`). **Discriminated Unions (DUs)** model data that can be one of several named cases — the functional equivalent of sealed class hierarchies but far more concise.\n\n**Pattern matching** with \`match\` exhaustively deconstructs both record fields and DU cases at compile time. Combined with the \`Option\` and \`Result\` types (built-in DUs), you eliminate null-reference errors and encode errors into the type system itself.`,
+    intro: `F#'s type system is where its expressiveness really shines. **Records** are lightweight named tuples with structural equality and copy-and-update syntax (\`{ record with field = newValue }\`). **Discriminated Unions (DUs)** model data that can be one of several named cases — the functional equivalent of sealed class hierarchies but far more concise.\n\n**Pattern matching** with \`match\` exhaustively deconstructs both record fields and DU cases at compile time. Combined with the \`Option\` and \`Result\` types (built-in DUs), you eliminate null-reference errors and encode errors into the type system itself. Work locally with \`dotnet fsi\` to run these examples.`,
     topics: [
       {
         label: 'Records',
@@ -123,7 +164,7 @@ printfn "%d" result`,
       },
     ],
     deliverable:
-      'An F# script defining a `Shape` discriminated union (Circle, Rectangle, Triangle), a `area` function using pattern matching, and a list of shapes whose areas are printed using `List.map` and `printfn`.',
+      'Build locally: a `wordcount` console app using `Seq.groupBy` and `Map`, sorted descending by count.',
     checks: [
       {
         kind: 'mcq',
@@ -131,14 +172,14 @@ printfn "%d" result`,
         prompt:
           'Given `type Color = Red | Green | Blue`, what does the compiler do if your `match` expression only handles `Red` and `Green`?',
         options: [
-          'Throws a runtime exception when `Blue` is encountered',
+          'Throws a runtime exception when `Blue` is encountered with no warning',
           'Silently ignores unhandled cases',
           'Emits a compile-time **incomplete pattern match** warning (or error with warnings-as-errors)',
           'Returns the default value of the type',
         ],
         correctIndex: 2,
         explanation:
-          'F# exhaustiveness checking happens at compile time. The compiler warns (or errors) when a DU case is not covered, preventing runtime surprises.',
+          'F# exhaustiveness checking happens at compile time. The compiler warns (or errors) when a DU case is not covered. See learn.microsoft.com/fsharp pattern matching reference.',
       },
       {
         kind: 'mcq',
@@ -156,27 +197,64 @@ printfn "%d" result`,
           'The `{ record with Field = newValue }` copy-and-update expression creates a new record with all fields copied from the original except the ones explicitly listed.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-2-code-1',
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nCircle area: 78.54\nRectangle area: 12.00\nTriangle area: 6.00\n```\nConfirm each line matches (values rounded to 2 dp), then mark as reviewed.',
-        starterCode: `type Shape =
-    | Circle of radius: float
-    | Rectangle of width: float * height: float
-    | Triangle of baseLen: float * height: float
-
-let area shape =
-    match shape with
-    | Circle r       -> System.Math.PI * r * r
-    | Rectangle(w,h) -> w * h
-    | Triangle(b,h)  -> 0.5 * b * h
-
-let shapes = [ Circle 5.0; Rectangle(4.0, 3.0); Triangle(4.0, 3.0) ]
-let labels = [ "Circle"; "Rectangle"; "Triangle" ]
-
-List.zip labels shapes
-|> List.iter (fun (label, s) -> printfn "%s area: %.2f" label (area s))`,
-        hint: 'The Triangle case uses `baseLen` to avoid the reserved keyword `base`. Make sure the Fable REPL is set to F#.',
+          'What does this F# program print?\n```fsharp\ntype Shape =\n    | Circle of radius: float\n    | Rectangle of width: float * height: float\n\nlet area shape =\n    match shape with\n    | Circle r       -> System.Math.PI * r * r\n    | Rectangle(w,h) -> w * h\n\nprintfn "%.2f" (area (Rectangle(4.0, 3.0)))\n```',
+        options: [
+          '`7.00`',
+          '`12.00`',
+          '`12`',
+          'Compile error: missing case for `Triangle`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`area (Rectangle(4.0, 3.0))` matches the `Rectangle(w,h)` case and returns `4.0 * 3.0 = 12.0`, formatted with `%.2f` as `12.00`. Because `Shape` only has `Circle` and `Rectangle` cases here, the match is exhaustive.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-4',
+        prompt:
+          'Which DU case is reached when this F# program runs?\n```fsharp\ntype Result =\n    | Found of int\n    | NotFound\n    | Invalid of string\n\nlet lookup key =\n    match key with\n    | k when k < 0  -> Invalid "negative key"\n    | 0             -> NotFound\n    | k             -> Found (k * 10)\n\nprintfn "%A" (lookup 0)\n```',
+        options: [
+          '`Found 0`',
+          '`NotFound`',
+          '`Invalid "zero key"`',
+          'Compile error: cannot mix literal and variable patterns',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The literal pattern `0` matches before the variable pattern `k`, so `lookup 0` returns `NotFound`. F# evaluates match clauses top-down and the first matching pattern wins. See learn.microsoft.com/fsharp pattern matching.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-5',
+        prompt:
+          'What does this F# program print?\n```fsharp\ntype Person = { Name: string; Age: int }\n\nlet ada = { Name = "Ada"; Age = 36 }\nlet older = { ada with Age = ada.Age + 1 }\n\nprintfn "%s is %d, was %d" ada.Name older.Age ada.Age\n```',
+        options: [
+          '`Ada is 36, was 37`',
+          '`Ada is 37, was 36`',
+          '`Ada is 37, was 37` — records are mutable',
+          'Compile error: `with` only works on classes',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Records are immutable. `{ ada with Age = ada.Age + 1 }` produces a new value `older` with `Age = 37`, leaving the original `ada` unchanged with `Age = 36`. See fsharpforfunandprofit.com on records.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-6',
+        prompt:
+          'Which Option combinator pattern is correct for chaining two lookups where the second depends on the first?',
+        options: [
+          '`firstLookup |> Option.map secondLookup` (when `secondLookup : string -> Option<int>`)',
+          '`firstLookup |> Option.bind secondLookup` (when `secondLookup : string -> Option<int>`)',
+          '`firstLookup |> Option.filter secondLookup`',
+          '`firstLookup |> Option.iter secondLookup`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Option.bind : (\'a -> Option<\'b>) -> Option<\'a> -> Option<\'b>` flattens nested options. Using `Option.map` here would yield `Option<Option<int>>`. `bind` is the monadic combinator for chaining fallible lookups.',
       },
     ],
   },
@@ -187,7 +265,7 @@ List.zip labels shapes
     level: 3,
     title: 'Modules, Namespaces, Classes & IO',
     timeEstimate: '5-7 hours',
-    intro: `F# code is organised into **modules** (the primary unit) and optionally **namespaces** (for .NET interop). Modules can be opened with \`open\` and nest freely. For .NET interoperability — consuming C# libraries or exposing an API — F# also supports **classes** with members, interfaces, and inheritance, though idiomatic F# prefers modules of functions over classes.\n\n**Exception handling** uses \`try/with\` and the \`exn\` hierarchy. **IO** is done through \`System.IO\` just as in C#, and F# makes simple file processing concise with \`File.ReadAllLines\` piped through list combinators.`,
+    intro: `F# code is organised into **modules** (the primary unit) and optionally **namespaces** (for .NET interop). Modules can be opened with \`open\` and nest freely. For .NET interoperability — consuming C# libraries or exposing an API — F# also supports **classes** with members, interfaces, and inheritance, though idiomatic F# prefers modules of functions over classes.\n\n**Exception handling** uses \`try/with\` and the \`exn\` hierarchy. **IO** is done through \`System.IO\` just as in C#, and F# makes simple file processing concise with \`File.ReadAllLines\` piped through list combinators. Use \`dotnet fsi\` for the examples in this phase.`,
     topics: [
       {
         label: 'Modules',
@@ -215,7 +293,7 @@ List.zip labels shapes
       },
     ],
     deliverable:
-      'An F# script with a `StringUtils` module containing at least three string-processing functions, a `try/with` block that catches `System.FormatException`, and a demonstration of reading lines from a string (simulated file) and filtering them.',
+      'Build locally: a `wordstats` console app that reads a text file, uses a `StringUtils` module of helpers, catches `System.IO.FileNotFoundException`, and prints per-line statistics.',
     checks: [
       {
         kind: 'mcq',
@@ -225,12 +303,12 @@ List.zip labels shapes
         options: [
           'They are identical — the keywords are interchangeable',
           'A namespace can contain values and functions directly; a module cannot',
-          'A module can contain values, functions, and types directly; a namespace can only contain modules and types (no bare values)',
+          'A module can contain values, functions, and types directly; a namespace can only contain modules and types (no bare `let` bindings)',
           'Namespaces are only used in .NET assemblies; modules are for scripts only',
         ],
         correctIndex: 2,
         explanation:
-          'Namespaces in F# are purely organisational containers for types and modules — they cannot hold `let` bindings directly. Modules can hold values, functions, types, and nested modules.',
+          'Namespaces in F# are purely organisational containers for types and modules — they cannot hold `let` bindings directly. Modules can hold values, functions, types, and nested modules. See learn.microsoft.com/fsharp namespaces reference.',
       },
       {
         kind: 'mcq',
@@ -248,35 +326,64 @@ List.zip labels shapes
           'F# uses `:?` (type test pattern) inside `with` to match a specific .NET exception type. The `as ex` part binds the exception object to a name.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-3-code-1',
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nHello World\nFsharp Is Great\nError: not a number\n```\nConfirm all three lines appear, then mark as reviewed.',
-        starterCode: `module StringUtils =
-    let capitalize (s: string) =
-        if System.String.IsNullOrEmpty(s) then s
-        else System.Char.ToUpper(s.[0]).ToString() + s.[1..].ToLower()
-
-    let titleCase (sentence: string) =
-        sentence.Split(' ')
-        |> Array.map capitalize
-        |> String.concat " "
-
-    let tryParseInt (s: string) =
-        try
-            Ok(int s)
-        with
-        | :? System.FormatException -> Error "not a number"
-
-open StringUtils
-
-printfn "%s" (titleCase "hello world")
-printfn "%s" (titleCase "FSHARP IS GREAT")
-
-match tryParseInt "abc" with
-| Ok n    -> printfn "Parsed: %d" n
-| Error e -> printfn "Error: %s" e`,
-        hint: 'The `s.[1..]` slice syntax works in Fable. If you see a type error on `s.[0]`, try `s[0]` (F# 6+ index syntax also accepted by Fable).',
+          'What does this F# program print?\n```fsharp\nmodule StringUtils =\n    let capitalize (s: string) =\n        if System.String.IsNullOrEmpty(s) then s\n        else System.Char.ToUpper(s.[0]).ToString() + s.[1..].ToLower()\n\n    let titleCase (sentence: string) =\n        sentence.Split(\' \')\n        |> Array.map capitalize\n        |> String.concat " "\n\nopen StringUtils\nprintfn "%s" (titleCase "HELLO fsharp world")\n```',
+        options: [
+          '`HELLO fsharp world`',
+          '`Hello Fsharp World`',
+          '`hello fsharp world`',
+          '`HELLO FSHARP WORLD`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`capitalize` upper-cases the first character and lower-cases the rest. `titleCase` splits on spaces, capitalises each word, and rejoins. Result: `Hello Fsharp World`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-4',
+        prompt:
+          'What does this F# program print?\n```fsharp\nlet tryParseInt (s: string) =\n    try\n        Ok(int s)\n    with\n    | :? System.FormatException -> Error "not a number"\n\nmatch tryParseInt "abc" with\n| Ok n    -> printfn "Parsed: %d" n\n| Error e -> printfn "Error: %s" e\n```',
+        options: [
+          '`Parsed: 0`',
+          '`Error: not a number`',
+          '`Parsed: NaN`',
+          'Unhandled `FormatException` crashes the program',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`int "abc"` throws `System.FormatException`, which is caught by the typed pattern `:? System.FormatException` and converted to `Error "not a number"`. The `match` then prints the error branch.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-5',
+        prompt:
+          'In F#, what does `[<RequireQualifiedAccess>]` on a module do?',
+        options: [
+          'Makes the module internal to the assembly',
+          'Forces callers to write `ModuleName.func` — `open ModuleName` no longer lets you call `func` unqualified',
+          'Restricts the module to a single thread',
+          'Marks the module for ahead-of-time compilation',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`[<RequireQualifiedAccess>]` prevents the names inside the module from being brought into scope by `open`. Callers must qualify each call (e.g. `Map.find`, `List.head`). This is the convention for the F# core library to avoid name collisions.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-6',
+        prompt:
+          'Which idiomatic F# pattern correctly reads a file and returns `Result<string list, string>`?',
+        options: [
+          '`try File.ReadAllLines path |> Array.toList |> Ok with ex -> Error ex.Message`',
+          '`File.ReadAllLines path |> Ok` (exceptions are auto-wrapped)',
+          '`Result.tryWith (File.ReadAllLines path)`',
+          '`async { return! File.ReadAllLines path }`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Idiomatic F# wraps a throwing .NET API in `try/with` and converts the exception into an `Error` case. `File.ReadAllLines` returns `string[]`, so `Array.toList` produces the desired `string list`. Result-aware combinator libraries (FsToolkit) provide shortcuts, but the raw pattern is the foundation.',
       },
     ],
   },
@@ -315,13 +422,13 @@ match tryParseInt "abc" with
       },
     ],
     deliverable:
-      'An F# script demonstrating: a generic `swap` function, partial application of `List.filter` to build a reusable predicate, an `option` computation expression that chains two lookups safely, and a unit-of-measure example that prevents mixing `m` and `ft`.',
+      'Build locally: a `notes` CLI using DUs for commands, partial application for handlers, and `System.Text.Json` for persistence.',
     checks: [
       {
         kind: 'mcq',
         id: 'fsharp-4-mcq-1',
         prompt:
-          'What is the inferred type of `let add x y = x + y` in F# when called as `let addFive = add 5`?',
+          'What is the inferred type of `addFive` here?\n```fsharp\nlet add x y = x + y\nlet addFive = add 5\n```',
         options: [
           '`int -> int -> int` — `addFive` is the same as `add`',
           '`int -> int` — `addFive` is a function waiting for one more `int` argument',
@@ -330,7 +437,7 @@ match tryParseInt "abc" with
         ],
         correctIndex: 1,
         explanation:
-          '`add 5` partially applies `add` with `x = 5`, returning a new function of type `int -> int`. This is currying: every multi-argument function in F# is a chain of single-argument functions.',
+          '`add 5` partially applies `add` with `x = 5`, returning a new function of type `int -> int`. This is currying: every multi-argument function in F# is a chain of single-argument functions. See fsharpforfunandprofit.com on partial application.',
       },
       {
         kind: 'mcq',
@@ -345,37 +452,67 @@ match tryParseInt "abc" with
         ],
         correctIndex: 1,
         explanation:
-          '`let!` is the monadic bind inside a CE. For `Result`, it extracts the `Ok` value or immediately propagates the `Error`, allowing you to chain fallible operations in a sequential style.',
+          '`let!` is the monadic bind inside a CE. For `Result`, it extracts the `Ok` value or immediately propagates the `Error`, allowing you to chain fallible operations in a sequential style. See learn.microsoft.com/fsharp computation expressions reference.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-4-code-1',
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nEvens: [2; 4; 6]\nHello, Alice!\nHello, Bob!\nUser found: Alice\nUser not found\n```\nConfirm all five lines appear, then mark as reviewed.',
-        starterCode: `// Partial application
-let isEven x = x % 2 = 0
-let evens = List.filter isEven [1..6]
-printfn "Evens: %A" evens
-
-// Higher-order function returning a function
-let greet greeting name = sprintf "%s, %s!" greeting name
-let hello = greet "Hello"
-List.iter (printfn "%s") (List.map hello ["Alice"; "Bob"])
-
-// Option chaining with built-in Option.bind
-let users = Map.ofList [("alice", "Alice"); ("bob", "Bob")]
-
-let findUser key =
-    Map.tryFind key users
-
-let lookupAndGreet key =
-    findUser key
-    |> Option.map (fun name -> sprintf "User found: %s" name)
-    |> Option.defaultValue "User not found"
-
-printfn "%s" (lookupAndGreet "alice")
-printfn "%s" (lookupAndGreet "charlie")`,
-        hint: 'This example uses `Option.bind` / `Option.map` rather than a full CE builder, which is compatible with Fable REPL. For full `result { }` CE syntax you would need FsToolkit.ErrorHandling.',
+          'What does this F# program print?\n```fsharp\nlet isEven x = x % 2 = 0\nlet evens = List.filter isEven [1..6]\nprintfn "%A" evens\n```',
+        options: [
+          '`[1; 3; 5]`',
+          '`[2; 4; 6]`',
+          '`[1; 2; 3; 4; 5; 6]`',
+          '`[]`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`List.filter` keeps elements where the predicate is true. `[1..6]` is the inclusive range `[1;2;3;4;5;6]`, and the even ones are `[2;4;6]`. `%A` is the generic formatter.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-4',
+        prompt:
+          'What does this F# program print?\n```fsharp\nlet greet greeting name = sprintf "%s, %s!" greeting name\nlet hello = greet "Hello"\nlet result = ["Ada"; "Bob"] |> List.map hello\nprintfn "%A" result\n```',
+        options: [
+          '`["Hello, Ada!"; "Hello, Bob!"]`',
+          '`["Ada, Hello!"; "Bob, Hello!"]`',
+          '`["Hello"; "Hello"]`',
+          'Compile error: `hello` has the wrong arity',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`greet "Hello"` is partial application: it fixes `greeting = "Hello"` and returns a function `string -> string`. `List.map hello` applies it to each name, producing the formatted strings.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-5',
+        prompt:
+          'What does this F# program print?\n```fsharp\nlet users = Map.ofList [("ada", "Ada"); ("bob", "Bob")]\n\nlet lookupAndGreet key =\n    Map.tryFind key users\n    |> Option.map (fun name -> sprintf "Hello, %s" name)\n    |> Option.defaultValue "unknown user"\n\nprintfn "%s | %s" (lookupAndGreet "ada") (lookupAndGreet "x")\n```',
+        options: [
+          '`Hello, Ada | Hello, x`',
+          '`Hello, Ada | unknown user`',
+          '`Ada | x`',
+          '`Some "Hello, Ada" | None`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Map.tryFind` returns `Option<string>`. `Option.map` transforms the inner value when `Some`. `Option.defaultValue` provides the fallback for `None`. The known key yields `Hello, Ada`; the missing key yields `unknown user`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-6',
+        prompt:
+          'What does the following units-of-measure code do?\n```fsharp\n[<Measure>] type m\n[<Measure>] type ft\n\nlet distance = 100.0<m>\nlet altitude = 50.0<ft>\nlet total = distance + altitude\n```',
+        options: [
+          'Compiles cleanly: F# auto-converts feet to metres',
+          'Compiles, but the result has unit `m*ft`',
+          'Compile error: `m` and `ft` are different units of measure and cannot be added',
+          'Runtime exception: `UnitMismatchException`',
+        ],
+        correctIndex: 2,
+        explanation:
+          'Units of measure are checked statically. Adding `float<m>` to `float<ft>` is a compile-time error. You must explicitly convert via a conversion factor, e.g. `altitude * 0.3048<m/ft>`. See learn.microsoft.com/fsharp units of measure.',
       },
     ],
   },
@@ -386,7 +523,7 @@ printfn "%s" (lookupAndGreet "charlie")`,
     level: 5,
     title: 'Type Providers — JSON, CSV & SQL',
     timeEstimate: '6-8 hours',
-    intro: `**Type providers** are one of F#'s killer features: a compiler plugin that generates types at design time by inspecting real data (a JSON file, CSV schema, database connection string). You get full IntelliSense and type safety over external data without hand-writing DTOs.\n\n\`FSharp.Data\` provides the most-used providers: \`JsonProvider\`, \`CsvProvider\`, and \`HtmlProvider\`. \`SQLProvider\` (separate package) generates types from a live database schema. This phase works best in a local dotnet project or VS Code with Ionide; Fable REPL does not support type providers. We cover the API and patterns here, with code tasks designed for a local \`.fsx\` script.`,
+    intro: `**Type providers** are one of F#'s killer features: a compiler plugin that generates types at design time by inspecting real data (a JSON file, CSV schema, database connection string). You get full IntelliSense and type safety over external data without hand-writing DTOs.\n\n\`FSharp.Data\` provides the most-used providers: \`JsonProvider\`, \`CsvProvider\`, and \`HtmlProvider\`. \`SQLProvider\` (separate package) generates types from a live database schema. This phase works best in a local dotnet project or VS Code with Ionide. Reference \`FSharp.Data\` from a \`.fsx\` script with \`#r "nuget: FSharp.Data"\` and run via \`dotnet fsi\`.`,
     topics: [
       {
         label: 'FSharp.Data — Overview',
@@ -414,7 +551,7 @@ printfn "%s" (lookupAndGreet "charlie")`,
       },
     ],
     deliverable:
-      'A local `.fsx` script that uses `FSharp.Data.JsonProvider` to parse a hard-coded JSON string of at least three records, filters by a field value, and prints results. Include a `#r "nuget: FSharp.Data"` reference.',
+      'Build locally: a CSV report tool using `FSharp.Data.CsvProvider` to load + transform + emit a summary.',
     checks: [
       {
         kind: 'mcq',
@@ -429,7 +566,7 @@ printfn "%s" (lookupAndGreet "charlie")`,
         ],
         correctIndex: 1,
         explanation:
-          'Type providers run inside the F# compiler. `JsonProvider<"sample.json">` reads the sample at compile time, infers a structural type, and makes its fields available as strongly-typed properties — giving you IntelliSense and compile-time safety over JSON.',
+          'Type providers run inside the F# compiler. `JsonProvider<"sample.json">` reads the sample at compile time, infers a structural type, and makes its fields available as strongly-typed properties — giving you IntelliSense and compile-time safety over JSON. See fsprojects.github.io/FSharp.Data/library/JsonProvider.html.',
       },
       {
         kind: 'mcq',
@@ -447,26 +584,64 @@ printfn "%s" (lookupAndGreet "charlie")`,
           'CsvProvider generates a typed row type with a property per column. `row.Score` is strongly typed (inferred as `float` or `int` from the data), eliminating the need for string-keyed lookups.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-5-code-1',
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-3',
         prompt:
-          'In a local terminal, create `tp-demo.fsx` with the starter code below and run it with `dotnet fsi tp-demo.fsx`. Expected output:\n```\nAlice: 92\nCharlie: 88\n```\nType providers are not supported in Fable REPL, so this exercise requires a local .NET 6+ install. Confirm the output matches, then mark as reviewed.',
-        starterCode: `#r "nuget: FSharp.Data, 6.4.0"
-open FSharp.Data
-
-type Students = JsonProvider<"""
-[
-  {"name": "Alice",   "score": 92},
-  {"name": "Bob",     "score": 74},
-  {"name": "Charlie", "score": 88}
-]""">
-
-let data = Students.GetSamples()
-
-data
-|> Array.filter (fun s -> s.Score >= 88)
-|> Array.iter (fun s -> printfn "%s: %d" s.Name s.Score)`,
-        hint: 'If `dotnet fsi` is not found, install .NET SDK from https://dotnet.microsoft.com/download. The `#r "nuget:"` directive downloads FSharp.Data on first run (requires internet).',
+          'What does this `.fsx` script print when run with `dotnet fsi`?\n```fsharp\n#r "nuget: FSharp.Data, 6.4.0"\nopen FSharp.Data\n\ntype Students = JsonProvider<"""\n[ {"name": "Ada", "score": 92},\n  {"name": "Bob", "score": 74},\n  {"name": "Eve", "score": 88} ]""">\n\nStudents.GetSamples()\n|> Array.filter (fun s -> s.Score >= 88)\n|> Array.iter (fun s -> printfn "%s: %d" s.Name s.Score)\n```',
+        options: [
+          '`Ada: 92` then `Bob: 74` then `Eve: 88`',
+          '`Ada: 92` then `Eve: 88`',
+          '`Ada` then `Eve`',
+          'Nothing — `JsonProvider` requires a file path, not an inline literal',
+        ],
+        correctIndex: 1,
+        explanation:
+          'JsonProvider supports inline samples via triple-quoted strings. The filter keeps `Score >= 88`, leaving Ada (92) and Eve (88). `Array.iter` prints each in order.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-4',
+        prompt:
+          'For a CSV with header `Country,Population` where the first data row has `Population = 331002651`, what type does `CsvProvider` infer for the `Population` column?',
+        options: [
+          '`string` — CSV values are always strings',
+          '`int` (or `int64` if values exceed `Int32.MaxValue`) — the provider infers numeric columns',
+          '`obj` — the provider is dynamic',
+          'No type — you must explicitly cast every cell',
+        ],
+        correctIndex: 1,
+        explanation:
+          'CsvProvider infers column types by scanning sample rows. Whole-number columns become `int`, or `int64` if any value exceeds `Int32.MaxValue`. Decimals become `decimal` (configurable). See FSharp.Data CsvProvider docs.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-5',
+        prompt:
+          'Which combinator pattern correctly transforms a `CsvProvider` row collection into the top 3 rows by `Score` descending?',
+        options: [
+          '`rows |> Seq.sortByDescending (fun r -> r.Score) |> Seq.truncate 3`',
+          '`rows |> Seq.sortBy (fun r -> r.Score) |> Seq.take 3`',
+          '`rows |> Seq.filter (fun r -> r.Score = 3)`',
+          '`rows |> Array.top 3 "Score"`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`Seq.sortByDescending` orders by the projected key in descending order; `Seq.truncate` takes up to N elements without throwing if there are fewer. `Seq.take` would throw if the source has fewer than 3 items.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-6',
+        prompt:
+          'What is the main downside of type providers compared to hand-written DTOs?',
+        options: [
+          'They are slower at runtime because they use reflection on every access',
+          'They require a representative sample at compile time and re-running the compiler when the schema changes — design-time tooling can be slow on huge schemas',
+          'They only work with .NET Framework, not .NET 6+',
+          'They cannot be used in script files',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Type providers are a design-time feature: they run during compilation and may slow down editor responsiveness on very large schemas. They generate erased or generative types, so runtime access is just normal property access — no reflection cost. See learn.microsoft.com/fsharp type providers tutorial.',
       },
     ],
   },
@@ -501,7 +676,7 @@ data
       },
     ],
     deliverable:
-      'A local `.fsx` that implements a `ResultBuilder` class with `Bind`, `Return`, and `ReturnFrom`, exposes it as `result { }`, and chains at least three fallible operations through the CE.',
+      'Build locally: a `result {}` computation expression for chained validations, with a CLI demo.',
     checks: [
       {
         kind: 'mcq',
@@ -516,7 +691,7 @@ data
         ],
         correctIndex: 1,
         explanation:
-          '`let! x = expr in body` desugars to `builder.Bind(expr, fun x -> body)`. This is the core monadic bind — it unwraps the value from the wrapper type and threads it through the continuation.',
+          '`let! x = expr in body` desugars to `builder.Bind(expr, fun x -> body)`. This is the core monadic bind — it unwraps the value from the wrapper type and threads it through the continuation. See learn.microsoft.com/fsharp computation expressions reference.',
       },
       {
         kind: 'mcq',
@@ -534,38 +709,64 @@ data
           '`return x` inside a CE desugars to `builder.Return(x)`. `Return` wraps a plain value into the computation type (e.g., `Ok x` for a result builder).',
       },
       {
-        kind: 'code',
-        id: 'fsharp-6-code-1',
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nOk 30\nError "age must be positive"\n```\nConfirm both lines appear, then mark as reviewed.',
-        starterCode: `type ResultBuilder() =
-    member _.Bind(m, f) =
-        match m with
-        | Ok v    -> f v
-        | Error e -> Error e
-    member _.Return(v) = Ok v
-    member _.ReturnFrom(m) = m
-
-let result = ResultBuilder()
-
-let validateAge age =
-    if age > 0 then Ok age
-    else Error "age must be positive"
-
-let validateName (name: string) =
-    if name.Length > 0 then Ok name
-    else Error "name is empty"
-
-let processUser name age =
-    result {
-        let! n = validateName name
-        let! a = validateAge age
-        return a * n.Length   // trivial combination
-    }
-
-printfn "%A" (processUser "Alice" 6)   // Ok 30
-printfn "%A" (processUser "Bob" -1)    // Error "age must be positive"`,
-        hint: '"Alice".Length is 5, so 5 * 6 = 30. If you see `Ok 18` something changed the age argument. Check the argument order in the last two lines.',
+          'What does this F# program print?\n```fsharp\ntype ResultBuilder() =\n    member _.Bind(m, f) = match m with Ok v -> f v | Error e -> Error e\n    member _.Return(v) = Ok v\n\nlet result = ResultBuilder()\n\nlet validateAge a = if a > 0 then Ok a else Error "age must be positive"\nlet validateName (n: string) = if n.Length > 0 then Ok n else Error "name empty"\n\nlet processUser name age =\n    result {\n        let! n = validateName name\n        let! a = validateAge age\n        return a * n.Length\n    }\n\nprintfn "%A" (processUser "Alice" 6)\n```',
+        options: [
+          '`Ok 18`',
+          '`Ok 30`',
+          '`Error "age must be positive"`',
+          '`Ok ("Alice", 6)`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`"Alice".Length = 5`, so `a * n.Length = 6 * 5 = 30`. Both validations succeed, so the CE returns `Ok 30`. The `Return` member wraps `30` as `Ok 30`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-4',
+        prompt:
+          'What does this F# program print?\n```fsharp\ntype ResultBuilder() =\n    member _.Bind(m, f) = match m with Ok v -> f v | Error e -> Error e\n    member _.Return(v) = Ok v\n\nlet result = ResultBuilder()\nlet validateAge a = if a > 0 then Ok a else Error "age must be positive"\nlet validateName (n: string) = if n.Length > 0 then Ok n else Error "name empty"\n\nlet processUser name age =\n    result {\n        let! n = validateName name\n        let! a = validateAge age\n        return (n, a)\n    }\n\nprintfn "%A" (processUser "Bob" -1)\n```',
+        options: [
+          '`Ok ("Bob", -1)`',
+          '`Error "name empty"`',
+          '`Error "age must be positive"`',
+          'Unhandled exception',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`validateName "Bob"` returns `Ok "Bob"`, so `let! n` proceeds. `validateAge -1` returns `Error "age must be positive"`. The `Bind` method short-circuits: the entire CE evaluates to that `Error`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-5',
+        prompt:
+          'What does the Kleisli composition operator `>=>` do for `Result`-returning functions?\n```fsharp\nlet (>=>) f g = fun x -> match f x with Ok v -> g v | Error e -> Error e\n```',
+        options: [
+          'Runs `f` and `g` in parallel and combines their results',
+          'Composes `f : \'a -> Result<\'b, _>` with `g : \'b -> Result<\'c, _>` to give `\'a -> Result<\'c, _>`',
+          'Filters the output of `f` using `g` as a predicate',
+          'Catches exceptions from `f` and falls back to `g`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Kleisli composition (`>=>`) chains two monadic functions. For Result, the result of `f` is unwrapped (if `Ok`) and passed to `g`; an `Error` from either short-circuits the chain. See fsharpforfunandprofit.com on Railway Oriented Programming.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-6',
+        prompt:
+          'Inside a CE, what does the `Zero` member let you do?',
+        options: [
+          'Reset the builder state between expressions',
+          'Allow `if ... then` without an `else` branch — `Zero` supplies the value for the missing branch',
+          'Construct a default value for any type',
+          'Combine two computations sequentially',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Zero` is required when a CE branch produces no value (e.g., a one-armed `if` or an empty `else`). For `option {}` it would typically be `None`; for `result {}` it is often left unimplemented because every branch must produce an explicit value.',
       },
     ],
   },
@@ -604,7 +805,7 @@ printfn "%A" (processUser "Bob" -1)    // Error "age must be positive"`,
       },
     ],
     deliverable:
-      'A local Saturn project with at least two routes: `GET /health` returning `{ "status": "ok" }` and `GET /greet/:name` returning a greeting JSON object. The project must start with `dotnet run` and respond correctly to `curl` requests.',
+      'Build locally: a Giraffe HTTP server with /todos endpoints, in-memory storage, JSON serialization.',
     checks: [
       {
         kind: 'mcq',
@@ -619,7 +820,7 @@ printfn "%A" (processUser "Bob" -1)    // Error "age must be positive"`,
         ],
         correctIndex: 1,
         explanation:
-          '`h1 >=> h2` composes two Giraffe handlers. The second handler only runs if the first returned `Some ctx`. This allows pipeline-style middleware composition (auth check >=> route handler >=> response writer).',
+          '`h1 >=> h2` composes two Giraffe handlers. The second handler only runs if the first returned `Some ctx`. This allows pipeline-style middleware composition (auth check >=> route handler >=> response writer). See giraffe.wiki/docs/routing.',
       },
       {
         kind: 'mcq',
@@ -634,34 +835,67 @@ printfn "%A" (processUser "Bob" -1)    // Error "age must be positive"`,
         ],
         correctIndex: 1,
         explanation:
-          'Saturn\'s router CE exposes `get`, `post`, `put`, `delete`, etc. as direct keywords that bind a path pattern to a handler function.',
+          'Saturn\'s router CE exposes `get`, `post`, `put`, `delete`, etc. as direct keywords that bind a path pattern to a handler function. See saturnframework.org/docs.html.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-7-code-1',
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-3',
         prompt:
-          'In a local terminal, create a new Saturn project and add the handler below. Start with `dotnet run`, then in another terminal run:\n```\ncurl http://localhost:5000/greet/World\n```\nExpected response:\n```json\n{"message":"Hello, World!"}\n```\nConfirm the response matches, then mark as reviewed.',
-        starterCode: `// Program.fs — minimal Saturn app
-open Saturn
-open Giraffe
-open Microsoft.AspNetCore.Http
-
-let greetHandler (name: string) : HttpHandler =
-    fun (next: HttpFunc) (ctx: HttpContext) ->
-        let msg = {| message = sprintf "Hello, %s!" name |}
-        json msg next ctx
-
-let myRouter = router {
-    get "/health" (json {| status = "ok" |})
-    getf "/greet/%s" greetHandler
-}
-
-let app = application {
-    use_router myRouter
-}
-
-run app`,
-        hint: 'Install Saturn with `dotnet add package Saturn`. If port 5000 conflicts, set `ASPNETCORE_URLS=http://localhost:5001` before `dotnet run`. Giraffe is pulled in transitively by Saturn.',
+          'What HTTP response does this Giraffe handler produce for `GET /greet/World`?\n```fsharp\nopen Giraffe\nopen Microsoft.AspNetCore.Http\n\nlet greetHandler (name: string) : HttpHandler =\n    fun (next: HttpFunc) (ctx: HttpContext) ->\n        let msg = {| message = sprintf "Hello, %s!" name |}\n        json msg next ctx\n\nlet webApp =\n    choose [\n        routef "/greet/%s" greetHandler\n    ]\n```',
+        options: [
+          '`text/plain` body `Hello, World!`',
+          '`application/json` body `{"message":"Hello, World!"}`',
+          'HTTP 404 — `routef` does not support string parameters',
+          'HTTP 500 — anonymous records cannot be serialised',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`routef "/greet/%s"` binds the URL segment to the handler\'s `name` parameter. `json` (Giraffe helper) serialises the anonymous record using the configured `IJsonSerializer` (System.Text.Json by default) and sets Content-Type to `application/json`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-4',
+        prompt:
+          'In Giraffe, what is the signature of an `HttpHandler`?',
+        options: [
+          '`HttpRequest -> HttpResponse`',
+          '`HttpFunc -> HttpContext -> Task<HttpContext option>`',
+          '`HttpContext -> unit`',
+          '`Request -> Response -> Task`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'A Giraffe `HttpHandler` is `HttpFunc -> HttpContext -> Task<HttpContext option>`. Returning `Some ctx` continues the pipeline; returning `None` signals "this handler did not match — try the next branch in `choose`".',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-5',
+        prompt:
+          'What does the `choose` combinator do in Giraffe?',
+        options: [
+          'Runs all handlers in parallel and selects the fastest response',
+          'Tries each handler in order; the first to return `Some ctx` wins, the rest are skipped',
+          'Selects a handler based on a hash of the URL',
+          'Randomly picks one handler from the list',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`choose : HttpHandler list -> HttpHandler` builds a router that tries each handler sequentially. The first handler returning `Some` short-circuits; if all return `None`, the request falls through (typically to a 404).',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-6',
+        prompt:
+          'Which Saturn keyword is used to configure overall application services and middleware?',
+        options: [
+          '`application { }`',
+          '`server { }`',
+          '`startup { }`',
+          '`host { }`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Saturn uses the `application { }` CE to configure the host, services, middleware, and router. It wraps `WebHost.CreateDefaultBuilder` and ASP.NET Core hosting configuration in F# style. See saturnframework.org/docs.html.',
       },
     ],
   },
@@ -696,7 +930,7 @@ run app`,
       },
     ],
     deliverable:
-      'A local `.fsx` using FParsec that parses arithmetic expressions (`+`, `-`, `*`, `/`, parentheses) into an AST DU and evaluates them. Must correctly evaluate `"(3 + 4) * 2"` to `14`.',
+      'Build locally: an FParsec parser for arithmetic expressions, with a CLI calculator.',
     checks: [
       {
         kind: 'mcq',
@@ -711,7 +945,7 @@ run app`,
         ],
         correctIndex: 1,
         explanation:
-          '`<|>` is the choice combinator. It attempts the left parser; if it fails without consuming any input (backtracking is safe), it tries the right parser. Use `attempt` to enable backtracking after partial consumption.',
+          '`<|>` is the choice combinator. It attempts the left parser; if it fails without consuming any input (backtracking is safe), it tries the right parser. Use `attempt` to enable backtracking after partial consumption. See quanttec.com/fparsec tutorial.',
       },
       {
         kind: 'mcq',
@@ -729,48 +963,64 @@ run app`,
           '`many p` applies `p` repeatedly until it fails and returns all results as an `\'a list`. `many1 p` requires at least one success. `opt p` returns `\'a option` for exactly zero or one occurrence.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-8-code-1',
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-3',
         prompt:
-          'In a local terminal, create `parser-demo.fsx` with the starter code and run with `dotnet fsi parser-demo.fsx`. Expected output:\n```\n14\n7\n```\nConfirm both lines match, then mark as reviewed.',
-        starterCode: `#r "nuget: FParsec, 1.1.1"
-open FParsec
-
-type Expr =
-    | Num of float
-    | Add of Expr * Expr
-    | Mul of Expr * Expr
-
-// Forward reference for recursive grammar
-let expr, exprRef = createParserForwardedToRef<Expr, unit>()
-
-let numExpr = pfloat |>> Num
-
-let parenExpr = between (pchar '(' .>> spaces) (pchar ')') (spaces >>. expr)
-
-let atom = (spaces >>. (numExpr <|> parenExpr) .>> spaces)
-
-let mulExpr =
-    chainl1 atom (pchar '*' >>% (fun a b -> Mul(a, b)) .>> spaces)
-
-let addExpr =
-    chainl1 mulExpr (pchar '+' >>% (fun a b -> Add(a, b)) .>> spaces)
-
-do exprRef.Value <- addExpr
-
-let rec eval = function
-    | Num n      -> n
-    | Add(a, b)  -> eval a + eval b
-    | Mul(a, b)  -> eval a * eval b
-
-let run input =
-    match run expr input with
-    | Success(ast, _, _) -> printfn "%g" (eval ast)
-    | Failure(msg, _, _) -> printfn "Parse error: %s" msg
-
-run "(3 + 4) * 2"
-run "3 + 4"`,
-        hint: 'FParsec 1.1.1 targets net6+. If `dotnet fsi` complains about targets, add `--langversion:preview` or use a `.fsproj` project instead. The `chainl1` combinator handles left-associative binary operators.',
+          'What does this FParsec parser evaluate `"(3 + 4) * 2"` to?\n```fsharp\nopen FParsec\n\ntype Expr =\n    | Num of float\n    | Add of Expr * Expr\n    | Mul of Expr * Expr\n\nlet expr, exprRef = createParserForwardedToRef<Expr, unit>()\nlet numExpr = pfloat |>> Num\nlet parenExpr = between (pchar \'(\' .>> spaces) (pchar \')\') (spaces >>. expr)\nlet atom = (spaces >>. (numExpr <|> parenExpr) .>> spaces)\nlet mulExpr = chainl1 atom (pchar \'*\' >>% (fun a b -> Mul(a,b)) .>> spaces)\nlet addExpr = chainl1 mulExpr (pchar \'+\' >>% (fun a b -> Add(a,b)) .>> spaces)\ndo exprRef.Value <- addExpr\n\nlet rec eval = function\n    | Num n -> n\n    | Add(a,b) -> eval a + eval b\n    | Mul(a,b) -> eval a * eval b\n\nmatch run expr "(3 + 4) * 2" with\n| Success(ast, _, _) -> printfn "%g" (eval ast)\n| Failure(m, _, _) -> printfn "err: %s" m\n```',
+        options: [
+          '`14`',
+          '`11`  (left-to-right ignoring parentheses)',
+          '`7`',
+          'Parse error: `chainl1` cannot handle parentheses',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`mulExpr` has higher precedence than `addExpr` because `addExpr` is built from `mulExpr`-level operands. Parentheses are handled in `parenExpr` via `between`. So `(3 + 4) * 2 = 7 * 2 = 14`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-4',
+        prompt:
+          'What does `chainl1` do in FParsec?',
+        options: [
+          'Parses one or more terms separated by an operator and combines them **left-associatively**',
+          'Parses exactly one chain of three operators',
+          'Parses terms in any order and returns them sorted',
+          'Parses right-associative operators only (e.g., `^`)',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`chainl1 term op` parses `term (op term)*` and combines with `op` left-associatively, so `1 - 2 - 3` parses as `(1 - 2) - 3`. For right-associative operators (`^`), use `chainr1`. See quanttec.com/fparsec/reference.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-5',
+        prompt:
+          'Which combinator in FParsec applies a function to the result of a parser, like `Functor.map`?',
+        options: [
+          '`>>=` (bind)',
+          '`|>>`',
+          '`>>.` (sequence, keep right)',
+          '`.>>` (sequence, keep left)',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`p |>> f` runs parser `p` and applies `f` to its result. In FParsec it is the functor map. `p >>= f` is monadic bind — `f` returns a parser. `>>.` and `.>>` sequence two parsers and keep only one side\'s result.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-6',
+        prompt:
+          'You write `let p = pchar \'a\' >>. pchar \'b\' <|> pchar \'c\'`. What input does `p` accept?',
+        options: [
+          '`"ab"` or `"c"`',
+          'Only `"abc"`',
+          '`"a"` followed by either `"b"` or `"c"`',
+          '`"ab"` only — `<|>` is ignored after `>>.`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'FParsec operator precedence groups this as `(pchar \'a\' >>. pchar \'b\') <|> pchar \'c\'`. So the parser accepts either the sequence `"ab"` (discarding the `\'a\'` and returning `\'b\'`) or the single character `"c"`. Use parentheses if you want different grouping.',
       },
     ],
   },
@@ -781,7 +1031,7 @@ run "3 + 4"`,
     level: 9,
     title: 'Concurrency — MailboxProcessor & Channels',
     timeEstimate: '7-9 hours',
-    intro: `F# has first-class support for the **actor model** through \`MailboxProcessor<'Msg>\` (also called \`Agent\`). Each agent owns its own message queue; other agents or threads post messages to it. Because message processing is sequential within an agent, you avoid shared-state concurrency bugs without locks.\n\nThis phase covers building agents that accumulate state, routing messages between agents, and the relationship with .NET \`System.Threading.Channels\` for high-throughput pipelines. We also touch on Akka.NET's F# API (\`Akka.FSharp\`) for distributed actor systems.`,
+    intro: `F# has first-class support for the **actor model** through \`MailboxProcessor<'Msg>\` (also called \`Agent\`). Each agent owns its own message queue; other agents or threads post messages to it. Because message processing is sequential within an agent, you avoid shared-state concurrency bugs without locks.\n\nThis phase covers building agents that accumulate state, routing messages between agents, and the relationship with .NET \`System.Threading.Channels\` for high-throughput pipelines. We also touch on Akka.NET's F# API (\`Akka.FSharp\`) for distributed actor systems. F# 8 also supports \`task { }\` computation expressions for async/await interop with .NET libraries.`,
     topics: [
       {
         label: 'MailboxProcessor (learn.microsoft.com)',
@@ -805,7 +1055,7 @@ run "3 + 4"`,
       },
     ],
     deliverable:
-      'A local `.fsx` containing a `MailboxProcessor` counter agent that accepts `Increment`, `Decrement`, and `GetCount` (with reply channel) messages, plus a test that posts 100 increments from multiple async workflows and reads back the final count.',
+      'Build locally: a MailboxProcessor-based agent pool for parallel HTTP downloads, with a CLI driver.',
     checks: [
       {
         kind: 'mcq',
@@ -820,7 +1070,7 @@ run "3 + 4"`,
         ],
         correctIndex: 1,
         explanation:
-          'The agent\'s `receive` loop is single-threaded: it blocks waiting for the next message and processes it fully before dequeuing the next one. Concurrent producers can post simultaneously, but the consumer processes messages one at a time, so state is never accessed by two threads concurrently.',
+          'The agent\'s `receive` loop is single-threaded: it blocks waiting for the next message and processes it fully before dequeuing the next one. Concurrent producers can post simultaneously, but the consumer processes messages one at a time. See learn.microsoft.com/fsharp mailbox-processor.',
       },
       {
         kind: 'mcq',
@@ -835,36 +1085,67 @@ run "3 + 4"`,
         ],
         correctIndex: 1,
         explanation:
-          'Including `AsyncReplyChannel<\'T>` in a message case lets external code call `agent.PostAndAsyncReply(fun ch -> GetCount ch)` and `await` the response. The agent calls `channel.Reply(value)` to send the answer back.',
+          'Including `AsyncReplyChannel<\'T>` in a message case lets external code call `agent.PostAndAsyncReply(fun ch -> GetCount ch)` and await the response. The agent calls `channel.Reply(value)` to send the answer back.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-9-code-1',
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nCount: 10\n```\nNote: Fable compiles to JS so true multi-threading is not demonstrated here — for real concurrency test on local `dotnet fsi`. Confirm the output matches, then mark as reviewed.',
-        starterCode: `type Msg =
-    | Increment
-    | GetCount of AsyncReplyChannel<int>
-
-let counter = MailboxProcessor.Start(fun inbox ->
-    let rec loop count = async {
-        let! msg = inbox.Receive()
-        match msg with
-        | Increment        -> return! loop (count + 1)
-        | GetCount channel ->
-            channel.Reply(count)
-            return! loop count
-    }
-    loop 0)
-
-// Post 10 increments
-for _ in 1 .. 10 do
-    counter.Post(Increment)
-
-// Retrieve and print count
-let count = counter.PostAndReply(GetCount)
-printfn "Count: %d" count`,
-        hint: '`PostAndReply` is synchronous — it blocks until the agent calls `channel.Reply`. In a real app prefer `PostAndAsyncReply` inside an `async { }` block.',
+          'What does this F# program print?\n```fsharp\ntype Msg =\n    | Increment\n    | GetCount of AsyncReplyChannel<int>\n\nlet counter = MailboxProcessor.Start(fun inbox ->\n    let rec loop count = async {\n        let! msg = inbox.Receive()\n        match msg with\n        | Increment        -> return! loop (count + 1)\n        | GetCount channel ->\n            channel.Reply(count)\n            return! loop count\n    }\n    loop 0)\n\nfor _ in 1 .. 10 do counter.Post(Increment)\n\nlet count = counter.PostAndReply(GetCount)\nprintfn "Count: %d" count\n```',
+        options: [
+          '`Count: 0`  (messages processed asynchronously, no time to apply)',
+          '`Count: 10`',
+          '`Count: 1`  (only the last message wins)',
+          'Deadlock — `PostAndReply` blocks forever',
+        ],
+        correctIndex: 1,
+        explanation:
+          'All `Post` calls are queued first. `PostAndReply` then enqueues `GetCount` and blocks until the agent processes it; by that time the agent has already handled all 10 `Increment` messages, so `count = 10`. The FIFO queue guarantees order.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-4',
+        prompt:
+          'What does this F# `async` workflow evaluate to?\n```fsharp\nlet work = async {\n    let! a = async { return 10 }\n    let! b = async { return 20 }\n    return a + b\n}\n\nprintfn "%d" (Async.RunSynchronously work)\n```',
+        options: [
+          '`30`',
+          '`10`',
+          '`20`',
+          'Compile error: `async { return 10 }` is invalid',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`async { return 10 }` is an `Async<int>` that yields `10`; `let!` awaits it. The block sequentially evaluates both children and returns their sum. `Async.RunSynchronously` drives the workflow to completion on the calling thread.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-5',
+        prompt:
+          'What is the key difference between F# `async { }` and `task { }`?',
+        options: [
+          '`async { }` is .NET-only; `task { }` is for Fable/JavaScript',
+          '`async { }` is cold and explicit (must be started); `task { }` returns a hot `Task<T>` that starts immediately and integrates with C# async/await',
+          'They are aliases for each other',
+          '`task { }` cannot be awaited from another `task { }`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`async { }` produces a cold `Async<T>` — nothing runs until you call `Async.Start` or `Async.RunSynchronously`. `task { }` produces a `Task<T>` that begins executing immediately (hot), matching the C#/CLR `Task` semantics and useful for interop with libraries that expect `Task`. See learn.microsoft.com/fsharp async-expressions.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-6',
+        prompt:
+          'When should you prefer `System.Threading.Channels` over `MailboxProcessor`?',
+        options: [
+          'When you need very high throughput with bounded buffering and multiple producers/consumers — channels are heavily optimised and support backpressure',
+          'When you need typed messages — `MailboxProcessor` is untyped',
+          'When you need persistence — channels write to disk by default',
+          'Never — `MailboxProcessor` always outperforms channels',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`Channel<T>` from `System.Threading.Channels` provides bounded/unbounded MPSC/MPMC queues with backpressure, optimised for high-throughput pipelines. `MailboxProcessor` is a higher-level actor with a per-agent unbounded queue and is better when you want stateful sequential handlers.',
       },
     ],
   },
@@ -903,7 +1184,7 @@ printfn "Count: %d" count`,
       },
     ],
     deliverable:
-      'An F# module that models an e-commerce order lifecycle using constrained types (`NonEmptyString`, `PositiveDecimal`) and a DU state machine (`OrderState = Pending | Confirmed | Shipped | Cancelled`), with transition functions that return `Result<OrderState, string>` and reject invalid transitions at the type level.',
+      'Build locally: a domain-modeling DDD exercise: model an order/inventory invariant with DUs + records, console-app driver.',
     checks: [
       {
         kind: 'mcq',
@@ -918,7 +1199,7 @@ printfn "Count: %d" count`,
         ],
         correctIndex: 1,
         explanation:
-          'Making the DU case constructor `private` means only code within the same file/module can call `EmailAddress "foo@bar.com"` directly. External callers must use a function like `EmailAddress.create : string -> Result<EmailAddress, string>` that validates the input first.',
+          'Making the DU case constructor `private` means only code within the same file/module can call `EmailAddress "foo@bar.com"` directly. External callers must use a function like `EmailAddress.create : string -> Result<EmailAddress, string>` that validates the input first. See fsharpforfunandprofit.com on designing with types.',
       },
       {
         kind: 'mcq',
@@ -933,47 +1214,67 @@ printfn "Count: %d" count`,
         ],
         correctIndex: 1,
         explanation:
-          '`update msg model` is a pure reducer: given the current model and an incoming message, it computes the next model and optionally a `Cmd` that triggers further effects (HTTP calls, timeouts). The runtime applies it and re-renders via `view`.',
+          '`update msg model` is a pure reducer: given the current model and an incoming message, it computes the next model and optionally a `Cmd` that triggers further effects (HTTP calls, timeouts). The runtime applies it and re-renders via `view`. See elmish.github.io/elmish.',
       },
       {
-        kind: 'code',
-        id: 'fsharp-10-code-1',
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-3',
         prompt:
-          'Paste into [fable.io/repl](https://fable.io/repl) and run. Expected output:\n```\nOk Confirmed\nError "cannot confirm a cancelled order"\nOk Shipped\n```\nConfirm all three lines match, then mark as reviewed.',
-        starterCode: `// Constrained type — only valid positive decimals
-type PositiveDecimal = private PositiveDecimal of decimal
-module PositiveDecimal =
-    let create (v: decimal) =
-        if v > 0m then Ok (PositiveDecimal v)
-        else Error "must be positive"
-    let value (PositiveDecimal v) = v
-
-// Order state machine
-type OrderState =
-    | Pending
-    | Confirmed
-    | Shipped
-    | Cancelled
-
-type TransitionError = string
-
-let confirm = function
-    | Pending   -> Ok Confirmed
-    | Cancelled -> Error "cannot confirm a cancelled order"
-    | other     -> Error (sprintf "cannot confirm from state %A" other)
-
-let ship = function
-    | Confirmed -> Ok Shipped
-    | other     -> Error (sprintf "cannot ship from state %A" other)
-
-// Exercise the state machine
-printfn "%A" (confirm Pending)
-printfn "%A" (confirm Cancelled)
-
-match confirm Pending with
-| Ok s  -> printfn "%A" (ship s)
-| Error e -> printfn "Error %s" e`,
-        hint: 'The third line chains `confirm` then `ship`. If you see `Ok (Ok Shipped)` you may have used `Result.map` instead of direct match — the starter code uses a plain `match` to keep it readable.',
+          'What does this F# program print?\n```fsharp\ntype OrderState =\n    | Pending\n    | Confirmed\n    | Shipped\n    | Cancelled\n\nlet confirm = function\n    | Pending   -> Ok Confirmed\n    | Cancelled -> Error "cannot confirm a cancelled order"\n    | other     -> Error (sprintf "cannot confirm from state %A" other)\n\nlet ship = function\n    | Confirmed -> Ok Shipped\n    | other     -> Error (sprintf "cannot ship from state %A" other)\n\nmatch confirm Pending with\n| Ok s    -> printfn "%A" (ship s)\n| Error e -> printfn "Error %s" e\n```',
+        options: [
+          '`Ok Confirmed`',
+          '`Ok Shipped`',
+          '`Error "cannot ship from state Pending"`',
+          '`Ok (Ok Shipped)`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`confirm Pending` returns `Ok Confirmed`. The `match` then calls `ship Confirmed`, which returns `Ok Shipped`. `printfn "%A"` prints it as `Ok Shipped`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-4',
+        prompt:
+          'Which Result combinator pattern correctly chains `confirm : OrderState -> Result<OrderState, string>` then `ship : OrderState -> Result<OrderState, string>`?',
+        options: [
+          '`Pending |> confirm |> Result.map ship`  (returns `Result<Result<OrderState, string>, string>`)',
+          '`Pending |> confirm |> Result.bind ship`  (returns `Result<OrderState, string>`)',
+          '`Pending |> confirm |> Option.bind ship`',
+          '`Result.both (confirm Pending) (ship Pending)`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Result.bind : (\'a -> Result<\'b, _>) -> Result<\'a, _> -> Result<\'b, _>` flattens the nested result. `Result.map` would yield `Result<Result<_,_>,_>` — a tell-tale sign you needed `bind` instead.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-5',
+        prompt:
+          'Why are F# struct DUs (declared `[<Struct>] type Coord = ...`) useful for performance-sensitive code?',
+        options: [
+          'They are allocated on the stack and avoid GC pressure for short-lived values',
+          'They run on the GPU automatically',
+          'They are mutable by default',
+          'They bypass type checking for faster compilation',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Struct DUs are .NET value types: stack-allocated when used as locals or fields of structs, inlined into arrays, no GC allocation. Use them for small (≤ 16 bytes), frequently-created values like coordinates or measurements. See learn.microsoft.com/fsharp on structs.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-6',
+        prompt:
+          'In the workflow composition pattern from *Domain Modeling Made Functional*, what is the type of a typical workflow function?',
+        options: [
+          '`Input -> Output` (a simple pure function)',
+          '`Input -> Async<Result<Output, DomainError>>`  (async + explicit errors)',
+          '`Input -> void` (workflows produce no output, only side effects)',
+          '`Input -> Output option` (always returns optional output)',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Workflows encode three concerns: I/O (so they return `Async` or `Task`), failure (so they return `Result` with a domain-specific error DU), and an explicit input-to-object contract. Composing such workflows uses `AsyncResult.bind` or a `asyncResult { }` CE. See *Domain Modeling Made Functional*.',
       },
     ],
   },
