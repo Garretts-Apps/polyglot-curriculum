@@ -9,7 +9,7 @@ export const pythonPhases: Phase[] = [
     title: 'Foundations: Syntax, Types, and Control Flow',
     timeEstimate: '6-10 hours',
     intro:
-      'Python is designed for readability — indentation is syntax, and the language ships with a rich standard library out of the box. This phase covers the absolute essentials: how Python programs are structured, the built-in scalar types (int, float, str, bool, None), how to branch with if/elif/else, loop with for and while, and how to define and call functions.\n\nBy the end you will build locally a `greet.py` CLI that takes a name argument and prints a personalised greeting along with the current time. Everything else in the curriculum builds on these primitives, so take time to fully understand variable binding, truthiness, and how Python\'s indentation-based block structure works.',
+      "By the end of this phase, you'll read short Python programs — if/elif chains, for/while loops, simple functions — and predict their output before running them. You'll know how indentation drives block structure, what counts as truthy, and how default arguments behave. To build the muscle, you'll write a `greet.py` CLI locally that takes a name and prints a personalised greeting with the current time — writing is how reading sticks.",
     topics: [
       {
         label: 'The Python Tutorial (Chapters 1-5)',
@@ -113,6 +113,51 @@ export const pythonPhases: Phase[] = [
         explanation:
           'The idiomatic check uses short-circuit `and`: if `s` is empty (falsy), the right side never runs, avoiding an `IndexError` from `s.startswith` on a bad value. Option 2 reverses the order and would crash on an empty string. Option 3 uses `or` which is wrong logically. Option 4 uses JavaScript syntax (`&&`, `.length`) which Python does not support.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-1-mcq-7',
+        prompt:
+          'This stack trace appears when running the script:\n```\nTraceback (most recent call last):\n  File "main.py", line 7, in <module>\n    last = items[len(items)]\n           ~~~~~^^^^^^^^^^^^^\nIndexError: list index out of range\n```\nHere is the code:\n```python\ndef main() -> None:\n    items = ["apple", "banana", "cherry"]\n    last = items[len(items)]\n    print(last)\n\nif __name__ == "__main__":\n    main()\n```\nWhich fix is correct?',
+        options: [
+          'Change `items[len(items)]` to `items[len(items) - 1]` (or `items[-1]`).',
+          'Change `items[len(items)]` to `items[len(items) + 1]`.',
+          'Wrap the list literal in `list(...)`.',
+          'Change `len(items)` to `len(items) * 2`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Python lists are zero-indexed: valid indices for a 3-element list are 0, 1, 2. `len(items)` returns 3, which is out of range. The last index is `len(items) - 1`, or you can use the idiomatic `items[-1]` to grab the last element. Adding to the index makes the error worse.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-1-mcq-8',
+        prompt:
+          'A teammate reports this error:\n```\nTypeError: unsupported operand type(s) for +: \'int\' and \'str\'\n```\nThe code is:\n```python\ndef total(price: int, tax_rate: str) -> int:\n    return price + (price * tax_rate)\n\nif __name__ == "__main__":\n    print(total(100, "0.08"))\n```\nWhich line is the bug and what is the fix?',
+        options: [
+          'The caller passes `"0.08"` as a string. Pass `0.08` as a float and accept `tax_rate: float`.',
+          'The bug is `return price + (price * tax_rate)`. Use `str(price * tax_rate)`.',
+          'The bug is `def total`. Use `lambda` instead.',
+          "Python cannot multiply int by string at all — use `int(tax_rate)` to fix it.",
+        ],
+        correctIndex: 0,
+        explanation:
+          'Python can multiply `int * str` — `100 * "0.08"` repeats the string 100 times. The crash actually happens at the `+`, because adding an int to that long string is invalid. The real fix is to use a numeric type for a numeric quantity: pass `0.08` (float) and update the annotation to `tax_rate: float`. Stringly-typed numbers are a classic source of these errors.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-1-mcq-9',
+        prompt:
+          'You try to run this script and Python refuses to start with:\n```\n  File "demo.py", line 3\n    if x > 0\n            ^\nSyntaxError: expected \':\'\n```\nThe code is:\n```python\ndef sign(x: int) -> str:\n    if x > 0\n        return "positive"\n    if x < 0:\n        return "negative"\n    return "zero"\n```\nWhich line is the bug?',
+        options: [
+          'Line 3 — missing colon after `if x > 0`.',
+          'Line 4 — the `return` is indented too deeply.',
+          'Line 5 — `x < 0` should be `x <= 0`.',
+          'Line 1 — type annotations are not allowed on functions.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Every `if`, `elif`, `else`, `for`, `while`, `def`, and `class` header in Python ends with a colon — the parser uses it to know the header is complete and a new block starts. The error message even tells you `expected \':\'`. Type annotations on functions are perfectly valid Python.',
+      },
     ],
   },
 
@@ -124,7 +169,7 @@ export const pythonPhases: Phase[] = [
     title: 'Data Structures, Comprehensions, and Iterators',
     timeEstimate: '8-12 hours',
     intro:
-      "Python's built-in collection types — lists, dicts, sets, and tuples — cover the vast majority of everyday data-wrangling needs. Knowing which to reach for (and why) is one of the skills that separates fluent Python from code that works but feels clunky. This phase covers slicing, mutation vs immutability, the full dict/set API, and the wonderfully expressive list/dict/set comprehension syntax.\n\nBy the end you will build locally a `wordcount.py` CLI that reads stdin or a file and prints the top-10 most common words with frequency, using comprehensions, generators, and `collections.Counter` patterns.",
+      "By the end of this phase, you'll read list/dict/set comprehensions, generator expressions, and slicing patterns and predict their output without running them. You'll know when to reach for a dict vs a list and how Python's iterator protocol underpins `for` loops. To build the muscle, you'll write a `wordcount.py` CLI locally that reads stdin or a file and prints the top-10 most common words — writing is how reading sticks.",
     topics: [
       {
         label: 'Data Structures (Python Tutorial Chapter 5)',
@@ -183,16 +228,17 @@ export const pythonPhases: Phase[] = [
       {
         kind: 'mcq',
         id: 'python-2-mcq-3',
-        prompt: 'Which statement about Python tuples is correct?',
+        prompt:
+          "What does `users.get('email')` return when `'email'` is NOT a key in the dict `users`?",
         options: [
-          'Tuples are immutable; you cannot reassign their elements after creation.',
-          'Tuples support item assignment: `t[0] = 1` is valid.',
-          'Tuples cannot contain mutable objects like lists.',
-          'A tuple with one element is written as `(1)` with no trailing comma needed.',
+          '`None` — `.get()` returns None by default if the key is missing.',
+          'Raises `KeyError` exactly like `users[\'email\']`.',
+          'Raises `AttributeError` because dicts have no `.get`.',
+          'Returns an empty string.',
         ],
         correctIndex: 0,
         explanation:
-          'Tuples are immutable — `t[0] = 1` raises `TypeError`. They can contain mutable objects (only the tuple structure itself is fixed; `t = ([1, 2], 3); t[0].append(99)` works fine). A single-element tuple requires a trailing comma: `(1,)`, not `(1)` which is just a parenthesised integer.',
+          '`dict.get(key)` returns `None` for missing keys; `dict.get(key, default)` lets you supply a different sentinel. By contrast `dict[key]` raises `KeyError` on missing keys. Use `.get` when absence is expected (lookups against partial data); use `[]` when absence is a bug you want to surface loudly.',
       },
       {
         kind: 'mcq',
@@ -228,16 +274,61 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-2-mcq-6',
         prompt:
-          'What is the time complexity of `x in s` for a Python set `s` of size n?',
+          'You see this exception in your logs:\n```\nTraceback (most recent call last):\n  File "cache.py", line 6, in <module>\n    print(lookup(cache, "missing"))\n  File "cache.py", line 3, in lookup\n    return d[key]\nKeyError: \'missing\'\n```\nThe code is:\n```python\ndef lookup(d: dict, key: str) -> str:\n    return d[key]\n\nif __name__ == "__main__":\n    cache = {"hit": "value"}\n    print(lookup(cache, "missing"))\n```\nThe caller wants `None` for missing keys (not a crash). Which fix is correct?',
         options: [
-          'O(1) average — sets are backed by a hash table.',
-          'O(n) — Python must scan every element.',
-          'O(log n) — sets are balanced trees.',
-          'O(n log n) — Python sorts before searching.',
+          'Replace `d[key]` with `d.get(key)` — returns `None` when absent.',
+          'Wrap the return in `str(d[key])`.',
+          'Add `d.append(key)` before the return.',
+          'Change `key: str` to `key: any` in the type annotation.',
         ],
         correctIndex: 0,
         explanation:
-          'Python sets (and dicts) use open-addressing hash tables, so membership tests are O(1) on average and O(n) only in pathological collision scenarios. Lists use O(n) linear scan for `in`. If you find yourself doing `x in some_list` repeatedly, convert to a set first.',
+          '`dict[key]` raises `KeyError` when the key is absent. `dict.get(key)` returns `None` (or a supplied default). Use `[]` when absence is a bug; use `.get` when missing is a normal outcome you want to handle. Type annotations are static hints — they do not change runtime behaviour.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-2-mcq-7',
+        prompt:
+          'This output is wrong — only `[1, 3]` should remain after removing all evens:\n```\nInput:  [1, 2, 3, 4]\nOutput: [1, 3, 4]\n```\nThe code is:\n```python\ndef remove_evens(xs: list[int]) -> list[int]:\n    for x in xs:\n        if x % 2 == 0:\n            xs.remove(x)\n    return xs\n\nif __name__ == "__main__":\n    print(remove_evens([1, 2, 3, 4]))\n```\nWhich fix is correct?',
+        options: [
+          'Do not mutate `xs` while iterating it. Build a new list: `return [x for x in xs if x % 2 != 0]`.',
+          'Change `xs.remove(x)` to `xs.pop(x)`.',
+          'Loop with `while xs:` instead of `for x in xs:`.',
+          'Add `xs.sort()` before the loop.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Mutating a list while iterating it skips elements: when `remove(2)` shifts everything left, the iterator advances past the new element at that index. The `4` is missed and survives. The standard fix is to build a new list with a comprehension (or iterate over `xs[:]` — a shallow copy).',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-2-mcq-8',
+        prompt:
+          'The expected output is `key1=alpha`, but the script crashes:\n```\nTraceback (most recent call last):\n  File "demo.py", line 8, in main\n    for k, v in d:\nValueError: too many values to unpack (expected 2)\n```\nThe code:\n```python\ndef main() -> None:\n    d = {"key1": "alpha", "key2": "beta"}\n    for k, v in d:\n        print(f"{k}={v}")\n\nif __name__ == "__main__":\n    main()\n```\nWhich line is the bug?',
+        options: [
+          'Line `for k, v in d:` — iterating a dict yields KEYS only. Use `d.items()` to get `(key, value)` pairs.',
+          'Line `d = {"key1": "alpha", ...}` — the dict literal is invalid.',
+          'The print is malformed — use `%s` instead of f-string.',
+          'Python dicts must be declared with `dict()` not `{}`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Iterating a dict directly (`for x in d`) yields KEYS, not key/value pairs. Each key is a string like `"key1"` — unpacking `"key1"` into `k, v` fails because the string has 4 characters, not 2. Use `for k, v in d.items()` to iterate over `(key, value)` tuples.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-2-mcq-9',
+        prompt:
+          'Why does this debug print show the SAME list twice instead of two independent lists?\n```\n[1, 99]\n[1, 99]\n```\nCode:\n```python\ndef build_pair() -> tuple[list[int], list[int]]:\n    base = [1]\n    a = base\n    b = base\n    b.append(99)\n    return a, b\n\nif __name__ == "__main__":\n    a, b = build_pair()\n    print(a)\n    print(b)\n```\nWhich fix is correct?',
+        options: [
+          '`a` and `b` reference the SAME list. Use `a = base.copy(); b = base.copy()` (or `list(base)`).',
+          'Use `b = base.append(99)` directly.',
+          'Add `del base` after the assignments.',
+          'Annotate `base` as `final base: list[int]`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'In Python, `a = base; b = base` makes both names point to the SAME list object. Mutating through one name is visible through the other. To get independent lists make explicit copies with `.copy()`, `list(base)`, or `base[:]`. This aliasing bug is one of the most common sources of "spooky action at a distance" in Python code.',
       },
     ],
   },
@@ -250,7 +341,7 @@ export const pythonPhases: Phase[] = [
     title: 'Modules, Packages, OOP, File I/O, and Exceptions',
     timeEstimate: '10-14 hours',
     intro:
-      'Real Python programs are split across multiple files. This phase teaches you how the import system works — relative vs absolute imports, `__init__.py`, and how `sys.path` is resolved — and how to manage dependencies with virtual environments and pip. You will also cover file I/O (text and binary modes, context managers), structured exception handling with try/except/else/finally, and the basics of object-oriented programming.\n\nBy the end you will build locally a `contacts.py` CLI: a contact book that stores entries as class instances, persists them to a JSON file, and supports add/list/search/delete subcommands with custom exception classes for duplicate and not-found cases.',
+      "By the end of this phase, you'll read multi-file projects — imports, class hierarchies, file handling with `with`, and `try/except/else/finally` blocks — and predict how exceptions propagate. You'll know when an `open()` leaks a file handle and what `__name__ == '__main__'` actually guards. To build the muscle, you'll write a `contacts.py` CLI locally backed by a JSON file, with custom exception classes for duplicate and not-found cases — writing is how reading sticks.",
     topics: [
       {
         label: 'Modules (Python Tutorial Chapter 6)',
@@ -366,6 +457,51 @@ export const pythonPhases: Phase[] = [
         explanation:
           '`with` is a context manager that calls `__exit__` (and thus `close()`) on normal exit, return, or exception propagation. Manual `f.close()` is easy to forget after a `return` statement, and an exception between `open()` and `close()` leaks the file descriptor. Always use `with` for files, sockets, locks, and database connections.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-3-mcq-7',
+        prompt:
+          "A teammate's script never writes the file fully — runs that crash leave the data partially flushed or empty:\n```python\ndef save_lines(path: str, lines: list[str]) -> None:\n    f = open(path, \"w\", encoding=\"utf-8\")\n    for line in lines:\n        f.write(line + \"\\n\")\n        if not line:\n            raise ValueError(\"blank line\")\n    f.close()\n```\nWhich line is the bug and what is the fix?",
+        options: [
+          'The manual `open` / `close` leaks the file on the `raise`. Use `with open(path, "w", encoding="utf-8") as f:` so close runs on exception.',
+          'Change `"w"` to `"a"` (append mode).',
+          'Add `f.flush()` after the for loop.',
+          'Replace the f-string `+ "\\n"` with `format()`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'When `raise ValueError("blank line")` fires, control jumps past `f.close()`, so the file handle is leaked and buffered data may never be flushed. `with` registers `__exit__` (which calls close) for ANY exit path — normal, return, or exception. Always use `with` for files.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-3-mcq-8',
+        prompt:
+          'Production logs show this circular-import crash on startup:\n```\nImportError: cannot import name \'User\' from partially initialized module \'models\' (most likely due to a circular import)\n```\nThe project has two files:\n```python\n# models.py\nfrom services import notify\n\nclass User:\n    pass\n```\n```python\n# services.py\nfrom models import User\n\ndef notify(u: User) -> None:\n    print(u)\n```\nWhich fix is best?',
+        options: [
+          'Break the cycle: import `User` inside the `notify` function body (`def notify(u): from models import User; ...`) or move the shared type to a third module.',
+          'Add `import sys; sys.path.append(...)` to both files.',
+          'Rename `services.py` to `_services.py`.',
+          'Delete the `class User:` definition.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'When `models.py` is partway through import, importing `services.py` triggers `from models import User` — but `User` is not yet defined. The clean fix is to break the cycle: either defer the import to function scope (so it runs after both modules are fully loaded) or pull the shared definitions into a third leaf module that both can import.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-3-mcq-9',
+        prompt:
+          'A class refuses to instantiate:\n```\nTraceback (most recent call last):\n  File "shop.py", line 14, in <module>\n    item = Item("widget", 10)\nTypeError: __init__() takes 2 positional arguments but 3 were given\n```\nThe class:\n```python\nclass Item:\n    def __init__(name: str, price: float) -> None:\n        self.name = name\n        self.price = price\n```\nWhich line is the bug?',
+        options: [
+          '`def __init__(name: str, price: float)` is missing the explicit `self` parameter. Should be `def __init__(self, name: str, price: float)`.',
+          'The class needs `@classmethod` on `__init__`.',
+          'The `-> None` annotation is invalid.',
+          'You must use `super().__init__()` even with no base class.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Python instance methods take an explicit first parameter (conventionally `self`). When you call `Item("widget", 10)`, Python prepends the instance, so the method actually receives THREE arguments — but the signature only declares two. The error message counts the call-site arguments, not the missing `self`. Add `self` as the first parameter.',
+      },
     ],
   },
 
@@ -377,7 +513,7 @@ export const pythonPhases: Phase[] = [
     title: 'Standard Library, Type Hints, Dataclasses, and pytest',
     timeEstimate: '12-16 hours',
     intro:
-      "Python's standard library is huge; knowing the right module saves you from re-inventing the wheel. This phase surveys the most-used modules: `pathlib` for filesystem paths, `os`/`shutil` for process/file ops, `json` and `csv` for serialisation, `datetime`, `collections` (Counter, defaultdict, deque, namedtuple), `itertools`, and `functools`. It also introduces static typing with PEP 484 hints, `@dataclass`, and pytest.\n\nBy the end you will build locally a `notes.py` CLI with subcommands (`add`, `list`, `find`, `done`) backed by a JSON file, using `argparse`, `pathlib`, dataclasses, and full type hints. You will write a pytest suite covering each subcommand.",
+      "By the end of this phase, you'll read code using `pathlib`, `collections`, `itertools`, `functools`, `@dataclass`, and pytest fixtures and predict their behaviour. You'll know when mypy will complain about an `Optional` dereference and how parametrize collapses six tests into one. To build the muscle, you'll write a `notes.py` CLI locally with full type hints and a pytest suite — writing is how reading sticks.",
     topics: [
       {
         label: 'pathlib — Object-oriented filesystem paths',
@@ -493,6 +629,51 @@ export const pythonPhases: Phase[] = [
         explanation:
           '`@pytest.mark.parametrize("input,expected", [(1, 2), (3, 6), ...])` reruns the test once per tuple. Fixtures provide reusable setup data. `skip` and `xfail` mark tests as not-to-be-run or expected-to-fail. Parametrize is the single biggest productivity boost over `unittest.TestCase` style.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-4-mcq-7',
+        prompt:
+          'A user reports that `add_item` keeps polluting the shared list across calls:\n```\n>>> add_item("a")\n[\'a\']\n>>> add_item("b")\n[\'a\', \'b\']   # expected just [\'b\']\n```\nCode:\n```python\ndef add_item(item: str, items: list[str] = []) -> list[str]:\n    items.append(item)\n    return items\n```\nWhich line is the bug?',
+        options: [
+          'The mutable default `items: list[str] = []` is evaluated ONCE at definition and shared by every call. Use `items: list[str] | None = None` and inside the function do `if items is None: items = []`.',
+          'The `append` should be `extend`.',
+          'Type hints `list[str]` are not allowed as defaults.',
+          'The function must return `None` not a list.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "Default argument values are evaluated once at function-definition time, so a mutable default (`[]`, `{}`, `set()`) becomes shared state across calls. Standard fix: use `None` as the sentinel and create the fresh list inside. This is one of Python's most famous gotchas — show it in interviews.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-4-mcq-8',
+        prompt:
+          'pytest reports this failure:\n```\n>       assert result == expected\nE       assert {\'a\': 1, \'b\': 2} == {\'a\': 1, \'b\': 2, \'c\': 3}\nE         Common items: {\'a\': 1, \'b\': 2}\nE         Right contains 1 more item: {\'c\': 3}\n```\nThe test:\n```python\ndef test_merge():\n    a = {"a": 1}\n    b = {"b": 2, "c": 3}\n    expected = {"a": 1, "b": 2, "c": 3}\n    result = a | {"b": 2}\n    assert result == expected\n```\nWhich line is the bug?',
+        options: [
+          '`result = a | {"b": 2}` only merges one key. Should be `result = a | b` to include both `b` and `c`.',
+          'Dict union `|` is not allowed; use `dict.update`.',
+          'The assertion is reversed — should be `expected == result`.',
+          '`pytest` cannot compare dicts; convert to `list(...)` first.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "pytest's `assert` rewriter shows you the actual diff: result is missing key `c`. The test merges `a` with a literal `{\"b\": 2}` instead of the full `b` dict that contains both `b` and `c`. Fix the call to merge `a | b`. Note that `|` for dict union is the Python 3.9+ syntax (PEP 584).",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-4-mcq-9',
+        prompt:
+          'mypy reports:\n```\nuser.py:6: error: Item "None" of "str | None" has no attribute "upper"\n```\nCode:\n```python\ndef get_email(user: dict) -> str | None:\n    return user.get("email")\n\ndef normalise(user: dict) -> str:\n    email = get_email(user)\n    return email.upper()\n```\nWhich fix satisfies mypy AND avoids a runtime `AttributeError` when email is missing?',
+        options: [
+          'Guard before dereferencing: `if email is None: raise ValueError("missing email"); return email.upper()` — mypy narrows `email` to `str` after the check.',
+          'Cast: `return cast(str, email).upper()` — silences mypy without runtime safety.',
+          'Use `email!.upper()` — TypeScript-style non-null assertion.',
+          'Remove the `-> str | None` annotation from `get_email`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'mypy is correct: `email` could be `None`, and calling `.upper()` on `None` raises `AttributeError`. The fix is to narrow with a runtime check; after `if email is None: raise`, mypy knows `email: str` in the next statement. `cast` lies to the type checker without actually changing runtime behaviour — never use it to silence a legitimate complaint.',
+      },
     ],
   },
 
@@ -504,7 +685,7 @@ export const pythonPhases: Phase[] = [
     title: 'Advanced Typing, Generics, Protocols, and Pattern Matching',
     timeEstimate: '14-18 hours',
     intro:
-      "Python's type system has grown dramatically with each release. This phase covers the advanced constructs that make large codebases maintainable: Generic classes and functions, Protocol for structural subtyping, TypedDict for typed dictionaries, Literal for narrowing to specific values, TypeGuard, and the newer PEP 695 type-parameter syntax (Python 3.12+). It also covers Python 3.10+ structural pattern matching (match/case).\n\nBy the end you will build locally a `result.py` library: a typed `Result[T, E]` generic class (Ok/Err variants) with `map`, `flat_map`, and `unwrap_or`, plus a `Mappable` Protocol. Use PEP 695 syntax and ship a pytest suite.",
+      "By the end of this phase, you'll read code using `Generic[T]`, `Protocol`, `TypedDict`, `TypeGuard`, and `match`/`case` and predict what mypy says about each line. You'll know how structural subtyping differs from inheritance and when an exhaustiveness check protects you. To build the muscle, you'll write a `result.py` library locally — a typed `Result[T, E]` generic with `Ok`/`Err` variants — writing is how reading sticks.",
     topics: [
       {
         label: 'Generics in Python (typing.Generic & PEP 695)',
@@ -614,16 +795,61 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-5-mcq-6',
         prompt:
-          'Which pattern correctly matches a list of EXACTLY two integers and binds them to `a` and `b`?',
+          'mypy reports `error: Missing return statement` on the function below despite all "obvious" cases being covered:\n```python\nfrom typing import Literal\n\ndef rate(grade: Literal["A", "B", "C"]) -> int:\n    match grade:\n        case "A":\n            return 4\n        case "B":\n            return 3\n        case "C":\n            return 2\n```\nWhat is happening AND how do you make mypy verify exhaustiveness?',
         options: [
-          '`case [a, b] if isinstance(a, int) and isinstance(b, int):`',
-          '`case (a, b):`',
-          '`case [int(a), int(b), *_]:`',
-          '`case {"a": a, "b": b}:`',
+          'mypy is conservative: add a default `case _:` that calls `typing.assert_never(grade)`. If a new Literal value is added later, mypy will flag the assert_never call as an error.',
+          'mypy is wrong — there is no fix; suppress with `# type: ignore`.',
+          'Replace `Literal` with `str` and add `else: return 0`.',
+          'Add `from __future__ import exhaustive_match` at the top.',
         ],
         correctIndex: 0,
         explanation:
-          'The sequence pattern `[a, b]` matches any sequence with exactly two elements. The `if` guard narrows further to require both be ints. Option 2 also matches tuples but does not check type. Option 3 uses `*_` which would also accept longer sequences. Option 4 matches a mapping (dict), not a list.',
+          '`assert_never(x)` is a type-checker primitive: if mypy thinks any value of `x` could reach this line, it errors. After matching `"A"`, `"B"`, `"C"`, mypy narrows `grade` to `Never` — so reaching `assert_never(grade)` is statically impossible AND mypy considers all paths returned. Add a fourth Literal later and mypy will immediately surface the unhandled case.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-5-mcq-7',
+        prompt:
+          'A custom Generic container behaves oddly when used with subclasses:\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Animal: ...\n\n@dataclass\nclass Dog(Animal): ...\n\nclass Box[T]:\n    def __init__(self, value: T) -> None:\n        self.value = value\n    def replace(self, new: T) -> None:\n        self.value = new\n\ndog_box: Box[Dog] = Box(Dog())\nanimal_box: Box[Animal] = dog_box  # mypy: this is an error\n```\nWhy does mypy reject the assignment?',
+        options: [
+          '`Box[T]` is INVARIANT in T (the default). Mutable containers cannot be covariant — `animal_box.replace(Cat())` would corrupt the Dog-only invariant. To allow covariance you would need a read-only Protocol with `T` covariant.',
+          'mypy is buggy — `Dog` is a subclass of `Animal`, so `Box[Dog]` is a `Box[Animal]`.',
+          'The bug is `@dataclass` on `Animal` — dataclasses cannot be generic.',
+          'You forgot `from typing import TypeVar`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Variance rules: a mutable generic container is invariant — `Box[Dog]` is NOT a `Box[Animal]` even though `Dog` is an `Animal`. If it were, callers could write `animal_box.replace(Cat())`, putting a Cat into a Box that promises Dogs. Covariance is only sound when the type appears in OUTPUT positions only (read-only sequences, return types).',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-5-mcq-8',
+        prompt:
+          'A `match` for shapes never reaches the `Rectangle` branch — the wildcard fires instead:\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Rectangle:\n    w: int\n    h: int\n\ndef area(shape) -> int:\n    match shape:\n        case Rectangle(w, h):\n            return w * h\n        case _:\n            return 0\n\nif __name__ == "__main__":\n    print(area(Rectangle(3, 4)))\n```\nThe call prints `0`. Why?',
+        options: [
+          'Positional class patterns need `__match_args__`. `@dataclass` sets it automatically — but `Rectangle(w, h)` only works if `__match_args__ = ("w", "h")` exists. Older Python (<3.10) lacks this. On 3.10+, the fix is to ensure no module shadowing AND use keyword patterns: `case Rectangle(w=w, h=h):`.',
+          'You must register `Rectangle` with `match.register` before use.',
+          'The bug is `return w * h` — should be `return w + h`.',
+          'Pattern matching only supports dicts, never classes.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "Class patterns like `Rectangle(w, h)` use the class's `__match_args__` tuple to map positional patterns to attributes. `@dataclass` populates this automatically on 3.10+. If a local variable named `Rectangle` shadows the class, the pattern silently becomes a CAPTURE pattern (binding any value to a variable). Using keyword patterns (`Rectangle(w=w, h=h)`) is unambiguous and recommended in scripts where shadowing is possible.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-5-mcq-9',
+        prompt:
+          'mypy complains:\n```\nerror: Argument 1 has incompatible type "dict[str, object]"; expected "User"\n```\nThe code:\n```python\nfrom typing import TypedDict\n\nclass User(TypedDict):\n    name: str\n    age: int\n\ndef parse(raw: dict[str, object]) -> User:\n    return raw  # mypy hates this\n```\nWhy does mypy reject this and what is the safe fix?',
+        options: [
+          'TypedDict is structural — mypy needs proof that the keys and value types match. Validate at the boundary: `if "name" in raw and isinstance(raw["name"], str) and ...: return User(name=..., age=...)`. For real boundaries, use Pydantic.',
+          'Add `User.from_dict(raw)` — mypy treats classmethods as authoritative.',
+          'Use `cast(User, raw)` and rely on it at runtime.',
+          'Make `User` a dataclass instead.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "TypedDict is a STATIC check; mypy refuses to upcast `dict[str, object]` because the runtime values' types are unknown. The honest fix at I/O boundaries is to validate explicitly with `isinstance` checks, or use Pydantic which generates the validation code for you. `cast` would silence mypy but leave the runtime exposed to bad data.",
       },
     ],
   },
@@ -636,12 +862,12 @@ export const pythonPhases: Phase[] = [
     title: 'Async/Await, asyncio Internals, and Context Managers',
     timeEstimate: '14-20 hours',
     intro:
-      "Python's async model is cooperative: a single thread runs an event loop that suspends coroutines at await points and resumes them when I/O is ready. This phase covers event loops, tasks, futures, `asyncio.gather` vs `asyncio.wait`, queues, locks, semaphores, and `contextvars`. Sync and async context managers (`__enter__`/`__exit__`, `__aenter__`/`__aexit__`, `@contextmanager`/`@asynccontextmanager`) are covered as the idiomatic resource-management pattern.\n\nBy the end you will build locally an async `linkcheck.py` CLI: given a list of URLs (file or argv), fetch them concurrently with `httpx.AsyncClient`, limit concurrency with a `Semaphore`, collect status codes, and print a report.",
+      "By the end of this phase, you'll read async code — `gather`, `TaskGroup`, semaphores, `async with` — and predict whether a coroutine actually awaits, never awaits (a silent bug), or deadlocks waiting for itself. You'll know why missing `await` is the single most common async bug. To build the muscle, you'll write an async `linkcheck.py` CLI locally that fetches URLs concurrently with a semaphore — writing is how reading sticks.",
     topics: [
       {
         label: 'asyncio — Coroutines and Tasks',
         url: 'https://docs.python.org/3/library/asyncio-task.html',
-        note: 'asyncio.run, create_task, gather, wait, sleep, timeout',
+        note: 'asyncio.run, create_task, gather, wait, sleep, timeout, TaskGroup',
       },
       {
         label: 'asyncio — Synchronisation Primitives',
@@ -740,16 +966,61 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-6-mcq-6',
         prompt:
-          'Which protocol defines an ASYNC context manager (usable with `async with`)?',
+          'You see this warning at exit and the result list is empty:\n```\nsys:1: RuntimeWarning: coroutine \'fetch\' was never awaited\nRuntimeWarning: Enable tracemalloc to get the object allocation traceback\n```\nThe code:\n```python\nimport asyncio\n\nasync def fetch(url: str) -> str:\n    return f"data:{url}"\n\nasync def main() -> list[str]:\n    return [fetch(u) for u in ["a", "b", "c"]]\n\nif __name__ == "__main__":\n    print(asyncio.run(main()))\n```\nWhich line is the bug?',
         options: [
-          '`__aenter__` and `__aexit__`',
-          '`__enter__` and `__exit__`',
-          '`__anext__` and `__aiter__`',
-          '`__await__` only',
+          '`return [fetch(u) for u in ...]` produces coroutines but never awaits them. Use `return await asyncio.gather(*(fetch(u) for u in [...]))`.',
+          '`async def fetch` should be `def fetch`.',
+          'Replace `asyncio.run(main())` with `main()` directly.',
+          'Add `await` in front of the list literal: `await [fetch(u) ...]`.',
         ],
         correctIndex: 0,
         explanation:
-          '`async with` calls `__aenter__()` (awaiting the result) on entry and `__aexit__()` on exit. `__enter__`/`__exit__` are the sync equivalents. `__aiter__`/`__anext__` define async ITERATORS, used with `async for`. `__await__` is what makes an object awaitable.',
+          "Calling an async function returns a coroutine OBJECT — it doesn't run until awaited. The list comprehension builds three coroutines and discards them without awaiting, so the function bodies never execute. `asyncio.gather` schedules all coroutines on the loop and awaits their results. (`await [...]` on a literal list is a TypeError.)",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-6-mcq-7',
+        prompt:
+          'A `TaskGroup` example hangs forever instead of finishing in ~1 second:\n```python\nimport asyncio\n\nasync def slow(d: float) -> None:\n    await asyncio.sleep(d)\n\nasync def main() -> None:\n    async with asyncio.TaskGroup() as tg:\n        tg.create_task(slow(1.0))\n        await asyncio.Event().wait()\n\nasyncio.run(main())\n```\nWhy does it hang?',
+        options: [
+          '`asyncio.Event().wait()` waits forever on an Event that is never set. The `async with TaskGroup` does not exit until ALL tasks AND the body complete, so the body itself blocks forever.',
+          '`TaskGroup` cannot be used with `async with`.',
+          '`asyncio.sleep(1.0)` requires `await asyncio.sleep(1)` (integer only).',
+          'The bug is `tg.create_task(slow(1.0))` — should be `tg.add(slow(1.0))`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'A `TaskGroup` block exits only after its body returns AND every child task is done. A fresh `Event` is never set, so `await asyncio.Event().wait()` blocks indefinitely, the body never returns, the group never exits. Either set the event from a task or remove that line. TaskGroups (3.11+) are the structured-concurrency replacement for raw `gather`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-6-mcq-8',
+        prompt:
+          'An async file-handling helper crashes:\n```\nTypeError: object NoneType can\'t be used in \'await\' expression\n```\nCode:\n```python\nimport asyncio\n\nasync def write_log(path: str, msg: str) -> None:\n    with open(path, "a") as f:\n        await f.write(msg + "\\n")\n\nasyncio.run(write_log("/tmp/app.log", "hello"))\n```\nWhich line is the bug?',
+        options: [
+          'Built-in `open()` is SYNC — `f.write` returns `None`, not a coroutine. Either drop `await` (sync I/O inside async is bad but works for tiny writes) or use the async-friendly `aiofiles.open(...)` library.',
+          'Change `"a"` to `"ab"` (binary append).',
+          'Move `import asyncio` inside the function.',
+          'Use `await write_log(...)` instead of `asyncio.run`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "Standard `open` is synchronous and `f.write` returns the number of characters written — `await None` raises `TypeError`. Sync I/O blocks the event loop, but for tiny writes it's tolerable. For real async file I/O use the third-party `aiofiles` package (or `anyio.open_file`). The same trap applies to using `requests` instead of `httpx`/`aiohttp` inside async code.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-6-mcq-9',
+        prompt:
+          'A run-of-the-mill cleanup function leaks file handles in production:\n```python\nfrom contextlib import asynccontextmanager\n\n@asynccontextmanager\nasync def session():\n    s = open_session()\n    yield s\n    s.close()\n```\nUnder load the logs show `ResourceWarning: unclosed connection`. Which fix is correct?',
+        options: [
+          'Wrap with try/finally so close runs even on exception: `try: yield s\\nfinally: s.close()`.',
+          'Replace `@asynccontextmanager` with `@contextmanager`.',
+          'Call `s.close()` BEFORE `yield`.',
+          'Use `async with s:` inside the function instead of `yield`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "`@asynccontextmanager` generators must run the cleanup block — but if the caller's `async with` body raises, control returns to the generator AT the `yield` point as an exception. Without a `try/finally`, the line after `yield` is skipped and `close()` never runs. Always wrap the `yield` of a context-manager generator in `try/finally`.",
       },
     ],
   },
@@ -762,7 +1033,7 @@ export const pythonPhases: Phase[] = [
     title: 'Performance, Profiling, and CPython Internals',
     timeEstimate: '16-22 hours',
     intro:
-      "Writing correct Python is necessary; writing fast Python requires knowing where to look. This phase teaches systematic profiling with cProfile and pstats, sampling profilers like py-spy, memory profiling with tracemalloc, and using the `dis` module to inspect bytecode. You will also learn the key CPython implementation details that affect performance: the GIL, reference counting, the cyclic garbage collector, and why threads cannot parallelise CPU-bound work in CPython.\n\nBy the end you will build locally a `matmul_bench.py` script that compares a naive pure-Python nested-loop matrix multiplication against a NumPy version, profiles both with cProfile, and prints a side-by-side timing report.",
+      "By the end of this phase, you'll read cProfile output and `dis` bytecode and predict where the hot loop is. You'll know why threads cannot parallelise CPU work in CPython and how to spot a memory leak from `tracemalloc` snapshots. To build the muscle, you'll write a `matmul_bench.py` script locally that profiles a naive nested-loop matrix multiplication against NumPy — writing is how reading sticks.",
     topics: [
       {
         label: 'cProfile and pstats — Profiling Python Programs',
@@ -875,6 +1146,51 @@ export const pythonPhases: Phase[] = [
       {
         kind: 'mcq',
         id: 'python-7-mcq-6',
+        prompt:
+          'A cProfile report on a slow CLI shows the top entry by cumulative time:\n```\n   ncalls  tottime  cumtime  filename:lineno(function)\n  1000000   0.852    1.205   query.py:14(_to_dict)\n```\nThe function:\n```python\ndef _to_dict(row):\n    return {col: row[col] for col in COLUMNS}\n```\n`COLUMNS` is a list of 50 strings. The function is called 1M times. What is the most impactful optimisation?',
+        options: [
+          'Call this function fewer times — process the data in batches with NumPy/pandas instead of row-by-row. The micro-optimisation `dict(zip(COLUMNS, row))` is marginal; the cure is to vectorise.',
+          'Replace the dict comprehension with `for` loop and `dict.__setitem__`.',
+          'Add `@lru_cache` to the function.',
+          'Switch from `dict` to `OrderedDict`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'When a profile flags a function called millions of times, the dominant fix is usually to reduce the call count (vectorise) rather than shave nanoseconds off each call. `lru_cache` is wrong here — each `row` is unique. Profiling lesson #1: optimise call count and algorithmic complexity before micro-tuning the inner expression.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-7-mcq-7',
+        prompt:
+          'A long-running daemon\'s memory grows unbounded. A `tracemalloc` diff between two snapshots shows:\n```\n/app/cache.py:23: size=1.4 GiB (+1.2 GiB), count=12000 (+10000), average=124 KiB\n```\nThe line:\n```python\n_CACHE: dict[str, bytes] = {}\n\ndef remember(key: str, blob: bytes) -> None:\n    _CACHE[key] = blob   # line 23\n```\nWhich fix is correct?',
+        options: [
+          'Bound the cache: replace `_CACHE: dict` with `functools.lru_cache` on a wrapping function, or use `cachetools.LRUCache(maxsize=...)`. An unbounded dict grows forever.',
+          'Call `del _CACHE` periodically from another thread.',
+          'Change `dict[str, bytes]` to `dict[str, bytearray]`.',
+          'Run `gc.collect()` after every insert.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'tracemalloc shows the growth is concentrated in one dict that has no eviction policy. Caches MUST have a bound (size, TTL, or both) in long-running processes; `gc.collect()` does nothing for objects still referenced by `_CACHE`. Use an LRU or TTL cache to bound the working set.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-7-mcq-8',
+        prompt:
+          'Threading does not speed up a CPU-bound numeric loop — `htop` shows one core pegged at 100%, others idle:\n```python\nimport threading\n\ndef burn() -> None:\n    n = 0\n    for _ in range(50_000_000):\n        n += 1\n\nts = [threading.Thread(target=burn) for _ in range(8)]\nfor t in ts: t.start()\nfor t in ts: t.join()\n```\nWhat is the actual fix?',
+        options: [
+          'Use `multiprocessing.Process` (or `concurrent.futures.ProcessPoolExecutor`). The GIL serialises Python bytecode across threads in one interpreter; only separate processes truly parallelise pure-Python CPU work.',
+          'Replace `range(50_000_000)` with `range(50_000_000, 1)` for a fast path.',
+          'Add `daemon=True` to each Thread.',
+          'Call `gc.disable()` before the loop.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'The single-core-pegged signature is the GIL diagnostic. Threads share one interpreter, and only one holds the GIL at a time for pure-Python bytecode. `multiprocessing` spawns separate interpreters, each on its own core. Workloads that release the GIL (NumPy, hashlib, zlib, file I/O) bypass this and DO speed up under threads.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-7-mcq-9',
         prompt: 'What is the time complexity of `list.append(x)` in CPython?',
         options: [
           'O(1) amortised — the list reallocates with geometric growth on overflow.',
@@ -897,7 +1213,7 @@ export const pythonPhases: Phase[] = [
     title: 'Production Web: FastAPI Advanced and SQLModel/SQLAlchemy 2',
     timeEstimate: '18-26 hours',
     intro:
-      'FastAPI has become the de-facto standard for Python web APIs: it combines Pydantic validation, async support, OpenAPI generation, and dependency injection into a cohesive framework. This phase goes beyond "hello world" to cover advanced dependency injection patterns, custom exception handlers, middleware, background tasks, lifespan events, and deployment with Uvicorn. The data layer uses SQLModel (SQLAlchemy 2 + Pydantic) with async sessions.\n\nBy the end you will build locally a FastAPI service `bookmarks.py` with `/add`, `/list`, `/delete` endpoints, SQLite-backed via SQLModel, async sessions, and integration tests using `httpx.AsyncClient`.',
+      "By the end of this phase, you'll read FastAPI route handlers, Pydantic models, and SQLAlchemy 2 async sessions and predict the request/response flow. You'll know why a 422 means validation failed and how `Depends` resolution becomes a dependency cycle. To build the muscle, you'll write a `bookmarks.py` FastAPI service locally with async SQLModel and integration tests — writing is how reading sticks.",
     topics: [
       {
         label: 'FastAPI — Advanced Dependencies',
@@ -1021,6 +1337,51 @@ export const pythonPhases: Phase[] = [
         explanation:
           'RFC 9110 specifies `201 Created` for successful resource creation, ideally with a `Location` header and the new resource representation in the body. `200 OK` is fine for in-place updates. `204 No Content` is for successful requests that return no body (e.g. DELETE). `202 Accepted` is for async work that has been queued but not yet completed.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-8-mcq-7',
+        prompt:
+          'A POST `/tasks` returns this 422 to the client:\n```json\n{\n  "detail": [\n    {\n      "type": "missing",\n      "loc": ["body", "title"],\n      "msg": "Field required",\n      "input": {"description": "buy milk"}\n    }\n  ]\n}\n```\nThe model:\n```python\nfrom pydantic import BaseModel\n\nclass TaskCreate(BaseModel):\n    title: str\n    description: str | None = None\n```\nWhat does the 422 mean and what should the client do?',
+        options: [
+          'The request body is missing the required `title` field. Pydantic validation rejected it before the route function ran. The client must send `{"title": "...", "description": "..."}`.',
+          'The server hit a database error. The client should retry.',
+          'The Pydantic model is broken. The server team must redeploy.',
+          'The client used the wrong HTTP method. Try GET instead of POST.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'FastAPI returns 422 (Unprocessable Entity) when Pydantic validation fails. The `detail` array tells you which fields and what kind of error. `loc: ["body", "title"]` means the missing field is in the JSON body, at key `title`. The client (or whoever wrote the request) must supply it. 422 is for malformed requests; 4xx tells the client to fix the request rather than retry.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-8-mcq-8',
+        prompt:
+          'A FastAPI service crashes at startup with:\n```\nRecursionError: maximum recursion depth exceeded in comparison\n  File ".../app.py", line 14, in get_db\n    return Depends(get_db)\n```\nThe code:\n```python\nfrom fastapi import Depends\n\ndef get_db(session = Depends(get_db)):\n    return session\n```\nWhich line is the bug and what is the fix?',
+        options: [
+          'A dependency cannot depend on itself — that creates an infinite resolution cycle. Inject the underlying session-maker instead: `def get_db(maker = Depends(get_sessionmaker)): yield maker()`.',
+          'Add `@functools.lru_cache` to `get_db`.',
+          'Move `from fastapi import Depends` to the bottom of the file.',
+          'Rename `get_db` to `_get_db`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "FastAPI resolves `Depends(get_db)` by calling `get_db(...)` — which itself depends on `get_db`, and so on. The fix is to break the cycle by depending on a different, more primitive provider (a session factory, an engine, or config). This is the same kind of cycle you'd hit with manual dependency injection.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-8-mcq-9',
+        prompt:
+          'A FastAPI route returns a Pydantic model but the client receives an error:\n```\n{"detail": "Internal Server Error"}\n```\nThe server log shows:\n```\nsqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can\'t call await_only() here\n```\nThe code:\n```python\n@app.get("/items/{id}")\ndef read_item(id: int, session = Depends(get_session)):\n    item = session.get(Item, id)\n    return item\n```\nWhich line is the bug?',
+        options: [
+          '`def read_item` is a sync function but `get_session` returns an `AsyncSession`. Either make the route `async def` and `await session.get(...)`, or use a sync session.',
+          'Replace `session.get(Item, id)` with `session.fetch(Item, id)`.',
+          'Add `await` before `Depends(get_session)`.',
+          'Pin SQLAlchemy to version 1.4.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "The `MissingGreenlet` exception is SQLAlchemy's signal that you used an `AsyncSession` from a sync context (or vice versa). FastAPI runs sync routes in a thread pool, but `AsyncSession`'s coroutines can only be awaited from a running event loop. Pick one mode and stick with it consistently across the request path.",
+      },
     ],
   },
 
@@ -1032,7 +1393,7 @@ export const pythonPhases: Phase[] = [
     title: 'Observability, Advanced Testing, and Property-Based Testing',
     timeEstimate: '20-28 hours',
     intro:
-      'Production systems need visibility. This phase covers the OpenTelemetry Python SDK for distributed tracing and metrics, structured logging (replacing printf-style logs with JSON-serialisable records), and how to correlate logs and traces. On the testing side you will move beyond basic pytest to advanced fixtures, parametrize, and coverage analysis with pytest-cov. The standout topic is Hypothesis — property-based testing that generates adversarial inputs automatically.\n\nBy the end you will build locally an `observable_api.py`: take the Level 8 bookmarks service, instrument it with OpenTelemetry tracing and structured JSON logging, and ship a Hypothesis-based test suite (4+ properties) targeting 90%+ branch coverage.',
+      "By the end of this phase, you'll read OpenTelemetry instrumentation, structured logs, and Hypothesis property tests and predict which inputs shrink to the minimal failing case. You'll know what trace-log correlation looks like in a real incident. To build the muscle, you'll write an `observable_api.py` locally that instruments the Level 8 service with OpenTelemetry and a Hypothesis test suite — writing is how reading sticks.",
     topics: [
       {
         label: 'OpenTelemetry Python — Getting Started',
@@ -1153,6 +1514,52 @@ export const pythonPhases: Phase[] = [
         explanation:
           'Trace-log correlation works by injecting the active `trace_id`/`span_id` into log records, so log aggregators (Datadog, Honeycomb, Loki) can pivot from a log line to the originating trace. The OpenTelemetry `logging` instrumentation does this automatically, or you can write a `logging.Filter` that reads `trace.get_current_span().get_span_context()`.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-9-mcq-7',
+        prompt:
+          'Hypothesis fails a test and shrinks to a small example:\n```\nFalsifying example: test_round_trip(s=\'\\x00\')\nAssertionError: assert decode(encode(s)) == s\n```\nThe code under test:\n```python\nimport base64\n\ndef encode(s: str) -> str:\n    return base64.b64encode(s.encode("ascii")).decode("ascii")\n\ndef decode(s: str) -> str:\n    return base64.b64decode(s).decode("ascii")\n```\nWhat does the `\\x00` failure tell you?',
+        options: [
+          'The code assumes ASCII-only input. `\\x00` (NUL byte) round-trips through base64, but non-ASCII input would crash `s.encode("ascii")`. Add input validation or use `"utf-8"` everywhere.',
+          'Hypothesis is buggy — it should not generate `\\x00`.',
+          'base64 cannot encode any control characters; this is unfixable.',
+          '`b64encode` requires bytes input; this code is fine.',
+          'The test should be deleted because edge cases are unrealistic.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Hypothesis shrinking is a feature, not a bug — it tells you the smallest input that breaks the assumption. The `\\x00` case actually does round-trip in base64; what it usually exposes is that you have a stricter contract than you realised (ASCII-only). The fix is to either declare and enforce the input contract or broaden the implementation to handle UTF-8.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-9-mcq-8',
+        prompt:
+          'A pytest fixture is supposed to clean up a temp DB after each test, but the cleanup never runs and disk fills up:\n```python\nimport pytest, tempfile, os\n\n@pytest.fixture(scope="function")\ndef temp_db():\n    f = tempfile.NamedTemporaryFile(delete=False)\n    return f.name\n    os.unlink(f.name)  # never executes\n```\nWhich line is the bug and what is the fix?',
+        options: [
+          'Code after `return` never runs. Use `yield` for fixture teardown: `yield f.name` then `os.unlink(f.name)` after.',
+          'Add `del f` after the return.',
+          'Change `scope="function"` to `scope="session"`.',
+          'Replace `tempfile.NamedTemporaryFile` with `tempfile.mktemp`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'pytest fixtures separate setup from teardown via `yield`. Code before `yield` is setup; the yielded value is what the test receives; code AFTER `yield` is teardown. `return` exits the fixture immediately — anything below is dead code. Always use `yield` when a fixture needs cleanup.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-9-mcq-9',
+        prompt:
+          'Structured logs in JSON look right on the console but Datadog cannot parse them:\n```json\n{"level": "INFO", "msg": "user logged in", "user_id": 42}\n```\nbut Datadog shows them as raw text. The logging setup:\n```python\nimport logging, json\n\nclass JsonFormatter(logging.Formatter):\n    def format(self, record):\n        return json.dumps({"level": record.levelname, "msg": record.msg, **record.args})\n\nlog = logging.getLogger("app")\nlog.addHandler(logging.StreamHandler())\n```\nWhich line is the bug?',
+        options: [
+          'The handler has no formatter set. Add `handler.setFormatter(JsonFormatter())` before `addHandler`. Without it, the handler uses the default text formatter and your JSON formatter never runs.',
+          '`json.dumps` cannot handle `record.args`.',
+          'Replace `StreamHandler` with `FileHandler`.',
+          'Datadog only parses YAML — switch the format.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'A `Formatter` only takes effect when attached to a Handler via `handler.setFormatter(...)`. Forgetting that step is one of the most common Python logging mistakes — the formatter class is correct, but the handler still uses the default plain-text formatter. Set the formatter on the handler BEFORE adding the handler to the logger.',
+      },
     ],
   },
 
@@ -1164,7 +1571,7 @@ export const pythonPhases: Phase[] = [
     title: 'Extending Python: Cython, PyO3, Packaging, and Wheels',
     timeEstimate: '22-32 hours',
     intro:
-      'When pure Python is not fast enough and you have exhausted NumPy and the GIL-releasing standard library, you extend Python with compiled code. This phase covers two paths: Cython (annotated Python compiled to C) and PyO3 (Rust bindings with Cargo). You will also learn modern Python packaging: writing `pyproject.toml`, building with `hatch` or `uv`, creating platform wheels with manylinux, and publishing to PyPI.\n\nBy the end you will build locally a `fastcount` Cython OR PyO3 extension that exposes a fast `count_words(text: str) -> dict[str, int]` function to Python, packaged with a working `pyproject.toml` and built with `pip install -e .` or `maturin develop`.',
+      "By the end of this phase, you'll read Cython `.pyx` files, PyO3 Rust modules, and `pyproject.toml` build configs and predict whether a wheel will build cleanly on Linux, macOS, and Windows. You'll know what manylinux solves and what a PyO3 panic looks like. To build the muscle, you'll write a `fastcount` extension locally (Cython OR PyO3) packaged with a working `pyproject.toml` — writing is how reading sticks.",
     topics: [
       {
         label: 'Cython — Getting Started',
@@ -1289,6 +1696,51 @@ export const pythonPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           '`maturin develop` (from the maturin tool) compiles the Rust crate with Cargo and installs the resulting `.so`/`.pyd` into the active venv as an editable install — the Rust equivalent of `pip install -e .`. `maturin build` produces a wheel for distribution. Plain `cargo build` does not install anything for Python to import.',
+      },
+      {
+        kind: 'mcq',
+        id: 'python-10-mcq-7',
+        prompt:
+          'Running `pip install -e .` against a Cython project fails:\n```\nerror: Microsoft Visual C++ 14.0 or greater is required.\n  ... clang: command not found\nERROR: Failed building wheel for fastcount\n```\n`pyproject.toml` says:\n```toml\n[build-system]\nrequires = ["setuptools", "wheel"]\nbuild-backend = "setuptools.build_meta"\n```\nWhich line is the bug?',
+        options: [
+          '`requires` is missing Cython. Add `"Cython>=3.0"`. The build backend cannot compile `.pyx` to `.c` without it, and the C compiler is failing on an absent intermediate file.',
+          '`build-backend` should be `"cython.build_meta"`.',
+          'Cython requires Visual Studio specifically; install MSVC.',
+          'Remove the `[build-system]` table entirely.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "When a build-system table is present, pip creates an isolated env with ONLY the listed packages. Without Cython in `requires`, there's no `.pyx → .c` compiler in the build env. The C compiler error is downstream noise. Always list every build-time dependency (Cython, numpy, setuptools-rust, etc.) in `requires`.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-10-mcq-8',
+        prompt:
+          'A PyO3 module crashes Python at import:\n```\nthread \'<unnamed>\' panicked at \'index out of bounds: the len is 0 but the index is 0\'\nfatal runtime error: failed to initiate panic, error 5\n```\nThe Rust code:\n```rust\n#[pyfunction]\nfn first(items: Vec<i64>) -> i64 {\n    items[0]\n}\n```\nWhich fix is correct?',
+        options: [
+          'A Rust panic crosses the FFI boundary as an abort and kills the interpreter. Return a `PyResult<i64>` and raise a Python exception on empty input: `if items.is_empty() { return Err(PyValueError::new_err("empty")); }`.',
+          'Wrap the call site with `try/except`.',
+          'Replace `i64` with `i32`.',
+          'Add `#[no_panic]` above the function.',
+        ],
+        correctIndex: 0,
+        explanation:
+          "PyO3 catches Rust panics and translates them to `PyRuntimeError` — but this aborts mid-call and leaves the interpreter in a fragile state. Idiomatic PyO3 code returns `PyResult<T>` and explicitly raises Python exceptions (`PyValueError`, `PyKeyError`, etc.) for expected error cases. Reserve `panic!` for truly unexpected invariants.",
+      },
+      {
+        kind: 'mcq',
+        id: 'python-10-mcq-9',
+        prompt:
+          'A teammate publishes a wheel and users on macOS arm64 report:\n```\nERROR: fastcount-0.1.0-cp311-cp311-macosx_14_0_x86_64.whl is not a supported wheel on this platform.\n```\nWhat went wrong and how do you fix it for the next release?',
+        options: [
+          'Only an x86_64 macOS wheel was published. Apple Silicon needs an arm64 (or universal2) wheel. Use `cibuildwheel` in CI to build the full matrix: cp3X manylinux2014_{x86_64,aarch64}, macosx_{x86_64,arm64,universal2}, win_amd64.',
+          'macOS 14 specifically blocks Python wheels.',
+          'The user must compile from source — there is no fix.',
+          'Rename the wheel to `.tar.gz`.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Wheel filenames encode the (Python tag, ABI tag, platform tag). `macosx_14_0_x86_64` is Intel-only — Apple Silicon Macs need `macosx_*_arm64` or a `universal2` wheel that contains both architectures. The canonical solution is `cibuildwheel` (matrix CI build) so every supported platform is covered automatically on each release.',
       },
     ],
   },
