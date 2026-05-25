@@ -124,6 +124,51 @@ export const typescriptPhases: Phase[] = [
         explanation:
           '`as const` produces a deeply readonly tuple of literal types, so the inferred type is `readonly ["Alice", 30]`. Without it, TypeScript widens to `(string | number)[]`.',
       },
+      {
+        kind: 'mcq',
+        id: 'typescript-1-mcq-debug-1',
+        prompt:
+          '> Production logs show:\n> ```\n> TypeError: Cannot read properties of undefined (reading \'name\')\n>   at Object.greet (/app/src/utils/greet.ts:4:21)\n> ```\n> The code:\n> ```typescript\n> export interface User { name: string; }\n>\n> export function greet(user: User | null): string {\n>   return `Hi, ${user.name}`;\n> }\n>\n> greet(null);\n> ```\n> What is the fix?',
+        options: [
+          'Change the parameter type to `user: User` so `null` is rejected at compile time under `--strict`',
+          'Add a null check: `return user ? \`Hi, ${user.name}\` : "Hi, stranger";`',
+          'Cast the argument: `greet(null as User)`',
+          'Enable `strictNullChecks: false` in tsconfig to allow the call',
+        ],
+        correctIndex: 1,
+        explanation:
+          'With `--strict`, `user` is `User | null` so accessing `user.name` without narrowing is a type error that the compiler flags — but only if you do not cast or disable checks. The runtime crash confirms the null was passed. The correct fix is to guard before accessing the property: `user ? \`Hi, ${user.name}\` : "Hi, stranger"`. Rejecting `null` at the call site (option A) is also valid if the API contract should forbid null, but the existing code is meant to handle it.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-1-mcq-debug-2',
+        prompt:
+          '> A CLI script reads a numeric argument and behaves unexpectedly:\n> ```typescript\n> const raw = process.argv[2];   // "abc"\n> const n = Number(raw);\n> console.log(n + 1);            // logs NaN\n> ```\n> The user passed `"abc"` by mistake. Which guard is the correct fix?',
+        options: [
+          '`if (n === NaN) { ... }` — compare with `NaN` directly',
+          '`if (!n) { ... }` — falsy check catches `NaN` and `0`',
+          '`if (Number.isNaN(n)) { console.error("Expected a number"); process.exit(1); }`',
+          '`if (typeof n !== "number") { ... }` — `typeof NaN` is `"number"` so this never fires',
+        ],
+        correctIndex: 2,
+        explanation:
+          '`NaN !== NaN` is true in JavaScript, so `=== NaN` always returns `false`. A falsy check catches `NaN` but also incorrectly rejects `0`. `typeof NaN` is `"number"`, so a `typeof` guard misses it entirely. The correct API is `Number.isNaN(n)`, which returns `true` only for the actual `NaN` value.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-1-mcq-debug-3',
+        prompt:
+          '> A loop is supposed to print indices 1 through 5 but the last value is missing:\n> ```typescript\n> const items = ["a", "b", "c", "d", "e"];\n> for (let i = 1; i < items.length; i++) {\n>   console.log(i, items[i]);\n> }\n> // Output: 1 b, 2 c, 3 d, 4 e   (index 0 / "a" never printed)\n> ```\n> What is the bug?',
+        options: [
+          'The loop should use `i <= items.length` as the condition',
+          'The loop initialiser starts at `i = 1`, skipping index 0 and the first element `"a"`',
+          '`items.length` is off-by-one because TypeScript uses 1-based arrays',
+          'The loop body should use `items[i - 1]` to compensate for 1-based indexing',
+        ],
+        correctIndex: 1,
+        explanation:
+          'JavaScript arrays are 0-indexed. Starting `i` at `1` skips `items[0]` ("a"). The fix is `for (let i = 0; i < items.length; i++)`. TypeScript does not change array indexing — it is always 0-based like JavaScript.',
+      },
     ],
   },
 
@@ -239,6 +284,51 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'The `typeof` type guard narrows `value` to `string` inside the truthy branch, so `x` is inferred as `string`. See TS Handbook → Narrowing.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-2-mcq-debug-1',
+        prompt:
+          '> Runtime error in production:\n> ```\n> TypeError: Cannot read properties of undefined (reading \'email\')\n>   at displayUser (/app/src/user.ts:8:30)\n> ```\n> The code:\n> ```typescript\n> interface User { id: number; name: string; email: string; }\n>\n> const users: User[] = [\n>   { id: 1, name: "Ada", email: "ada@example.com" },\n>   { id: 2, name: "Bo",  email: "bo@example.com"  },\n> ];\n>\n> function displayUser(id: number): string {\n>   const user = users.find(u => u.id === id);\n>   return user.email;   // line 8\n> }\n>\n> displayUser(99);\n> ```\n> What is the root cause and correct fix?',
+        options: [
+          '`Array.find()` throws when no match is found; wrap in a try/catch',
+          '`Array.find()` returns `T | undefined`; access `.email` without a null check causes the crash when `id` 99 is not in the array',
+          'The `users` array should be typed as `User[] | undefined` to allow empty lookups',
+          'Use `users.filter()` instead; it never returns `undefined`',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Array.prototype.find()` returns `T | undefined` — `undefined` when no element matches. Under `--strict`, TypeScript flags `user.email` as a potential error because `user` could be `undefined`. The fix is to narrow first: `if (!user) throw new Error(\`User ${id} not found\`); return user.email;` or use optional chaining with a fallback.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-2-mcq-debug-2',
+        prompt:
+          '> The following code compiles but produces unexpected output:\n> ```typescript\n> interface Config { host: string; port?: number; }\n>\n> function buildUrl(cfg: Config): string {\n>   return `${cfg.host}:${cfg.port?.toString()}`;\n> }\n>\n> console.log(buildUrl({ host: "localhost" }));\n> // Output: "localhost:undefined"\n> ```\n> What is wrong and how should it be fixed?',
+        options: [
+          'Remove the optional chain `?.` — it is not valid on a `number` type',
+          'The optional chain silences the TypeScript error but at runtime `cfg.port` is `undefined`, so `undefined.toString()` is never called and the template literal coerces it to the string `"undefined"`; use a fallback: `` `${cfg.host}${cfg.port !== undefined ? `:${cfg.port}` : ""}` ``',
+          'Change `port?: number` to `port: number | null` — `null` serialises to `"null"` instead of `"undefined"`',
+          'Use `cfg.port!.toString()` to assert that `port` is always defined',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Optional chaining (`?.`) short-circuits to `undefined` when `cfg.port` is absent — it does not remove the property from the template. The template literal then coerces `undefined` to the string `"undefined"`. The idiomatic fix is a conditional interpolation: `` `${cfg.host}${cfg.port !== undefined ? `:${cfg.port}` : ""}` ``.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-2-mcq-debug-3',
+        prompt:
+          '> Code review comment: "This discriminated union exhaustiveness check is broken."\n> ```typescript\n> type Shape =\n>   | { kind: "circle";   radius: number }\n>   | { kind: "square";   side: number }\n>   | { kind: "triangle"; base: number; height: number };\n>\n> function area(shape: Shape): number {\n>   if (shape.kind === "circle") return Math.PI * shape.radius ** 2;\n>   if (shape.kind === "square") return shape.side ** 2;\n>   // triangle accidentally omitted\n>   return 0;\n> }\n> ```\n> Which change makes TypeScript report a compile error if a new `Shape` variant is added but not handled?',
+        options: [
+          'Add `as const` to the `Shape` type alias',
+          'Add a default branch that passes `shape` to a function typed `(x: never) => never`; TypeScript will error if `shape` is not `never` there',
+          'Annotate the return type as `number | undefined` so missing cases return `undefined`',
+          'Use `switch (shape.kind)` instead of `if` chains — switches are inherently exhaustive',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The exhaustiveness trick is an `assertNever` helper: `function assertNever(x: never): never { throw new Error("Unhandled case: " + (x as any).kind); }`. Place `return assertNever(shape)` in the final else/default. After narrowing all known variants, `shape` must be `never`; if a new variant is added without a handler, `shape` still has that type, and assigning a non-`never` value to a `never` parameter is a compile error.',
       },
     ],
   },
@@ -369,6 +459,51 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`import type` is purely a type-level import and is stripped during transpilation. This is critical for single-file transpilers that cannot resolve whether an import is used as a type or a value. See TS 3.8 release notes.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-3-mcq-debug-1',
+        prompt:
+          '> Node process exits with an unhandled rejection and no useful error message:\n> ```\n> node:internal/process/promises:391\n>   triggerUncaughtException(err, true /* fromPromise */);\n> UnhandledPromiseRejection: FetchError: request to https://api.example.com/data failed\n> ```\n> The code:\n> ```typescript\n> async function loadData(): Promise<void> {\n>   const res = await fetch("https://api.example.com/data");\n>   const json = await res.json();\n>   console.log(json);\n> }\n>\n> loadData();\n> ```\n> What is missing?',
+        options: [
+          'A `.then()` handler — `async/await` does not catch network errors',
+          'The call `loadData()` returns a Promise that is never `.catch()`-ed or `await`-ed at the top level, so rejections are unhandled; wrap in `loadData().catch(console.error)` or use a top-level `try/catch` inside an `async` IIFE',
+          'Add `"use strict"` at the top of the file to enable Promise error propagation',
+          'Replace `await res.json()` with `JSON.parse(await res.text())` to surface parse errors',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Calling an `async` function without `await` or a `.catch()` handler means any rejection silently becomes an `UnhandledPromiseRejection`. The fix is either `await loadData()` inside another async context, `loadData().catch(err => { console.error(err); process.exit(1); })`, or a top-level `try/catch` inside an async IIFE: `(async () => { try { await loadData(); } catch (e) { console.error(e); } })();`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-3-mcq-debug-2',
+        prompt:
+          '> A CLI tool hangs indefinitely when the remote server is slow:\n> ```typescript\n> import fetch from "node-fetch";\n>\n> async function fetchWithTimeout(url: string): Promise<unknown> {\n>   const res = await fetch(url);\n>   return res.json();\n> }\n> ```\n> The server at `url` accepts the TCP connection but never sends a response. What is the fix?',
+        options: [
+          'Set `res.timeout = 5000` on the response object after `await fetch()`',
+          'Wrap in `Promise.race([fetch(url), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000))])` — this is the recommended pattern',
+          'Pass an `AbortController` signal to `fetch`: create `const ac = new AbortController(); setTimeout(() => ac.abort(), 5000);` then `fetch(url, { signal: ac.signal })`',
+          'Use `fetch(url, { timeout: 5000 })` — the Fetch API accepts a `timeout` option',
+        ],
+        correctIndex: 2,
+        explanation:
+          'The Fetch API does not have a built-in `timeout` option. The standard approach is `AbortController`: create a controller, schedule `controller.abort()` after a deadline, and pass `{ signal: controller.signal }` to `fetch`. When the abort fires, fetch rejects with an `AbortError`. `Promise.race` with a timer works but does not cancel the underlying request, wasting connections.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-3-mcq-debug-3',
+        prompt:
+          '> A function crashes at runtime with:\n> ```\n> SyntaxError: Unexpected token u in JSON at position 0\n> ```\n> The code:\n> ```typescript\n> function parseConfig(raw: unknown): { port: number } {\n>   return JSON.parse(raw as string);\n> }\n>\n> parseConfig(undefined);\n> ```\n> What is the root cause and the correct fix?',
+        options: [
+          '`JSON.parse` only accepts `Buffer`; convert with `Buffer.from(raw).toString()` first',
+          '`raw` is cast to `string` with `as string` which bypasses TypeScript\'s type check, but `undefined` is still `undefined` at runtime; `JSON.parse(undefined)` converts it to the string `"undefined"` which is invalid JSON. Fix: validate before parsing — `if (typeof raw !== "string") throw new TypeError("Expected a string"); return JSON.parse(raw);`',
+          'Replace `as string` with `String(raw)` — `String(undefined)` returns `"undefined"` which is valid JSON',
+          'Wrap in a try/catch and return a default value on parse failure',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`as string` is a compile-time-only assertion; it does not convert the value at runtime. `JSON.parse` coerces its argument with `String()`, turning `undefined` into `"undefined"`, which is not valid JSON — hence the `SyntaxError`. The correct fix is to guard the type before calling `JSON.parse`: `if (typeof raw !== "string") throw new TypeError(...)`. Using `String(raw)` would produce the same bad input.',
       },
     ],
   },
@@ -501,6 +636,51 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'The `const` type parameter (TS 5.0) tells TypeScript to infer `T` as the narrowest literal type — `"hello"` rather than the widened `string`. `satisfies` validates the shape without widening.',
       },
+      {
+        kind: 'mcq',
+        id: 'typescript-4-mcq-debug-1',
+        prompt:
+          '> A settings update function silently drops the `theme` field:\n> ```typescript\n> interface Config {\n>   theme: "light" | "dark";\n>   language: string;\n>   notifications: boolean;\n> }\n>\n> function applyPatch(current: Config, patch: Partial<Config>): Config {\n>   return { ...current, ...patch };\n> }\n>\n> const base: Config = { theme: "light", language: "en", notifications: true };\n> const result = applyPatch(base, { language: "fr" });\n> console.log(result.theme); // "light" — correct\n>\n> // Later, a colleague writes:\n> const bad = applyPatch(base, { theme: undefined });\n> console.log(bad.theme); // undefined — runtime error downstream\n> ```\n> Why does `{ theme: undefined }` compile, and what is the safest fix?',
+        options: [
+          '`Partial<Config>` makes every property optional (`theme?: "light" | "dark"`), which means `undefined` is a valid value; use `Required<Config>` for the patch parameter instead',
+          '`Partial<Config>` makes every property `T | undefined`; explicitly passing `undefined` overwrites `theme` in the spread. Fix: filter out `undefined` values before spreading, or use a stricter patch type that omits `undefined`: `type Patch<T> = { [K in keyof T]?: NonNullable<T[K]> }`',
+          'The spread operator `{ ...current, ...patch }` always skips `undefined` values, so `bad.theme` should still be `"light"`',
+          'Add a runtime `Object.assign` instead of spread — it handles `undefined` differently',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`Partial<T>` expands each property to `T[K] | undefined`, so `{ theme: undefined }` is valid. When spread, the explicit `undefined` overwrites the base value, leaving `theme` as `undefined` at runtime. A stricter patch type excludes `undefined` values: `type Patch<T> = { [K in keyof T]?: NonNullable<T[K]> }`. Alternatively, filter the patch before spreading: `const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-4-mcq-debug-2',
+        prompt:
+          '> A generic cache returns `any` instead of the expected type:\n> ```typescript\n> function createCache<T>() {\n>   const store = new Map();\n>   return {\n>     set(key: string, value: T): void { store.set(key, value); },\n>     get(key: string) { return store.get(key); },\n>   };\n> }\n>\n> const cache = createCache<number>();\n> const val = cache.get("x"); // type is `any`, not `number | undefined`\n> ```\n> What is wrong with the `get` method?',
+        options: [
+          '`Map` must be typed as `Map<string, T>` and `get` must return `T | undefined` — the untyped `new Map()` defaults to `Map<any, any>`, so `get` returns `any`',
+          'Add a `return type: T` annotation on `get` — TypeScript infers `any` without it',
+          'Use `WeakMap` instead of `Map` to enable generic inference',
+          'Call `store.get(key) as T` to cast the return value to the correct type',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`new Map()` without a type argument defaults to `Map<any, any>`, so `.get()` returns `any`. Declaring `const store = new Map<string, T>()` constrains the map to the generic `T`, and `.get()` then returns `T | undefined` as expected. Casting with `as T` would suppress the `undefined` case and is unsafe.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-4-mcq-debug-3',
+        prompt:
+          '> A Vitest test fails with an unexpected type error:\n> ```\n> AssertionError: expected { id: 1, name: \'Ada\' } to deeply equal { id: 1, name: \'Ada\', role: \'admin\' }\n> ```\n> The test:\n> ```typescript\n> import { expect, it } from "vitest";\n> import { createUser } from "./db";\n>\n> it("createUser returns an admin user", () => {\n>   const user = createUser({ name: "Ada", role: "admin" });\n>   expect(user).toEqual({ id: 1, name: "Ada", role: "admin" });\n> });\n> ```\n> `createUser` is typed as:\n> ```typescript\n> function createUser(input: Omit<User, "id">): User {\n>   return { id: nextId++, ...input };\n> }\n> ```\n> What is the most likely root cause?',
+        options: [
+          '`Omit<User, "id">` removes `role` from the input type, so `role` is silently dropped',
+          '`createUser` spreads `input` after `id`, so `role` from the input is present in the returned object — the test is checking for `role: "admin"` but `createUser` is returning only `{ id, name }` because the `User` interface does not include a `role` field',
+          'Vitest\'s `toEqual` does a reference check, not a deep equality check',
+          '`nextId++` increments before returning, so `id` is `2` not `1`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The assertion error shows the actual object lacks `role`. This means the `User` interface does not include a `role` property, so TypeScript accepts `input` typed as `Omit<User, "id">` without `role`. Fix: add `role: string` (or a union) to the `User` interface. `Omit` only removes the listed keys — it does not add new ones. The test is valid; the type definition is incomplete.',
+      },
     ],
   },
 
@@ -632,6 +812,51 @@ export const typescriptPhases: Phase[] = [
         explanation:
           '`in` marks a type parameter as contravariant. `out` marks it covariant. The compiler verifies the annotation matches actual usage. See TS 4.7 release notes → Variance annotations.',
       },
+      {
+        kind: 'mcq',
+        id: 'typescript-5-mcq-debug-1',
+        prompt:
+          '> A utility type produces an unexpected result:\n> ```typescript\n> type IsArray<T> = T extends any[] ? true : false;\n>\n> type A = IsArray<string[] | number>;\n> // Expected: false  (the union contains a non-array)\n> // Actual:   boolean  (true | false)\n> ```\n> Why does `IsArray<string[] | number>` evaluate to `boolean` instead of `false`?',
+        options: [
+          'The `extends any[]` constraint is too broad and matches all types',
+          'Distributive conditional types apply the condition to each union member separately: `string[] extends any[] → true`, `number extends any[] → false`, result is `true | false` which is `boolean`; wrap `T` in a tuple to prevent distribution: `type IsArray<T> = [T] extends [any[]] ? true : false`',
+          'TypeScript widens `true | false` to `boolean` for all conditional types regardless of distribution',
+          'Add `& {}` to the constraint to disable distribution: `T extends any[] & {}`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Distributive conditional types distribute over union members when the checked type is a bare type parameter. `IsArray<string[] | number>` becomes `IsArray<string[]> | IsArray<number>` = `true | false` = `boolean`. To check the whole union at once, wrap in a tuple: `type IsArray<T> = [T] extends [any[]] ? true : false`. Now `[string[] | number] extends [any[]]` is `false` because `string[] | number` is not assignable to `any[]`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-5-mcq-debug-2',
+        prompt:
+          '> A type utility fails to extract the inner type:\n> ```typescript\n> type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;\n>\n> type A = UnwrapPromise<Promise<string>>;  // string ✓\n> type B = UnwrapPromise<Promise<Promise<number>>>;  // Promise<number>  ✗ expected: number\n> ```\n> How do you make `UnwrapPromise` recursively unwrap nested Promises?',
+        options: [
+          'Use `T extends Promise<infer U> ? UnwrapPromise<U> : T` — recurse on the inferred `U`',
+          'Use `Awaited<T>` — the built-in utility type already handles nested Promises recursively',
+          'Both A and B are correct fixes',
+          'Add `& Promise<unknown>` to the constraint to force TypeScript to look deeper',
+        ],
+        correctIndex: 2,
+        explanation:
+          'Both fixes work. Recursing on `U` (`T extends Promise<infer U> ? UnwrapPromise<U> : T`) unwraps one layer at a time. The built-in `Awaited<T>` (TS 4.5+) does the same thing and also handles non-Promise thenables. For real codebases, prefer `Awaited<T>` from the standard library over a hand-rolled version.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-5-mcq-debug-3',
+        prompt:
+          '> A template-literal type produces a compile error instead of the expected string union:\n> ```typescript\n> type Axis = "x" | "y" | "z";\n> type Getter = `get${Axis}`;\n> // Error: Type \'Axis\' is not assignable to type \'string | number | bigint | boolean | null | undefined\'.\n> ```\n> Why does this error occur, and what is the fix?',
+        options: [
+          'Template literal types only work with `string` — change `Axis` to `type Axis = string`',
+          'The error does not actually occur — template literal types distribute over string unions automatically; `Getter` resolves to `"getx" | "gety" | "getz"`',
+          'Capitalize the interpolated type: `` `get${Capitalize<Axis>}` `` to make the identifiers valid',
+          'Template literal types require the `--experimentalDecorators` flag to use union interpolation',
+        ],
+        correctIndex: 1,
+        explanation:
+          'This error does not actually occur in TypeScript. Template literal types distribute over string literal unions automatically — `\`get${Axis}\`` resolves to `"getx" | "gety" | "getz"`. If you see this error in practice, the type being interpolated is not a `string | number | bigint | boolean | null | undefined` — for example, it might be an object type or `unknown`. Check what `Axis` is actually resolving to at that point.',
+      },
     ],
   },
 
@@ -762,6 +987,51 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`@deprecated` is the standard TSDoc tag recognised by the TypeScript Language Service. Any editor that talks to `tsserver` (or `tsc --noEmit` in CI with a TSDoc-aware linter) treats marked symbols as deprecated. See tsdoc.org for the full tag list.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-6-mcq-debug-1',
+        prompt:
+          '> A consumer of your library gets a type error that does not match the `.d.ts` you wrote:\n> ```\n> error TS2345: Argument of type \'string\' is not assignable to parameter of type \'number\'.\n> ```\n> Your source `src/math.ts`:\n> ```typescript\n> export function double(x: number): number { return x * 2; }\n> ```\n> Your hand-written `dist/math.d.ts`:\n> ```typescript\n> export declare function double(x: string): number;\n> ```\n> What is the root cause?',
+        options: [
+          'The consumer\'s tsconfig has `skipLibCheck: true` which ignores `.d.ts` errors',
+          'The hand-written `.d.ts` file declares `x: string` instead of `x: number`, so the declaration drifts from the implementation; TypeScript trusts the `.d.ts` over the source — consumers see the wrong type',
+          'The `dist/` directory needs a `package.json` with `"types": "math.d.ts"` to be recognised',
+          'Hand-written `.d.ts` files are only valid for JavaScript packages, not TypeScript source',
+        ],
+        correctIndex: 1,
+        explanation:
+          'TypeScript always trusts the `.d.ts` file for published packages — it does not re-check the source. A drift between `src/math.ts` (correct) and `dist/math.d.ts` (wrong) means consumers see the wrong type signature. The fix is to let `tsc --declaration` generate the `.d.ts` automatically, or meticulously keep the hand-written declaration in sync with the source. This is why `isolatedDeclarations` (TS 5.5) was introduced: to catch these mismatches at build time.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-6-mcq-debug-2',
+        prompt:
+          '> After publishing a dual ESM/CJS library, a Next.js app throws at runtime:\n> ```\n> Error [ERR_REQUIRE_ESM]: require() of ES Module .../node_modules/my-lib/dist/index.js not supported.\n> ```\n> The `package.json` of `my-lib`:\n> ```json\n> {\n>   "type": "module",\n>   "main": "dist/index.js",\n>   "exports": {\n>     ".": "./dist/index.js"\n>   }\n> }\n> ```\n> What is wrong?',
+        options: [
+          'The `"type": "module"` field must be removed — it conflicts with `"main"`',
+          'The `exports` field is missing the `"require"` condition; all consumers that call `require()` fall through to `"main"`, which is an ESM file. Add `"require": "./dist/index.cjs"` alongside `"import": "./dist/index.js"` in the exports map',
+          'Rename `dist/index.js` to `dist/index.mjs` to signal ESM to Node',
+          'Add `"module": "dist/index.mjs"` to the `package.json` for bundlers',
+        ],
+        correctIndex: 1,
+        explanation:
+          'With `"type": "module"`, `.js` files are treated as ESM. The `exports` map has no `"require"` condition, so CommonJS consumers (`require()`) match the single `"."` entry which points to an ESM file — causing `ERR_REQUIRE_ESM`. The fix is a dual-condition exports entry: `{ ".": { "import": "./dist/index.js", "require": "./dist/index.cjs" } }`, with a separate CJS build output as `dist/index.cjs`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-6-mcq-debug-3',
+        prompt:
+          '> A colleague reports that importing your library under `isolatedModules: true` fails:\n> ```\n> error TS1205: Re-exporting a type when \'--isolatedModules\' is set requires using \'export type\'.\n> ```\n> Your library\'s `index.ts`:\n> ```typescript\n> export { User } from "./user";\n> ```\n> Where `User` is defined as:\n> ```typescript\n> // user.ts\n> export interface User { id: number; name: string; }\n> ```\n> What is the fix?',
+        options: [
+          'Change `interface User` to `type User = { id: number; name: string; }` — interfaces cannot be re-exported',
+          'Change the re-export to `export type { User } from "./user"` — this tells single-file transpilers the export is type-only and safe to erase',
+          'Add `"isolatedModules": false` to the library\'s `tsconfig.json`',
+          'Move the `User` interface into `index.ts` directly to avoid the re-export',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Tools like esbuild and swc process one file at a time without cross-file type resolution. When they see `export { User }`, they cannot tell if `User` is a value or a type. `export type { User }` is an explicit signal that the export is purely type-level and should be erased. Enabling `isolatedModules: true` in the library\'s own tsconfig catches these at compile time. See TS 3.8 release notes → type-only imports and exports.',
       },
     ],
   },
@@ -904,6 +1174,51 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'Functions cannot be passed across the server→client boundary unless marked `"use server"`. Importing a client component into a server component is fine; importing a plain function is fine; passing it as a prop is the violation.',
       },
+      {
+        kind: 'mcq',
+        id: 'typescript-7-mcq-debug-1',
+        prompt:
+          '> A React component shows stale data after state updates:\n> ```typescript\n> "use client";\n> import { useEffect, useState } from "react";\n>\n> export function Counter() {\n>   const [count, setCount] = useState(0);\n>\n>   useEffect(() => {\n>     const id = setInterval(() => {\n>       console.log("count:", count); // always logs 0\n>       setCount(count + 1);          // never increments past 1\n>     }, 1000);\n>     return () => clearInterval(id);\n>   }, []); // empty deps\n>\n>   return <div>{count}</div>;\n> }\n> ```\n> What is the bug?',
+        options: [
+          'The `setInterval` callback must be declared `async` to read the latest state',
+          'The `useEffect` has an empty dependency array, so the callback closes over the initial `count = 0` and never sees updates; use the functional updater form `setCount(c => c + 1)` to avoid the stale closure',
+          'Add `count` to the dependency array and recreate the interval on every render',
+          '`setInterval` is not supported inside React components; use `setTimeout` recursively',
+        ],
+        correctIndex: 1,
+        explanation:
+          'This is the classic stale closure bug. The `useEffect` callback captures `count` at mount time (0) and the empty `[]` dependency array means the effect never re-runs. Every tick reads the stale `0`. Two fixes: (1) functional updater `setCount(c => c + 1)` — no closure over `count` needed; (2) add `count` to deps — re-registers the interval on every count change. Option 1 is preferred because it avoids tearing down and recreating the interval.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-7-mcq-debug-2',
+        prompt:
+          '> A Next.js 16 server action fails at runtime with a serialization error:\n> ```\n> Error: Only plain objects, and a few built-ins, can be passed to Client Components from Server Components.\n> Classes or null prototypes are not supported.\n> ```\n> The server action:\n> ```typescript\n> "use server";\n> import { db } from "@/lib/db";\n>\n> export async function getUser(id: string) {\n>   const user = await db.user.findUnique({ where: { id } });\n>   return user; // Prisma model instance\n> }\n> ```\n> What is the fix?',
+        options: [
+          'Mark the file with `"use client"` so the Prisma object is handled on the client',
+          'Prisma model instances are class instances with non-plain-object prototypes; serialize to a plain object before returning: `return user ? { id: user.id, name: user.name, email: user.email } : null`',
+          'Add `JSON.stringify(user)` before returning and `JSON.parse` on the client',
+          'Wrap the return in `structuredClone(user)` to produce a plain object copy',
+        ],
+        correctIndex: 1,
+        explanation:
+          'React Server Components serialize return values across the server/client boundary using a subset of structured clone. Prisma model instances are class instances (non-plain objects) and cannot be serialized this way. The fix is to map to a plain object DTO before returning. `structuredClone` does not strip the class prototype in all environments. `JSON.stringify`/`JSON.parse` works but is verbose and loses type safety.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-7-mcq-debug-3',
+        prompt:
+          '> A Next.js 16 page throws at runtime:\n> ```\n> Error: Route "/blog/[slug]": params should be awaited before using its properties.\n> ```\n> The page component:\n> ```typescript\n> export default function BlogPost({ params }: { params: { slug: string } }) {\n>   return <h1>{params.slug}</h1>;\n> }\n> ```\n> What is the fix?',
+        options: [
+          'Destructure `params` directly in the function signature: `{ params: { slug } }`',
+          'In Next.js 15+, `params` is a `Promise`; the component must be `async` and `await` the params: `export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; ... }`',
+          'Use `useParams()` from `next/navigation` instead of the page prop',
+          'Add `export const dynamic = "force-static"` to opt out of dynamic params',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Next.js 15 changed `params` and `searchParams` to be Promises to support streaming and partial prerendering. The correct type is `Promise<{ slug: string }>` and the component must be `async` to `await` it. Using `useParams()` is a client-side hook and is not valid in a server component. The old synchronous pattern (`params: { slug: string }`) no longer works in Next.js 15+.',
+      },
     ],
   },
 
@@ -1035,6 +1350,51 @@ export const typescriptPhases: Phase[] = [
         explanation:
           '`it.each(rows)` (table form) generates a test per row, formatting the title with `printf`-style placeholders. See vitest.dev/api → it.each.',
       },
+      {
+        kind: 'mcq',
+        id: 'typescript-8-mcq-debug-1',
+        prompt:
+          '> An XState v5 machine never transitions from `idle` to `active` when the `START` event is sent:\n> ```typescript\n> import { createMachine, createActor } from "xstate";\n>\n> const machine = createMachine({\n>   id: "toggle",\n>   initial: "idle",\n>   states: {\n>     idle:   { on: { start: { target: "active" } } },\n>     active: { on: { stop:  { target: "idle"   } } },\n>   },\n> });\n>\n> const actor = createActor(machine).start();\n> actor.send({ type: "START" });\n> console.log(actor.getSnapshot().value); // "idle" — not "active"\n> ```\n> What is the bug?',
+        options: [
+          'XState v5 requires `setup()` before `createMachine()` for transitions to work',
+          'Event types are case-sensitive; the machine defines `"start"` but the code sends `{ type: "START" }` — the event does not match any transition',
+          '`actor.send()` is asynchronous; add `await` before reading `.getSnapshot()`',
+          'The `target` must use the full state path `"#toggle.active"` instead of `"active"`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'XState event types are exact string matches — `"start"` and `"START"` are different events. The machine listens for `"start"` but receives `"START"`, so no transition fires and the state stays `"idle"`. Fix: use consistent casing (`{ type: "start" }` or rename the transition key to `"START"`). A TypeScript-typed machine with `setup({ types: { events: ... } })` would catch this at compile time.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-8-mcq-debug-2',
+        prompt:
+          '> A Playwright test is flaky — it passes locally but fails in CI with:\n> ```\n> Error: locator.click: Error: strict mode violation: getByText("Submit") resolved to 2 elements\n> ```\n> The test:\n> ```typescript\n> import { test, expect } from "@playwright/test";\n>\n> test("submits the form", async ({ page }) => {\n>   await page.goto("/checkout");\n>   await page.getByText("Submit").click();\n>   await expect(page.getByText("Order confirmed")).toBeVisible();\n> });\n> ```\n> What is the fix?',
+        options: [
+          'Use `page.getByText("Submit").first().click()` to always pick the first match',
+          'The locator `getByText("Submit")` matches multiple elements (e.g., a button and a tooltip); use a more specific locator such as `page.getByRole("button", { name: "Submit" })` to uniquely identify the submit button',
+          'Add `await page.waitForLoadState("networkidle")` before clicking to wait for the page to settle',
+          'Switch from `getByText` to `locator("button:has-text(\'Submit\')")` for CSS selector precision',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Playwright strict mode (the default) throws when a locator matches more than one element. `getByText("Submit")` matches any element containing that text — buttons, labels, tooltips, etc. The robust fix is `getByRole("button", { name: "Submit" })`, which targets the semantic role and accessible name, uniquely identifying the button. Using `.first()` hides the ambiguity and may pick the wrong element in CI where layout differs.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-8-mcq-debug-3',
+        prompt:
+          '> A Vitest test for an XState machine assertion fails unexpectedly:\n> ```typescript\n> import { createMachine, createActor } from "xstate";\n> import { expect, it } from "vitest";\n>\n> const machine = createMachine({\n>   initial: "idle",\n>   states: {\n>     idle:     { on: { FETCH: "loading" } },\n>     loading:  { on: { SUCCESS: "done", FAILURE: "error" } },\n>     done:     {},\n>     error:    {},\n>   },\n> });\n>\n> it("transitions idle → loading → done", () => {\n>   const actor = createActor(machine).start();\n>   actor.send({ type: "FETCH" });\n>   actor.send({ type: "SUCCESS" });\n>   expect(actor.getSnapshot().value).toBe("done");\n> });\n> ```\n> The test fails with `expected "loading" to be "done"`. What is the issue?',
+        options: [
+          'XState processes events asynchronously; the `SUCCESS` event has not been handled yet when `getSnapshot()` is called',
+          'The machine is missing a `context` definition, which causes events to be dropped',
+          '`actor.send()` in XState v5 is synchronous — the issue is that `SUCCESS` is being sent before the machine has processed `FETCH`; reorder the sends or add synchronous event inspection between them',
+          'Events in XState v5 are batched; call `actor.getSnapshot()` inside a `flushSync` callback',
+        ],
+        correctIndex: 0,
+        explanation:
+          'In XState v5, actor event processing can be asynchronous when services or promises are involved, but for pure state machines without invoke, `send()` is synchronous and the snapshot should reflect the transition immediately. If the test sees `"loading"` after sending `SUCCESS`, it is likely that `FETCH` was not processed before `SUCCESS` was sent — perhaps due to actor lifecycle timing. Ensure the actor is fully started (`actor.start()`) before sending events, and verify both sends happen in the correct order. In pure machines, both transitions should be synchronous.',
+      },
     ],
   },
 
@@ -1165,6 +1525,51 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'Vite plugins are registered in the `plugins` array inside `vite.config.ts`. `tsconfig.json#plugins` is for *Language Service* plugins, which serve the editor — not the bundler.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-9-mcq-debug-1',
+        prompt:
+          '> A Node.js script using `tsx` works fine, but when compiled with `tsc` and run with `node dist/index.js` it throws:\n> ```\n> Error [ERR_REQUIRE_ESM]: require() of ES Module dist/utils.js not supported.\n> Please either convert file to CommonJS, or use dynamic import().\n> ```\n> The `tsconfig.json`:\n> ```json\n> {\n>   "compilerOptions": {\n>     "target": "ES2022",\n>     "module": "ESNext",\n>     "outDir": "dist"\n>   }\n> }\n> ```\n> What is the root cause?',
+        options: [
+          '`tsx` transpiles to CommonJS by default; switch to `ts-node` for ESM output',
+          '`"module": "ESNext"` emits ES module syntax (`import`/`export`); but without `"type": "module"` in `package.json`, Node treats `.js` files as CommonJS and fails on the ESM `import` statement. Fix: add `"type": "module"` to `package.json`, or change `"module"` to `"CommonJS"` in tsconfig',
+          'Change `"target"` from `"ES2022"` to `"ES5"` to produce compatible output',
+          'Rename the output files from `.js` to `.mjs` manually after compilation',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`"module": "ESNext"` (or `"ES2020"`) emits `import`/`export` statements. Node.js only executes these as ESM when either the file extension is `.mjs` or `"type": "module"` is set in the nearest `package.json`. Without it, Node tries to interpret the `import` as CJS and throws `ERR_REQUIRE_ESM`. The two clean fixes are: (1) add `"type": "module"` to `package.json`; (2) switch to `"module": "CommonJS"` in tsconfig for a CJS build.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-9-mcq-debug-2',
+        prompt:
+          '> Stack traces in production point to minified line numbers with no file names:\n> ```\n> TypeError: Cannot read properties of undefined\n>     at t.<anonymous> (index-BxK92.js:1:4821)\n> ```\n> The `vite.config.ts` build config:\n> ```typescript\n> export default defineConfig({\n>   build: {\n>     sourcemap: false,\n>     minify: true,\n>   },\n> });\n> ```\n> What single change produces readable stack traces without disabling minification?',
+        options: [
+          'Set `minify: false` — minification is incompatible with source maps',
+          'Set `sourcemap: true` (or `"hidden"`) — Vite generates `.js.map` files; error monitoring tools (Sentry, Datadog) consume hidden source maps server-side while keeping them out of the browser bundle',
+          'Add `"inlineSourceMap": true` to `tsconfig.json` — tsc embeds source maps in the JS output',
+          'Switch from `esbuild` minifier to `terser` — terser preserves function names in stack traces',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Source maps and minification are independent features. Setting `sourcemap: true` generates `.map` files alongside the bundle; `"hidden"` generates the maps without adding the `//# sourceMappingURL` comment, keeping them invisible to browser DevTools but uploadable to error monitoring services. This is the standard production pattern: minify for performance, hidden source maps for debuggability. `tsconfig` `inlineSourceMap` applies to `tsc` output, not Vite\'s bundler output.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-9-mcq-debug-3',
+        prompt:
+          '> A TypeScript file imports a local utility using a path alias, but `tsc --noEmit` passes while `node dist/index.js` throws:\n> ```\n> Error: Cannot find module \'@utils/format\'\n> ```\n> The `tsconfig.json`:\n> ```json\n> {\n>   "compilerOptions": {\n>     "paths": { "@utils/*": ["src/utils/*"] },\n>     "outDir": "dist"\n>   }\n> }\n> ```\n> Why does TypeScript accept the import but Node throws at runtime?',
+        options: [
+          '`tsc` should have reported an error — the `paths` configuration is wrong',
+          'TypeScript `paths` are compile-time aliases for the type checker only; `tsc` does not rewrite import specifiers in the emitted JavaScript. Node sees the literal `@utils/format` string, which has no mapping at runtime. Fix: use a bundler (esbuild, Vite, webpack) that resolves path aliases, or use `tsc-alias` / `tsconfig-paths` to post-process or register the aliases at runtime',
+          'Add `"baseUrl": "."` to `tsconfig.json` — without it, `paths` are ignored by the emitter',
+          'Rename the alias to use a relative path — Node only resolves `./` and `../` imports natively',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`compilerOptions.paths` tells the TypeScript *type checker* how to resolve module specifiers — it has no effect on the emitted JavaScript. `tsc` emits the import as-is (`@utils/format`), and Node has no knowledge of the alias. Solutions: (1) use a bundler that resolves aliases; (2) use `tsconfig-paths/register` at runtime (`node -r tsconfig-paths/register dist/index.js`); (3) use `tsc-alias` as a post-build step to rewrite aliases to relative paths. Adding `baseUrl` alone does not fix the runtime resolution.',
       },
     ],
   },
@@ -1301,6 +1706,51 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 2,
         explanation:
           '`tsc --generateTrace ./trace` writes a Chrome-trace event log to the given directory. Open it with `chrome://tracing` or `https://ui.perfetto.dev/`. See TS Wiki → Performance Tracing.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-10-mcq-debug-1',
+        prompt:
+          '> A TypeScript Language Service plugin causes `tsserver` to crash on every file open:\n> ```\n> [tsserver] TypeError: Cannot read properties of undefined (reading \'getSemanticDiagnostics\')\n>     at Object.create (/project/node_modules/my-ts-plugin/dist/index.js:12:34)\n> ```\n> The plugin entry point:\n> ```typescript\n> import type * as ts from "typescript/lib/tsserverlibrary";\n>\n> function init(modules: { typescript: typeof ts }) {\n>   function create(info: ts.server.PluginCreateInfo) {\n>     const proxy = info.languageService;\n>     proxy.getSemanticDiagnostics = (fileName) => {\n>       return info.languageService.getSemanticDiagnostics(fileName);\n>     };\n>     return proxy;\n>   }\n>   return { create };\n> }\n\nexport = init;\n> ```\n> What is wrong with the proxy pattern?',
+        options: [
+          'The plugin must use `export default` instead of `export =`',
+          'The proxy is mutating `info.languageService` directly instead of creating a new object that delegates to it; mutating the original service object corrupts it for all other plugins. Fix: `const proxy = Object.create(info.languageService)` to create a prototype-chain delegate, then override only the methods you need',
+          'The `typescript` module parameter is unused and must be destructured before `create` is called',
+          'Language Service plugins cannot override `getSemanticDiagnostics` — use `getCompletionsAtPosition` instead',
+        ],
+        correctIndex: 1,
+        explanation:
+          'The standard LS plugin proxy pattern is `const proxy = Object.create(info.languageService)`. This creates an object whose prototype is the original service, so all un-overridden methods delegate transparently. Directly mutating `info.languageService` replaces methods on the shared object, breaking other plugins and potentially causing recursive calls or undefined references. See the TS wiki → Writing a Language Service Plugin.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-10-mcq-debug-2',
+        prompt:
+          '> A generic function infers the wrong type for the default value:\n> ```typescript\n> function getOrDefault<T>(value: T | undefined, fallback: T): T {\n>   return value ?? fallback;\n> }\n>\n> // Caller wants T = string, but TypeScript infers T = string | number\n> const result = getOrDefault(undefined, 42);\n> // result: string | number  (expected: number)\n> ```\n> After reading the TS 5.4 release notes, a colleague suggests wrapping `fallback` with `NoInfer<T>`. What does that fix?',
+        options: [
+          '`NoInfer<T>` prevents `fallback` from contributing to the inference of `T`, so TypeScript infers `T` solely from `value`; since `value` is `undefined`, `T` cannot be inferred and must be supplied explicitly — this forces callers to write `getOrDefault<string>(undefined, "")` rather than inferring from the fallback',
+          '`NoInfer<T>` widens `T` to `unknown` so that any fallback value is accepted',
+          '`NoInfer<T>` makes `fallback` optional, allowing the caller to omit it',
+          '`NoInfer<T>` is equivalent to `T extends unknown ? T : never` and has no practical effect here',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`NoInfer<T>` (TS 5.4) excludes an argument position from inference. Without it, TypeScript infers `T` from both `value` (`undefined` — uninformative) and `fallback` (`42` → `number`), producing `T = number`. With `fallback: NoInfer<T>`, only `value` is used for inference. Since `value` is `undefined`, `T` cannot be inferred and the caller must supply it explicitly: `getOrDefault<number>(undefined, 42)`. This is the canonical use case from the TS 5.4 release notes.',
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-10-mcq-debug-3',
+        prompt:
+          '> After installing a TS Language Service plugin via `tsconfig.json#plugins`, the custom diagnostics appear in the editor but NOT when running `tsc --noEmit` in CI:\n> ```json\n> // tsconfig.json\n> {\n>   "compilerOptions": {\n>     "plugins": [{ "name": "my-await-in-loop-plugin" }]\n>   }\n> }\n> ```\n> CI output shows zero errors even for code the plugin should flag. What is the root cause?',
+        options: [
+          'The plugin package is listed in `devDependencies`; move it to `dependencies` for CI to pick it up',
+          '`tsconfig.json#plugins` is only loaded by the TypeScript Language Service (i.e., the editor\'s `tsserver`); `tsc` itself does not load or execute Language Service plugins, so plugin diagnostics never appear in CLI builds or CI',
+          'Pass `--plugins my-await-in-loop-plugin` on the `tsc` command line to enable it for CLI builds',
+          'Add `"skipLibCheck": false` to the tsconfig so `tsc` performs a full diagnostic pass including plugin checks',
+        ],
+        correctIndex: 1,
+        explanation:
+          'This is a fundamental limitation of the TS plugin architecture. `tsconfig.json#plugins` wires plugins into the Language Service used by editors (`tsserver`), but the `tsc` CLI does not load them. Plugin diagnostics are editor-only. If you need CI enforcement, you have two options: (1) write an ESLint rule that enforces the same constraint (ESLint runs in both editor and CI); (2) use a custom `tsc` transformer (via `ts-patch` or a build script) that runs as part of the compilation step.',
       },
     ],
   },
