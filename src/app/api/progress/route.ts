@@ -1,29 +1,73 @@
-import { getKv } from '@/lib/kv';
+import { createClient } from '@/lib/supabase/server';
 import { STORAGE_VERSION } from '@/lib/storage';
 
 export const runtime = 'nodejs';
 
-const KEY = 'progress:singleton';
-
 export async function GET() {
-  const kv = await getKv();
-  if (!kv) return new Response(null, { status: 204 });
-  const data = await kv.get(KEY);
-  if (!data) return new Response(null, { status: 204 });
-  return Response.json(data);
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('progress')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching progress from Supabase:', error);
+      return new Response(null, { status: 204 });
+    }
+
+    if (!data || !data.progress) {
+      return new Response(null, { status: 204 });
+    }
+
+    return Response.json(data.progress);
+  } catch (err) {
+    console.error('Unexpected error fetching progress:', err);
+    return new Response(null, { status: 204 });
+  }
 }
 
 export async function PUT(req: Request) {
-  const body = await req.json();
-  if (
-    typeof body !== 'object' ||
-    body == null ||
-    (body as { version?: number }).version !== STORAGE_VERSION
-  ) {
-    return Response.json({ error: 'invalid' }, { status: 400 });
+  try {
+    const body = await req.json();
+    if (
+      typeof body !== 'object' ||
+      body == null ||
+      (body as { version?: number }).version !== STORAGE_VERSION
+    ) {
+      return Response.json({ error: 'invalid' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const { error } = await supabase
+      .from('user_progress')
+      .upsert({
+        user_id: user.id,
+        progress: body,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error('Error upserting progress in Supabase:', error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    console.error('Unexpected error saving progress:', err);
+    return Response.json({ error: 'internal server error' }, { status: 500 });
   }
-  const kv = await getKv();
-  if (!kv) return new Response(null, { status: 204 });
-  await kv.set(KEY, body);
-  return new Response(null, { status: 204 });
 }

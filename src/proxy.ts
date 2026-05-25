@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PUBLIC_PATHS, SESSION_COOKIE_NAME, verifySession } from '@/lib/auth';
+import { PUBLIC_PATHS } from '@/lib/auth';
+import { updateSession } from '@/lib/supabase/middleware';
 
 export const config = {
   // PWA assets (manifest, service worker, app icons, apple-touch-icon) are excluded so
@@ -19,15 +20,14 @@ function isPublicPath(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  const expectedUsername = process.env['BASIC_AUTH_USERNAME'];
-  const expectedPassword = process.env['BASIC_AUTH_PASSWORD'];
-  const secret = process.env['AUTH_SECRET'];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Fail closed if env is misconfigured — same posture as the old basic-auth proxy.
-  if (!expectedUsername || !expectedPassword || !secret || secret.length < 32) {
+  // Fail closed if env is misconfigured
+  if (!supabaseUrl || !supabaseAnonKey) {
     return new NextResponse(
-      'Service misconfigured: BASIC_AUTH_USERNAME, BASIC_AUTH_PASSWORD, and AUTH_SECRET (32+ chars) must be set',
-      { status: 503 },
+      'Service misconfigured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set',
+      { status: 503 }
     );
   }
 
@@ -38,12 +38,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  if (token) {
-    const session = await verifySession(token);
-    if (session) {
-      return NextResponse.next();
+  // Initial pass-through response
+  const response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  try {
+    // updateSession handles refreshing token and reading/writing Supabase cookies
+    const { user, response: supabaseResponse } = await updateSession(request, response);
+
+    if (user) {
+      return supabaseResponse;
     }
+  } catch (error) {
+    console.error('Middleware session verification failed:', error);
   }
 
   // No valid session — redirect to /login with `?from=` so we can return after.

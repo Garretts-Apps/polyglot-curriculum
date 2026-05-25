@@ -1,23 +1,23 @@
 import { Suspense } from 'react';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { ShellPrompt } from '@/components/ui/ShellPrompt';
 import { TerminalCursor } from '@/components/ui/TerminalCursor';
-import { SESSION_COOKIE_NAME, verifySession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
   // If the user already has a valid session, bounce them home so they don't
   // see a needless login screen.
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  if (token) {
-    const session = await verifySession(token);
-    if (session) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
       redirect('/');
     }
+  } catch (error) {
+    console.error('Failed to check user session on login page:', error);
   }
 
   return (

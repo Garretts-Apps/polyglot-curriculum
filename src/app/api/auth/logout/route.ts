@@ -1,17 +1,14 @@
-import { cookies } from 'next/headers';
-import { SESSION_COOKIE_NAME } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
 
   // If the form submission accepts HTML (browser default), redirect to /login.
   // For JSON callers, return a tiny ack.

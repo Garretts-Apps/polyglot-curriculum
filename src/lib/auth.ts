@@ -19,7 +19,7 @@ export const SESSION_COOKIE_NAME = 'polyglot_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 /** Names of public paths that bypass the auth check in `proxy.ts`. */
-export const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout'];
+export const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/signup', '/api/auth/logout'];
 
 interface SessionPayload {
   user: string;

@@ -46,3 +46,4 @@ next-env.d.ts
 # omc / copilot state (local tooling only)
 .omc/
 .copilot-logs/
+.env*.local

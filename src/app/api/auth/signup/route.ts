@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-interface LoginBody {
+interface SignupBody {
   email?: unknown;
   password?: unknown;
 }
@@ -18,9 +18,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: LoginBody;
+  let body: SignupBody;
   try {
-    body = (await req.json()) as LoginBody;
+    body = (await req.json()) as SignupBody;
   } catch {
     return Response.json({ error: 'invalid request body' }, { status: 400 });
   }
@@ -35,9 +35,25 @@ export async function POST(req: Request) {
     );
   }
 
+  if (password.length < 6) {
+    return Response.json(
+      { error: 'password must be at least 6 characters long' },
+      { status: 400 }
+    );
+  }
+
+  // Basic email regex sanity check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return Response.json(
+      { error: 'invalid email address format' },
+      { status: 400 }
+    );
+  }
+
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -45,15 +61,21 @@ export async function POST(req: Request) {
     if (error) {
       return Response.json(
         { error: error.message },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
-    return Response.json({ ok: true });
+    // Check if the user needs to confirm their email
+    const sessionActive = data.session !== null;
+    return Response.json({
+      ok: true,
+      sessionActive,
+      message: sessionActive ? 'signup-success' : 'confirmation-required',
+    });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('Signup error:', err);
     return Response.json(
-      { error: 'internal server error during authentication' },
+      { error: 'internal server error during registration' },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import type { Phase, LanguageMeta } from '@/curriculum/types';
 import type { PhaseProgress, CheckResult } from '@/lib/storage';
 import { useProgress } from '@/lib/use-progress';
 import { phasePassed, phasePassFraction, PASS_THRESHOLD } from '@/lib/phase-status';
+import { getPhasesForLanguage } from '@/curriculum/phases';
 import { Markdown } from '@/components/ui/Markdown';
 import { Button } from '@/components/ui/Button';
 import { ShellPrompt } from '@/components/ui/ShellPrompt';
@@ -62,6 +63,17 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   const { pct: passPct } = phasePassFraction(phase, phaseProgress);
   const thresholdPct = Math.round(PASS_THRESHOLD * 100);
   const notes = phaseProgress?.notes ?? '';
+
+  // ── Phase-lock gate ────────────────────────────────────────────────────────
+  // Block direct URL access to phase N unless phase N-1 has met PASS_THRESHOLD.
+  // Lookup happens client-side because progress lives in localStorage.
+  // While hydrating we render the full view to avoid a flash of the lock for
+  // a user who has actually passed the prior phase.
+  const phasesForLang = getPhasesForLanguage(phase.language);
+  const prevPhase = phasesForLang.find((p) => p.level === phase.level - 1);
+  const prevProgress = prevPhase ? state.phases[prevPhase.id] : undefined;
+  const isLocked =
+    hydrated && prevPhase != null && !phasePassed(prevPhase, prevProgress);
 
   const handleResult = useCallback(
     (checkId: string, status: 'pass' | 'fail') => {
