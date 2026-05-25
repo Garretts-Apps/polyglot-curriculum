@@ -178,20 +178,27 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-1-mcq-debug-1',
-        prompt: `**Production symptom:** Service crashes at startup with the following panic. What is the root cause?
+        prompt: `**Production incident:** The order-processing service crashed 30 seconds after deploy on 2024-03-12 at 09:17 UTC. On-call received a PagerDuty alert. The crash reproduces locally when \`APP_ENV\` is unset. Here is the full panic and the relevant source:
 
 \`\`\`
 goroutine 1 [running]:
-main.loadConfig(...)
-        /app/config/loader.go:42 +0x68
-main.main()
-        /app/main.go:15 +0x34
+cmd/server/main.go:67 +0x1a4
 panic: runtime error: invalid memory address or nil pointer dereference
-[signal SIGSEGV: segmentation violation code=0x1 addr=0x18 pc=0x...]
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x28 pc=0x6f3c82]
+
+goroutine 1 [running]:
+runtime/panic.go:914 +0x21c
+app/internal/config.loadConfig(...)
+        /app/internal/config/loader.go:42 +0x68
+main.main()
+        /app/cmd/server/main.go:67 +0x1a4
+exit status 2
 \`\`\`
 
 \`\`\`go
-package main
+// /app/internal/config/loader.go
+
+package config
 
 import (
 \t"fmt"
@@ -199,20 +206,30 @@ import (
 )
 
 type Config struct {
-\tDSN  string
-\tPort int
+\tDSN      string
+\tPort     int
+\tAppEnv   string
 }
 
+// loadConfig reads environment variables and returns a populated Config.
+// Called once at startup from cmd/server/main.go:67.
 func loadConfig() *Config {
-\tif os.Getenv("APP_ENV") == "production" {
-\t\treturn &Config{DSN: os.Getenv("DATABASE_URL"), Port: 8080}
+\tenv := os.Getenv("APP_ENV")
+\tif env == "production" {
+\t\treturn &Config{
+\t\t\tDSN:    os.Getenv("DATABASE_URL"),
+\t\t\tPort:   8080,
+\t\t\tAppEnv: env,
+\t\t}
 \t}
-\t// forgot the non-production return
+\t// staging / local path: falls off here, returns nil implicitly
 }
+
+// /app/cmd/server/main.go (excerpt)
 
 func main() {
-\tcfg := loadConfig()
-\tfmt.Println(cfg.DSN) // line 15 — panics when cfg is nil
+\tcfg := config.loadConfig()
+\tfmt.Printf("connecting to DSN=%s port=%d\\n", cfg.DSN, cfg.Port) // line 67
 }
 \`\`\``,
         options: [
@@ -227,21 +244,67 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-1-mcq-debug-2',
-        prompt: `**Production symptom:** Loop processes fewer records than expected. QA reports the last record is always skipped.
+        prompt: `**Production incident:** Nightly reconciliation job on 2024-04-02 processed 9,999 of 10,000 order IDs. Accounting flagged a missing settlement for order #10000. The discrepancy reproduces 100% of the time. Relevant source:
+
+\`\`\`
+$ go run /app/cmd/reconcile/main.go --date=2024-04-02
+processed 9999 records
+missing: [order-10000]
+expected: 10000
+\`\`\`
 
 \`\`\`go
+// /app/cmd/reconcile/main.go
+
 package main
 
-import "fmt"
+import (
+\t"database/sql"
+\t"fmt"
+\t"log"
 
+\t_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+func fetchOrderIDs(db *sql.DB, date string) ([]int, error) {
+\trows, err := db.Query(
+\t\t\`SELECT id FROM orders WHERE settled_date = $1 ORDER BY id\`,
+\t\tdate,
+\t)
+\tif err != nil {
+\t\treturn nil, fmt.Errorf("fetchOrderIDs: %w", err)
+\t}
+\tdefer rows.Close()
+\tvar ids []int
+\tfor rows.Next() {
+\t\tvar id int
+\t\tif err := rows.Scan(&id); err != nil {
+\t\t\treturn nil, err
+\t\t}
+\t\tids = append(ids, id)
+\t}
+\treturn ids, rows.Err()
+}
+
+// processIDs reconciles a batch of order IDs fetched from the DB.
 func processIDs(ids []int) {
-\tfor i := 0; i < len(ids)-1; i++ { // off-by-one
-\t\tfmt.Printf("processing id=%d\\n", ids[i])
+\tfor i := 0; i < len(ids)-1; i++ { // off-by-one: last element never processed
+\t\tfmt.Printf("processed order id=%d\\n", ids[i])
 \t}
 }
 
 func main() {
-\tprocessIDs([]int{10, 20, 30, 40, 50})
+\tdb, err := sql.Open("pgx", "postgres://app:secret@db:5432/orders")
+\tif err != nil {
+\t\tlog.Fatal(err)
+\t}
+\tdefer db.Close()
+\tids, err := fetchOrderIDs(db, "2024-04-02")
+\tif err != nil {
+\t\tlog.Fatal(err)
+\t}
+\tfmt.Printf("processed %d records\\n", len(ids)-1) // also wrong
+\tprocessIDs(ids)
 }
 \`\`\``,
         options: [
@@ -256,20 +319,42 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-1-mcq-debug-3',
-        prompt: `**Production symptom:** A batch job reports it processed 0 items every run, even though the input file has 1 000 lines.
+        prompt: `**Production incident:** The nightly log-ingestion job at \`/app/cmd/ingest/main.go\` has reported "total: 0 lines ingested" every night for a week. Each chunk file on disk contains roughly 200 lines. Ops confirmed the files exist and are non-empty.
+
+\`\`\`
+$ ls -lh /data/chunks/
+-rw-r--r-- 1 app app 14K chunk_0.txt
+-rw-r--r-- 1 app app 13K chunk_1.txt
+-rw-r--r-- 1 app app 15K chunk_2.txt
+-rw-r--r-- 1 app app 12K chunk_3.txt
+-rw-r--r-- 1 app app 14K chunk_4.txt
+
+$ go run /app/cmd/ingest/main.go
+total: 0 lines ingested
+\`\`\`
 
 \`\`\`go
+// /app/cmd/ingest/main.go
+
 package main
 
 import (
 \t"bufio"
 \t"fmt"
+\t"log"
 \t"os"
+
+\t"go.opentelemetry.io/otel"
+\t"go.opentelemetry.io/otel/attribute"
 )
 
+var tracer = otel.Tracer("ingest")
+
+// countLines opens a file and returns the number of newline-delimited records.
 func countLines(path string) int {
 \tf, err := os.Open(path)
 \tif err != nil {
+\t\tlog.Printf("countLines: open %s: %v", path, err)
 \t\treturn 0
 \t}
 \tdefer f.Close()
@@ -279,15 +364,25 @@ func countLines(path string) int {
 \tfor scanner.Scan() {
 \t\tcount++
 \t}
+\tif err := scanner.Err(); err != nil {
+\t\tlog.Printf("countLines: scan %s: %v", path, err)
+\t}
 \treturn count
 }
 
 func main() {
+\tctx := context.Background()
+\t_, span := tracer.Start(ctx, "ingest-chunks")
+\tdefer span.End()
+
 \ttotal := 0
 \tfor i := 0; i < 5; i++ {
-\t\ttotal = countLines(fmt.Sprintf("chunk_%d.txt", i))
+\t\tpath := fmt.Sprintf("/data/chunks/chunk_%d.txt", i)
+\t\ttotal = countLines(path) // BUG: assigns instead of accumulates
 \t}
-\tfmt.Println("total:", total)
+
+\tspan.SetAttributes(attribute.Int("lines.total", total))
+\tfmt.Printf("total: %d lines ingested\\n", total)
 }
 \`\`\``,
         options: [
@@ -495,40 +590,72 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-2-mcq-debug-1',
-        prompt: `**Production symptom:** An \`errors.Is\` check in a caller always returns \`false\` even though the function clearly returned a non-nil \`*AppError\`. The on-call engineer sees this in the logs:
+        prompt: `**Production incident:** The \`/api/users/{id}\` handler always takes the error branch even for valid user IDs. On-call sees this in Datadog logs every request:
 
 \`\`\`
-[ERROR] unexpected error path hit — err is non-nil but errors.Is returned false
+2024-05-10T11:42:03Z ERROR pkg/store/postgres.go:128 unexpected error path:
+  err != nil = true, errors.Is(err, nil) = false, err = <nil>
+  user_id=42 trace_id=4bf92f3577b34da6
 \`\`\`
 
 \`\`\`go
-package main
+// /app/pkg/store/postgres.go
+
+package store
 
 import (
+\t"context"
+\t"database/sql"
 \t"errors"
 \t"fmt"
+
+\t"go.opentelemetry.io/otel"
 )
 
-type AppError struct{ Code int }
+var tracer = otel.Tracer("store")
 
-func (e *AppError) Error() string { return fmt.Sprintf("app error %d", e.Code) }
-
-func lookup(id int) error {
-\tvar err *AppError // typed nil
-\tif id < 0 {
-\t\terr = &AppError{Code: 404}
-\t}
-\treturn err // always returns non-nil interface when id >= 0!
+type QueryError struct {
+\tCode    int
+\tMessage string
 }
 
-func main() {
-\terr := lookup(1)
-\tif err != nil {
-\t\tfmt.Println("non-nil error:", err)
-\t\tfmt.Println("errors.Is nil:", errors.Is(err, nil))
-\t} else {
-\t\tfmt.Println("no error")
+func (e *QueryError) Error() string {
+\treturn fmt.Sprintf("query error %d: %s", e.Code, e.Message)
+}
+
+// LookupUser returns the user's display name or an error.
+// BUG: var qErr *QueryError is a typed nil; returning it as error
+// produces a non-nil interface value even when qErr was never set.
+func LookupUser(ctx context.Context, db *sql.DB, id int) (string, error) {
+\t_, span := tracer.Start(ctx, "LookupUser")
+\tdefer span.End()
+
+\tvar qErr *QueryError // typed nil — zero value of pointer type
+
+\tvar name string
+\terr := db.QueryRowContext(ctx,
+\t\t"SELECT display_name FROM users WHERE id = $1", id,
+\t).Scan(&name)
+\tif errors.Is(err, sql.ErrNoRows) {
+\t\tqErr = &QueryError{Code: 404, Message: "user not found"}
+\t} else if err != nil {
+\t\tqErr = &QueryError{Code: 500, Message: err.Error()}
 \t}
+
+\treturn name, qErr // line 128: always returns non-nil error interface!
+}
+\`\`\`
+
+\`\`\`go
+// /app/internal/handlers/checkout.go:42 (caller)
+
+func GetUser(w http.ResponseWriter, r *http.Request) {
+\tname, err := store.LookupUser(r.Context(), db, userID)
+\tif err != nil { // always true — typed nil trap
+\t\thttp.Error(w, "internal error", 500)
+\t\treturn
+\t}
+\tw.Write([]byte(name))
 }
 \`\`\``,
         options: [
@@ -543,36 +670,66 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-2-mcq-debug-2',
-        prompt: `**Production symptom:** Service panics under load with the following stack trace. The panic only occurs when multiple goroutines process requests simultaneously.
+        prompt: `**Production incident:** The product-catalog service crashed at 14:32 UTC under its first load test (500 req/s). The panic did not reproduce in unit tests, which run single-threaded. Sentry captured:
 
 \`\`\`
 goroutine 47 [running]:
 runtime.throw2({0x6f3a80?, 0x0?})
-        /usr/local/go/src/runtime/panic.go:1023
-runtime.mapassign(...)
-        /usr/local/go/src/runtime/map.go:612
-main.(*Cache).Set(...)
-        /app/handlers/cache.go:28 +0x94
+        /usr/local/go/src/runtime/panic.go:1023 +0x5c
+runtime.mapassign_faststr(0x7a3b20, 0x0, {0xc0004e2010, 5})
+        /usr/local/go/src/runtime/map_faststr.go:212 +0x3cc
+app/internal/handlers.(*ResponseCache).Set(...)
+        /app/internal/handlers/cache.go:28 +0x94
+app/internal/handlers.ProductHandler.ServeHTTP(...)
+        /app/internal/handlers/product.go:61 +0x1d8
+
 panic: assignment to entry in nil map
+goroutine 47 [running]
 \`\`\`
 
 \`\`\`go
-package main
+// /app/internal/handlers/cache.go
 
-type Cache struct {
-\tstore map[string]string
+package handlers
+
+import (
+\t"net/http"
+\t"time"
+)
+
+// ResponseCache holds rendered JSON responses keyed by cache key.
+type ResponseCache struct {
+\tttl   time.Duration
+\tstore map[string]string // BUG: never initialised in NewResponseCache
 }
 
-func NewCache() *Cache {
-\treturn &Cache{} // store is nil — never initialised
+// NewResponseCache constructs a ResponseCache with the given TTL.
+func NewResponseCache(ttl time.Duration) *ResponseCache {
+\treturn &ResponseCache{ttl: ttl} // store is nil — map zero value
 }
 
-func (c *Cache) Set(key, val string) {
-\tc.store[key] = val // line 28 — panics on nil map
+// Set stores a response body under key. Panics if store is nil.
+func (c *ResponseCache) Set(key, val string) {
+\tc.store[key] = val // line 28 — panics: assignment to entry in nil map
 }
 
-func (c *Cache) Get(key string) string {
-\treturn c.store[key] // safe: reads from nil map return zero value
+// Get retrieves a cached body. Safe: reads from nil map return "".
+func (c *ResponseCache) Get(key string) string {
+\treturn c.store[key]
+}
+
+// /app/internal/handlers/product.go:61 (caller)
+
+func (h ProductHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+\tkey := r.URL.Path
+\tif cached := h.cache.Get(key); cached != "" {
+\t\tw.Header().Set("Content-Type", "application/json")
+\t\tw.Write([]byte(cached))
+\t\treturn
+\t}
+\tbody := h.renderProduct(r.Context(), key)
+\th.cache.Set(key, body) // line 61 — triggers the panic
+\tw.Write([]byte(body))
 }
 \`\`\``,
         options: [
@@ -587,29 +744,59 @@ func (c *Cache) Get(key string) string {
       {
         kind: 'mcq',
         id: 'go-2-mcq-debug-3',
-        prompt: `**Production symptom:** A data-processing pipeline corrupts earlier records when it appends new items to a sub-slice returned from a helper. The bug is intermittent and depends on input size.
+        prompt: `**Production incident:** The analytics pipeline at \`/app/internal/pipeline/transform.go\` produces corrupted event records intermittently. The bug appears only for input batches smaller than the pre-allocated buffer capacity (typically batches < 512 events). A sample bad run:
+
+\`\`\`
+$ go run /app/cmd/pipeline/main.go --batch-size=5
+processing window: [event-3 event-4 event-5]
+after enrichment window: [event-3 event-4 event-5 ENRICHED]
+raw buffer after pipeline: [event-1 event-2 event-3 event-4 ENRICHED]
+                                                              ^^^^^^^
+ERROR: buf[4] was "event-5" before enrichment, now "ENRICHED" — corruption!
+\`\`\`
 
 \`\`\`go
-package main
+// /app/internal/pipeline/transform.go
 
-import "fmt"
+package pipeline
 
-// Returns a window into the global buffer — does NOT copy.
-func getWindow(buf []int, start, end int) []int {
-\treturn buf[start:end] // shares backing array
+import (
+\t"context"
+\t"fmt"
+
+\t"go.opentelemetry.io/otel"
+)
+
+var tracer = otel.Tracer("pipeline")
+
+// windowFromBuf returns a sub-slice of the raw event buffer for processing.
+// IMPORTANT: this shares the backing array — it does NOT copy.
+func windowFromBuf(buf []string, start, end int) []string {
+\treturn buf[start:end] // cap = cap(buf) - start, shares backing array
 }
 
-func main() {
-\tbuf := make([]int, 5, 10) // len=5, cap=10
-\tbuf[0], buf[1], buf[2], buf[3], buf[4] = 1, 2, 3, 4, 5
+// enrichWindow appends an ENRICHED sentinel to the window for downstream processing.
+func enrichWindow(ctx context.Context, window []string) []string {
+\t_, span := tracer.Start(ctx, "enrichWindow")
+\tdefer span.End()
+\t// BUG: if cap(window) > len(window), this writes into buf's backing array
+\treturn append(window, "ENRICHED")
+}
 
-\twindow := getWindow(buf, 2, 5) // [3 4 5], cap still 8
+func RunPipeline(ctx context.Context, events []string) {
+\t// Pre-allocate with extra capacity to avoid reallocations
+\tbuf := make([]string, len(events), len(events)+10)
+\tcopy(buf, events)
 
-\t// "safe" append — but cap is large enough, so no new allocation!
-\twindow = append(window, 99)
+\t// Take a window over the last 3 events
+\twindow := windowFromBuf(buf, len(buf)-3, len(buf))
+\tfmt.Println("processing window:", window)
 
-\tfmt.Println("buf:", buf)    // what prints here?
-\tfmt.Println("window:", window)
+\tenriched := enrichWindow(ctx, window)
+\tfmt.Println("after enrichment window:", enriched)
+
+\t// buf's backing array was mutated — buf[len(buf)-1] is now "ENRICHED"
+\tfmt.Println("raw buffer after pipeline:", buf)
 }
 \`\`\``,
         options: [
@@ -820,43 +1007,74 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-3-mcq-debug-1',
-        prompt: `**Production symptom:** p99 latency spikes from 50ms to 30s starting at 14:32 UTC. Memory usage grows steadily. \`go tool pprof\` shows thousands of goroutines in state "chan send". Relevant code:
+        prompt: `**Production incident:** p99 latency on \`/api/orders\` spiked from 50ms to 30s at 14:32 UTC after deploying v2.4.1. A \`pprof\` goroutine dump taken 10 minutes after the deploy showed 25,000 goroutines stuck in "chan send". Memory grew from 180MB to 2.1GB before the pod was OOM-killed.
+
+\`\`\`
+$ curl -s http://localhost:6060/debug/pprof/goroutine?debug=1 | head -40
+
+goroutine profile: total 25143
+
+24891 @ 0x43d486 0x44b0c5 0x8f3c42 0x4750e1
+#	0x8f3c42	app/internal/handlers.fetchAll.func1+0x82
+#	                /app/internal/handlers/checkout.go:42
+
+250 @ 0x43d486 0x44b0c5 0x6c3a18 0x4750e1
+#	0x6c3a18	app/internal/handlers.fetchAll+0xb4
+#	                /app/internal/handlers/checkout.go:55
+\`\`\`
 
 \`\`\`go
-package main
+// /app/internal/handlers/checkout.go
+
+package handlers
 
 import (
 \t"context"
-\t"fmt"
+\t"net/http"
 \t"time"
+
+\t"go.opentelemetry.io/otel"
 )
 
+var tracer = otel.Tracer("handlers")
+
+// fetchAll fans out HTTP calls for a checkout request and returns the first result.
+// Called on every POST /api/orders request.
 func fetchAll(ctx context.Context, urls []string) []string {
-\tresults := make(chan string) // unbuffered
+\t_, span := tracer.Start(ctx, "fetchAll")
+\tdefer span.End()
+
+\tresults := make(chan string) // unbuffered — requires a receiver for every send
 \tfor _, u := range urls {
 \t\tu := u
 \t\tgo func() {
-\t\t\ttime.Sleep(200 * time.Millisecond) // simulate HTTP
-\t\t\tresults <- u + "-done"
+\t\t\ttime.Sleep(200 * time.Millisecond) // simulate downstream HTTP
+\t\t\tresults <- u + "-done"            // line 42: blocks if no receiver
 \t\t}()
 \t}
-\t// context cancelled early by caller
+
 \tselect {
-\tcase r := <-results:
+\tcase r := <-results: // line 55: takes only the first result
 \t\treturn []string{r}
-\tcase <-ctx.Done():
-\t\treturn nil // goroutines still blocked on results <-
+\tcase <-ctx.Done(): // caller cancelled; remaining goroutines stay blocked
+\t\treturn nil
 \t}
 }
 
-func main() {
-\tctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
+\tctx, cancel := context.WithTimeout(r.Context(), 10*time.Millisecond)
 \tdefer cancel()
-\tfor i := 0; i < 100; i++ {
-\t\tgo fetchAll(ctx, []string{"a", "b", "c"})
+\turls := []string{
+\t\t"https://inventory/reserve",
+\t\t"https://pricing/quote",
+\t\t"https://fraud/check",
 \t}
-\ttime.Sleep(2 * time.Second)
-\tfmt.Println("done")
+\tresults := fetchAll(ctx, urls)
+\tif len(results) == 0 {
+\t\thttp.Error(w, "upstream timeout", http.StatusGatewayTimeout)
+\t\treturn
+\t}
+\tw.Write([]byte(results[0]))
 }
 \`\`\``,
         options: [
@@ -871,34 +1089,72 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-3-mcq-debug-2',
-        prompt: `**Production symptom:** A CLI tool hangs indefinitely and never prints output. \`SIGQUIT\` (Ctrl-\\\\) produces:
+        prompt: `**Production incident:** A new \`cmd/export/main.go\` CLI shipped in v1.3.0 hangs immediately on every invocation. It never prints any output. Engineers confirmed it was tested manually on a single record — the bug only surfaced when integrated into the CI pipeline. Pressing Ctrl-\\\\ (SIGQUIT) produced this goroutine dump:
 
 \`\`\`
+$ ./export --date=2024-06-01
+^\\
+SIGQUIT: quit
+PC=0x45d3c2 m=0 sigcode=0
+
 goroutine 1 [chan receive]:
 main.main()
-        /app/cmd/tool.go:18 +0x58
+        /app/cmd/export/main.go:67 +0x58
+created by main.main in goroutine 1
 
 goroutine 6 [chan send]:
-main.produce(...)
-        /app/cmd/tool.go:10 +0x44
+main.streamRecords(0xc0000b4000)
+        /app/cmd/export/main.go:34 +0x44
+created by main.main in goroutine 1 at:
+        /app/cmd/export/main.go:62 +0x38
+
+exit status 2
 \`\`\`
 
 \`\`\`go
+// /app/cmd/export/main.go
+
 package main
 
-import "fmt"
+import (
+\t"database/sql"
+\t"fmt"
+\t"log"
 
-func produce(ch chan int) {
-\tfor i := 0; i < 3; i++ {
-\t\tch <- i
+\t_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+// streamRecords queries the DB and sends each row ID onto ch.
+// Must close ch when done so the consumer's range loop can exit.
+func streamRecords(db *sql.DB, ch chan int) {
+\trows, err := db.Query("SELECT id FROM export_queue ORDER BY id")
+\tif err != nil {
+\t\tlog.Printf("streamRecords: query: %v", err)
+\t\treturn
 \t}
+\tdefer rows.Close()
+\tfor rows.Next() {
+\t\tvar id int
+\t\tif err := rows.Scan(&id); err != nil {
+\t\t\tlog.Printf("streamRecords: scan: %v", err)
+\t\t\tcontinue
+\t\t}
+\t\tch <- id // line 34: blocks on first send — no receiver yet
+\t}
+\t// BUG: close(ch) is missing; consumer range loop never terminates
 }
 
 func main() {
+\tdb, err := sql.Open("pgx", "postgres://app:secret@db:5432/prod")
+\tif err != nil {
+\t\tlog.Fatal(err)
+\t}
+\tdefer db.Close()
+
 \tch := make(chan int) // unbuffered
-\tproduce(ch)         // called synchronously — blocks on first send
-\tfor v := range ch {
-\t\tfmt.Println(v)
+\tstreamRecords(db, ch) // line 62: called synchronously — deadlocks immediately
+\tfor id := range ch { // line 67: never reached
+\t\tfmt.Printf("exporting id=%d\\n", id)
 \t}
 }
 \`\`\``,
@@ -914,35 +1170,74 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-3-mcq-debug-3',
-        prompt: `**Production symptom:** A worker pipeline processes the first N jobs correctly then stalls. Memory stays flat. CPU drops to zero. No errors are logged. Relevant code:
+        prompt: `**Production incident:** The image-resizing worker pool at \`/app/cmd/resizer/main.go\` processes exactly 5 jobs (the channel buffer size) then stalls completely. CPU drops to 0%. Memory stays flat. No errors appear in logs. The pod must be manually killed. Engineers initially suspected a deadlock in the image library.
+
+\`\`\`
+$ go run /app/cmd/resizer/main.go --jobs=10
+processed job 0 (512x512)
+processed job 1 (512x512)
+processed job 2 (512x512)
+processed job 3 (512x512)
+processed job 4 (512x512)
+[hangs here — no output, no errors, CPU=0%]
+^C
+\`\`\`
+
+A SIGQUIT dump confirmed the hang:
+
+\`\`\`
+goroutine 1 [chan receive]:
+main.main()
+        /app/cmd/resizer/main.go:71 +0x134
+
+goroutine 7 [chan receive]:
+main.worker(0xc0000b6000, 0xc0000c2000)
+        /app/cmd/resizer/main.go:38 +0x88
+\`\`\`
 
 \`\`\`go
+// /app/cmd/resizer/main.go
+
 package main
 
 import (
 \t"fmt"
+\t"log"
 \t"time"
+
+\t"go.opentelemetry.io/otel"
 )
 
-func worker(jobs <-chan int, done chan<- bool) {
-\tfor j := range jobs {
-\t\ttime.Sleep(10 * time.Millisecond)
-\t\tfmt.Println("processed", j)
+var tracer = otel.Tracer("resizer")
+
+type Job struct {
+\tID   int
+\tSize string
+}
+
+// worker drains the jobs channel and signals done when the channel is closed.
+func worker(jobs <-chan Job, done chan<- struct{}) {
+\tfor j := range jobs { // line 38: exits only when jobs is closed
+\t\ttime.Sleep(10 * time.Millisecond) // simulate image resize
+\t\tfmt.Printf("processed job %d (%s)\\n", j.ID, j.Size)
 \t}
-\tdone <- true
+\tdone <- struct{}{}
 }
 
 func main() {
-\tjobs := make(chan int, 5) // buffer=5
-\tdone := make(chan bool)
+\tjobs := make(chan Job, 5) // buffered: holds 5 jobs
+\tdone := make(chan struct{})
 
 \tgo worker(jobs, done)
 
 \tfor i := 0; i < 10; i++ {
-\t\tjobs <- i
+\t\tjobs <- Job{ID: i, Size: "512x512"}
 \t}
-\t// forgot: close(jobs)
-\t<-done // blocks forever — worker never exits its range loop
+\t// BUG: close(jobs) is missing here
+\t// The worker is stuck waiting in range jobs at line 38.
+\t// main is stuck waiting on <-done at line 71.
+\t<-done // line 71: blocks forever
+\tlog.Println("all jobs processed")
 }
 \`\`\``,
         options: [
