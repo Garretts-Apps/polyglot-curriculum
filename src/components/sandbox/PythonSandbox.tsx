@@ -69,8 +69,16 @@ export default function PythonSandbox({
   return (
     <div>
       {loadingPyodide && (
-        <div className="mb-2 rounded bg-[#1a1a2e] px-4 py-2 text-sm text-[var(--muted)]">
-          Loading Python runtime (~8 MB, first run only)…
+        <div
+          className="mb-2 px-3 py-2 text-xs font-mono border-l-2"
+          style={{
+            borderLeftColor: 'var(--accent-warn)',
+            backgroundColor: 'var(--bg-elevated)',
+            color: 'var(--fg-muted)',
+          }}
+        >
+          <span style={{ color: 'var(--accent-warn)' }}>~</span> fetching pyodide runtime{' '}
+          <span style={{ color: 'var(--fg-dim)' }}>(~8MB, first-run only)</span>…
         </div>
       )}
       <SandboxShell

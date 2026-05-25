@@ -82,8 +82,16 @@ export default function JsSandbox({
   return (
     <div>
       {loadingEsbuild && (
-        <div className="mb-2 rounded bg-[#1a1a2e] px-4 py-2 text-sm text-[var(--muted)]">
-          Loading TypeScript compiler (first run only)…
+        <div
+          className="mb-2 px-3 py-2 text-xs font-mono border-l-2"
+          style={{
+            borderLeftColor: 'var(--accent-warn)',
+            backgroundColor: 'var(--bg-elevated)',
+            color: 'var(--fg-muted)',
+          }}
+        >
+          <span style={{ color: 'var(--accent-warn)' }}>~</span> fetching esbuild-wasm{' '}
+          <span style={{ color: 'var(--fg-dim)' }}>(first-run only)</span>…
         </div>
       )}
       <SandboxShell

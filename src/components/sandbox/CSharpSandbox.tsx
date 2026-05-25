@@ -7,23 +7,18 @@
  * We embed dotnetfiddle.net in an iframe.
  *
  * LIMITATION: cross-origin restrictions prevent reading the fiddle's output
- * programmatically. The user must run their code in the embedded fiddle and
- * manually confirm success by clicking "Mark as Reviewed".
- *
- * The starter code is shown in a read-only CodeMirror editor so the user can
- * copy it into the fiddle.
+ * programmatically. The user must run code in the embedded fiddle and manually
+ * confirm success by clicking "mark reviewed".
  */
 
 import { useState } from 'react';
 import type { SandboxProps, RunOutcome } from '@/lib/sandbox/types';
 import CodeEditor from './CodeEditor';
+import { StatusTag } from '@/components/ui/StatusTag';
 
 type CSharpSandboxProps = Omit<SandboxProps, 'language'>;
 
-export default function CSharpSandbox({
-  starterCode,
-  onResult,
-}: CSharpSandboxProps) {
+export default function CSharpSandbox({ starterCode, onResult }: CSharpSandboxProps) {
   const [marked, setMarked] = useState(false);
 
   function handleMarkReviewed() {
@@ -33,35 +28,42 @@ export default function CSharpSandbox({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[#13131a] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-2">
-        <span
-          className="rounded px-2 py-0.5 text-xs font-semibold"
-          style={{ background: 'var(--accent-csharp)', color: '#0f0f11' }}
-        >
-          C#
-        </span>
+    <div className="border font-mono" style={{ borderColor: 'var(--border)' }}>
+      <div
+        className="flex items-center gap-2 border-b px-3 py-1.5 text-[11px]"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <span style={{ color: 'var(--accent-csharp)' }} className="glow-soft">●</span>
+        <span style={{ color: 'var(--fg)' }}>csharp/main.cs</span>
         <span className="flex-1" />
-        <span className="text-xs text-[var(--muted)]">External Fiddle</span>
+        <span style={{ color: 'var(--fg-dim)' }}>// external fiddle</span>
       </div>
 
-      {/* Notice */}
-      <div className="border-b border-[var(--border)] bg-[#1a1a2e] px-4 py-3 text-sm text-[var(--muted)]">
-        <strong className="text-[var(--fg)]">Note:</strong> C# runs in the embedded .NET Fiddle
-        below. Copy your starter code into the editor, click{' '}
-        <strong className="text-[var(--fg)]">Run</strong>, and verify the output visually. Then
-        click <strong className="text-[var(--fg)]">Mark as Reviewed</strong> to proceed.
+      <div
+        className="border-b px-3 py-2 text-xs border-l-2"
+        style={{
+          borderColor: 'var(--border)',
+          borderLeftColor: 'var(--accent-warn)',
+          color: 'var(--fg-muted)',
+          backgroundColor: 'var(--bg-elevated)',
+        }}
+      >
+        <span style={{ color: 'var(--accent-warn)' }}>note:</span> C# runs in the embedded
+        .NET Fiddle. Copy starter code, click <code className="px-1">Run</code>, verify output,
+        then <code className="px-1">[ mark reviewed ]</code>.
       </div>
 
-      {/* Starter code (read-only, for copying) */}
-      <div className="border-b border-[var(--border)]">
-        <div className="px-4 pt-2 pb-1 text-xs text-[var(--muted)]">Starter code (copy into fiddle):</div>
+      <div className="border-b" style={{ borderColor: 'var(--border)' }}>
+        <p className="px-3 pt-2 pb-1 text-[11px]" style={{ color: 'var(--fg-dim)' }}>
+          // starter code — copy into the fiddle below
+        </p>
         <CodeEditor language="csharp" value={starterCode} readOnly />
       </div>
 
-      {/* Embedded fiddle iframe */}
-      <div className="relative" style={{ height: '480px' }}>
+      <div
+        className="relative"
+        style={{ height: '480px', backgroundColor: 'var(--bg-elevated)' }}
+      >
         <iframe
           src="https://dotnetfiddle.net/"
           title="C# .NET Fiddle"
@@ -72,20 +74,43 @@ export default function CSharpSandbox({
         />
       </div>
 
-      {/* Mark as Reviewed */}
-      <div className="flex items-center gap-3 border-t border-[var(--border)] px-4 py-3">
+      <div
+        className="flex items-center justify-between gap-3 border-t px-3 py-2"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <span className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
+          // manual confirmation
+        </span>
         <button
+          type="button"
           onClick={handleMarkReviewed}
           disabled={marked}
-          className="rounded px-4 py-1.5 text-sm font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--accent-csharp)', color: '#0f0f11' }}
+          className="inline-flex items-center justify-center gap-1.5 font-mono font-semibold text-xs leading-none px-3 py-2 border transition-colors duration-100 disabled:opacity-50 focus-visible:outline-1 focus-visible:outline-offset-2 hover:bg-[var(--accent-csharp)] hover:text-[var(--bg)]"
+          style={{ color: 'var(--accent-csharp)', borderColor: 'var(--accent-csharp)' }}
         >
-          {marked ? 'Reviewed' : 'Mark as Reviewed'}
+          <span aria-hidden="true" className="opacity-60">[</span>
+          {marked ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true">✓</span>reviewed
+            </span>
+          ) : (
+            'mark reviewed'
+          )}
+          <span aria-hidden="true" className="opacity-60">]</span>
         </button>
-        {marked && (
-          <span className="text-sm text-green-400">Marked as reviewed</span>
-        )}
       </div>
+
+      {marked && (
+        <div
+          className="px-3 py-2 flex items-center gap-2"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <StatusTag status="pass" />
+          <span className="text-xs" style={{ color: 'var(--accent-prompt)' }}>
+            marked as reviewed
+          </span>
+        </div>
+      )}
     </div>
   );
 }

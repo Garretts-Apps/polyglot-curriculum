@@ -2,28 +2,17 @@
 
 /**
  * F# Sandbox — iframe compromise.
- *
- * F# cannot be executed inline in the browser without a large custom toolchain.
- * We embed the Fable REPL (https://fable.io/repl/) in an iframe.
- *
- * LIMITATION: cross-origin restrictions prevent reading the REPL's output
- * programmatically. The user must run their code in the embedded REPL and
- * manually confirm success by clicking "Mark as Reviewed".
- *
- * The starter code is shown in a read-only CodeMirror editor so the user can
- * copy it into the REPL.
+ * Embeds the Fable REPL because F# can't run inline in the browser.
  */
 
 import { useState } from 'react';
 import type { SandboxProps, RunOutcome } from '@/lib/sandbox/types';
 import CodeEditor from './CodeEditor';
+import { StatusTag } from '@/components/ui/StatusTag';
 
 type FSharpSandboxProps = Omit<SandboxProps, 'language'>;
 
-export default function FSharpSandbox({
-  starterCode,
-  onResult,
-}: FSharpSandboxProps) {
+export default function FSharpSandbox({ starterCode, onResult }: FSharpSandboxProps) {
   const [marked, setMarked] = useState(false);
 
   function handleMarkReviewed() {
@@ -33,35 +22,42 @@ export default function FSharpSandbox({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[#13131a] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-2">
-        <span
-          className="rounded px-2 py-0.5 text-xs font-semibold"
-          style={{ background: 'var(--accent-fsharp)', color: '#0f0f11' }}
-        >
-          F#
-        </span>
+    <div className="border font-mono" style={{ borderColor: 'var(--border)' }}>
+      <div
+        className="flex items-center gap-2 border-b px-3 py-1.5 text-[11px]"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <span style={{ color: 'var(--accent-fsharp)' }} className="glow-soft">●</span>
+        <span style={{ color: 'var(--fg)' }}>fsharp/main.fs</span>
         <span className="flex-1" />
-        <span className="text-xs text-[var(--muted)]">External REPL</span>
+        <span style={{ color: 'var(--fg-dim)' }}>// external REPL</span>
       </div>
 
-      {/* Notice */}
-      <div className="border-b border-[var(--border)] bg-[#1a1a2e] px-4 py-3 text-sm text-[var(--muted)]">
-        <strong className="text-[var(--fg)]">Note:</strong> F# runs in the embedded Fable REPL
-        below. Copy your starter code into the REPL editor, click{' '}
-        <strong className="text-[var(--fg)]">Run</strong>, and verify the output visually. Then
-        click <strong className="text-[var(--fg)]">Mark as Reviewed</strong> to proceed.
+      <div
+        className="border-b px-3 py-2 text-xs border-l-2"
+        style={{
+          borderColor: 'var(--border)',
+          borderLeftColor: 'var(--accent-warn)',
+          color: 'var(--fg-muted)',
+          backgroundColor: 'var(--bg-elevated)',
+        }}
+      >
+        <span style={{ color: 'var(--accent-warn)' }}>note:</span> F# runs in the embedded
+        Fable REPL. Copy starter code, click <code className="px-1">Run</code>, verify output,
+        then <code className="px-1">[ mark reviewed ]</code>.
       </div>
 
-      {/* Starter code (read-only, for copying) */}
-      <div className="border-b border-[var(--border)]">
-        <div className="px-4 pt-2 pb-1 text-xs text-[var(--muted)]">Starter code (copy into REPL):</div>
+      <div className="border-b" style={{ borderColor: 'var(--border)' }}>
+        <p className="px-3 pt-2 pb-1 text-[11px]" style={{ color: 'var(--fg-dim)' }}>
+          // starter code — copy into the REPL below
+        </p>
         <CodeEditor language="fsharp" value={starterCode} readOnly />
       </div>
 
-      {/* Embedded REPL iframe */}
-      <div className="relative" style={{ height: '480px' }}>
+      <div
+        className="relative"
+        style={{ height: '480px', backgroundColor: 'var(--bg-elevated)' }}
+      >
         <iframe
           src="https://fable.io/repl/"
           title="F# Fable REPL"
@@ -72,20 +68,43 @@ export default function FSharpSandbox({
         />
       </div>
 
-      {/* Mark as Reviewed */}
-      <div className="flex items-center gap-3 border-t border-[var(--border)] px-4 py-3">
+      <div
+        className="flex items-center justify-between gap-3 border-t px-3 py-2"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-overlay)' }}
+      >
+        <span className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
+          // manual confirmation
+        </span>
         <button
+          type="button"
           onClick={handleMarkReviewed}
           disabled={marked}
-          className="rounded px-4 py-1.5 text-sm font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--accent-fsharp)', color: '#0f0f11' }}
+          className="inline-flex items-center justify-center gap-1.5 font-mono font-semibold text-xs leading-none px-3 py-2 border transition-colors duration-100 disabled:opacity-50 focus-visible:outline-1 focus-visible:outline-offset-2 hover:bg-[var(--accent-fsharp)] hover:text-[var(--bg)]"
+          style={{ color: 'var(--accent-fsharp)', borderColor: 'var(--accent-fsharp)' }}
         >
-          {marked ? 'Reviewed' : 'Mark as Reviewed'}
+          <span aria-hidden="true" className="opacity-60">[</span>
+          {marked ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true">✓</span>reviewed
+            </span>
+          ) : (
+            'mark reviewed'
+          )}
+          <span aria-hidden="true" className="opacity-60">]</span>
         </button>
-        {marked && (
-          <span className="text-sm text-green-400">Marked as reviewed</span>
-        )}
       </div>
+
+      {marked && (
+        <div
+          className="px-3 py-2 flex items-center gap-2"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <StatusTag status="pass" />
+          <span className="text-xs" style={{ color: 'var(--accent-prompt)' }}>
+            marked as reviewed
+          </span>
+        </div>
+      )}
     </div>
   );
 }
