@@ -56,8 +56,11 @@ export function SettingsForm() {
   }
 
   function handleResetLanguage(lang: Language) {
-    const next = resetLanguage(state, lang);
-    resetState(next);
+    const langName = LANGUAGES.find((l) => l.id === lang)?.name ?? lang;
+    if (window.confirm(`Are you sure you want to reset all progress for ${langName}? This cannot be undone.`)) {
+      const next = resetLanguage(state, lang);
+      resetState(next);
+    }
   }
 
   function handleResetAll() {
@@ -206,7 +209,7 @@ export function SettingsForm() {
           type="file"
           accept=".json,application/json"
           onChange={handleImportFile}
-          className="sr-only"
+          className="sr-only peer"
           id="import-file"
         />
         <label
@@ -217,6 +220,7 @@ export function SettingsForm() {
             'px-3 py-2 text-sm min-h-[38px] border',
             'border-[var(--border-active)] text-[var(--fg)]',
             'hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
+            'peer-focus-visible:ring-1 peer-focus-visible:ring-[var(--accent-prompt)] peer-focus-visible:outline-none',
             'transition-colors duration-100',
           ].join(' ')}
         >

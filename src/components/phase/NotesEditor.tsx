@@ -80,7 +80,9 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
           <button
             type="button"
             role="tab"
+            id="tab-edit"
             aria-selected={mode === 'edit'}
+            aria-controls="panel-edit"
             onClick={() => setMode('edit')}
             className={[
               'px-2 py-0.5 text-[11px] font-mono leading-none transition-colors duration-100',
@@ -96,7 +98,9 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
           <button
             type="button"
             role="tab"
+            id="tab-preview"
             aria-selected={mode === 'preview'}
+            aria-controls="panel-preview"
             onClick={() => setMode('preview')}
             className={[
               'px-2 py-0.5 text-[11px] font-mono leading-none transition-colors duration-100',
@@ -115,13 +119,16 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
       {/* Content area */}
       {mode === 'edit' ? (
         <div
+          role="tabpanel"
+          id="panel-edit"
+          aria-labelledby="tab-edit"
           className="relative grid"
           style={{ gridTemplateColumns: '3.5ch 1fr' }}
         >
           {/* Line gutter */}
           <div
             aria-hidden="true"
-            className="select-none text-right text-[11px] py-3 px-2 tabular-nums leading-[1.6]"
+            className="select-none text-right text-sm py-3 px-2 tabular-nums leading-[1.6]"
             style={{
               color: 'var(--fg-dim)',
               backgroundColor: 'var(--bg)',
@@ -139,7 +146,7 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
             placeholder="# scratch notes&#10;//&#10;// jot down stuff here. markdown supported.&#10;// auto-saves after 400ms of idle typing."
             rows={Math.max(lineCount, 8)}
             aria-label="Phase notes (Markdown supported)"
-            className="w-full resize-y px-3 py-3 text-sm font-mono bg-transparent outline-none leading-[1.6]"
+            className="w-full resize-none px-3 py-3 text-sm font-mono bg-transparent outline-none leading-[1.6]"
             style={{
               color: 'var(--fg)',
               caretColor: 'var(--accent-prompt)',
@@ -149,7 +156,12 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
           />
         </div>
       ) : (
-        <div className="p-4 min-h-[200px]">
+        <div
+          role="tabpanel"
+          id="panel-preview"
+          aria-labelledby="tab-preview"
+          className="p-4 min-h-[200px]"
+        >
           {draft.trim() ? (
             <Markdown content={draft} className="prose-terminal" />
           ) : (

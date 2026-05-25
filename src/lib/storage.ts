@@ -71,7 +71,7 @@ export function exportJson(state: ProgressState): string {
   return JSON.stringify(state, null, 2);
 }
 
-function stripDangerousKeys(obj: unknown): unknown {
+export function stripDangerousKeys(obj: unknown): unknown {
   if (typeof obj !== 'object' || obj === null) return obj;
   if (Array.isArray(obj)) return obj.map(stripDangerousKeys);
   const out: Record<string, unknown> = Object.create(null);

@@ -8,16 +8,16 @@ import { TerminalCursor } from '@/components/ui/TerminalCursor';
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
-  // If the user already has a valid session, bounce them home so they don't
-  // see a needless login screen.
+  let user = null;
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      redirect('/');
-    }
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    user = currentUser;
   } catch (error) {
     console.error('Failed to check user session on login page:', error);
+  }
+  if (user) {
+    redirect('/');
   }
 
   return (

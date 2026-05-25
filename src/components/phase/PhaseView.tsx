@@ -130,6 +130,24 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   const phaseSlug = `${paddedLevel(phase.level)}_${slugifyPhaseTitle(phase.title)}`;
   const progressFraction = totalChecks > 0 ? passedCount / totalChecks : 0;
 
+  if (isLocked) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-20 text-center font-mono">
+        <p className="text-sm text-[var(--accent-error)] mb-4">
+          [ ERROR: LEVEL LOCKED ]
+        </p>
+        <p className="text-xs text-[var(--fg-muted)] mb-8 leading-relaxed">
+          You must complete at least {Math.round(PASS_THRESHOLD * 100)}% of the checks in Level {paddedLevel(prevPhase?.level ?? 0)} ({prevPhase?.title}) to unlock this phase.
+        </p>
+        <div>
+          <Button as="link" href={`/${langMeta.id}`} variant="secondary">
+            ◀ return to {langMeta.name.toLowerCase()} map
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
       {/* ─── Phase header ─────────────────────────────────────────────────── */}

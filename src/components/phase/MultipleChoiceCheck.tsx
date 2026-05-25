@@ -125,6 +125,7 @@ export function MultipleChoiceCheck({
               className={[
                 'grid items-start gap-3 px-2 py-1.5 text-sm leading-snug',
                 'transition-colors duration-100 select-none',
+                'focus-within:ring-1 focus-within:ring-[var(--accent-prompt)] focus-within:outline-none',
                 submitted ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--bg-overlay)]',
               ].join(' ')}
               style={{

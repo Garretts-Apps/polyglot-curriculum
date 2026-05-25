@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { STORAGE_VERSION } from '@/lib/storage';
+import { STORAGE_VERSION, stripDangerousKeys } from '@/lib/storage';
 
 export const runtime = 'nodejs';
 
@@ -45,6 +45,8 @@ export async function PUT(req: Request) {
       return Response.json({ error: 'invalid' }, { status: 400 });
     }
 
+    const sanitizedBody = stripDangerousKeys(body);
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -56,7 +58,7 @@ export async function PUT(req: Request) {
       .from('user_progress')
       .upsert({
         user_id: user.id,
-        progress: body,
+        progress: sanitizedBody,
         updated_at: new Date().toISOString(),
       });
 
