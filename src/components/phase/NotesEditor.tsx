@@ -54,6 +54,7 @@ export function NotesEditor({ value, onChange }: NotesEditorProps) {
           onChange={(e) => onChange(e.target.value)}
           placeholder="Add notes in markdown…"
           rows={8}
+          aria-label="Phase notes (Markdown supported)"
           className="w-full resize-y p-4 text-sm font-mono bg-transparent outline-none"
           style={{
             color: 'var(--fg)',

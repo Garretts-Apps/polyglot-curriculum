@@ -46,6 +46,8 @@ Open http://localhost:3000 in your browser. You'll be prompted for HTTP Basic Au
 
 ## Deploying to Vercel
 
+Prerequisites: `pnpm add -g vercel` and `vercel login`. Change `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD` to strong values before deploying.
+
 ```bash
 vercel link
 vercel env add BASIC_AUTH_USERNAME production
@@ -63,7 +65,8 @@ src/
   components/          — UI components, sandbox runners, phase views, layout
   curriculum/          — phase data: one TypeScript file per language (10 levels)
   lib/                 — storage/KV utilities, progress hook, sandbox loaders
-  middleware.ts        — HTTP Basic Auth + security headers (HSTS, CSP, etc.)
+  proxy.ts             — HTTP Basic Auth (username/password check, constant-time comparison)
+next.config.ts         — security headers: HSTS, CSP, X-Frame-Options, Referrer-Policy, etc.
 ```
 
 ## Knowledge check types
@@ -80,16 +83,20 @@ Sandbox execution is a compromise between safety, language coverage, and browser
 
 - **Python (Pyodide):** Full CPython 3.12 running in browser. First load is ~6–10 MB. No external library installs; only stdlib + bundled scientific stack.
 - **TypeScript:** esbuild-wasm transpiles to JavaScript in browser, runs via `Function()`. Single-user app, no untrusted user code, so runtime isolation is acceptable.
-- **Rust:** Server-side proxy to play.rust-lang.org/execute. Compilation happens on Rust's servers; we return stderr/stdout.
-- **Go:** Server-side proxy to go.dev/_/compile. Same model as Rust.
+- **Rust:** Server-side proxy to play.rust-lang.org/execute. Compilation happens on Rust's servers; we return stderr/stdout. Code limited to 5000 characters per request.
+- **Go:** Server-side proxy to go.dev/_/compile. Same model as Rust. Code limited to 5000 characters per request.
 - **F# & C#:** iframes pointing to fable.io/repl and dotnetfiddle.net respectively. Cross-origin isolation means we can't read their output directly; instead, we ask you to mark the check as reviewed after running it.
+
+### Known external-service risks
+
+fable.io and dotnetfiddle.net are external services we do not control. If they go down or change their embed policies (e.g., set X-Frame-Options: DENY), F# and C# checks will fail to load. Mitigation: the read-only starter code panel still lets you copy/paste into the live sites in a new tab.
 
 ## Privacy & security
 
-- **No analytics:** no tracking, no third-party scripts (beyond Vercel's defaults).
+- **No analytics:** no tracking. Two third-party CDN origins are required at runtime — cdn.jsdelivr.net for Pyodide (Python) and esbuild-wasm (TypeScript). CSP restricts script-src to that origin only.
 - **No AI/LLM calls:** all code is real, all sandboxes are public or local.
-- **Single-user, password-protected:** HTTP Basic Auth over HTTPS; constant-time password comparison.
-- **Security headers:** HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy set in middleware.
+- **Single-user, password-protected:** HTTP Basic Auth over HTTPS; constant-time password comparison in `src/proxy.ts`.
+- **Security headers:** HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy set in `next.config.ts` via `headers()`.
 
 ## License
 

@@ -38,7 +38,7 @@ export default function CSharpSandbox({
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-2">
         <span
           className="rounded px-2 py-0.5 text-xs font-semibold"
-          style={{ background: 'var(--accent-csharp)', color: '#ffffff' }}
+          style={{ background: 'var(--accent-csharp)', color: '#0f0f11' }}
         >
           C#
         </span>
@@ -78,7 +78,7 @@ export default function CSharpSandbox({
           onClick={handleMarkReviewed}
           disabled={marked}
           className="rounded px-4 py-1.5 text-sm font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--accent-csharp)', color: '#ffffff' }}
+          style={{ background: 'var(--accent-csharp)', color: '#0f0f11' }}
         >
           {marked ? 'Reviewed' : 'Mark as Reviewed'}
         </button>

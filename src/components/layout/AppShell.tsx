@@ -76,7 +76,7 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
       )}
 
       {/* Page content */}
-      <main className="flex-1">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
     </div>
   );
 }

@@ -588,7 +588,7 @@ printfn "%A" (processUser "Bob" -1)    // Error "age must be positive"`,
       },
       {
         label: 'Saturn Documentation',
-        url: 'https://saturnframework.org/docs/',
+        url: 'https://saturnframework.org/docs.html',
       },
       {
         label: 'Saturn GitHub',

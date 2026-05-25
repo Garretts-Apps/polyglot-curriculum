@@ -81,29 +81,31 @@ export function MultipleChoiceCheck({ check, checkResult, onResult }: MultipleCh
         </button>
       )}
 
-      {submitted && (
-        <div
-          className="mt-4 rounded-[var(--radius-md)] border p-4 text-sm"
-          style={{
-            borderColor: wasCorrect ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)',
-            backgroundColor: wasCorrect ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
-          }}
-        >
-          <p className="font-semibold mb-1" style={{ color: wasCorrect ? '#22c55e' : '#ef4444' }}>
-            {wasCorrect ? 'Correct!' : 'Incorrect'}
-          </p>
-          <Markdown content={check.explanation} />
-          {!wasCorrect && (
-            <button
-              onClick={() => { setSubmitted(false); setSelected(null); setWasCorrect(null); }}
-              className="mt-2 text-xs underline"
-              style={{ color: 'var(--fg-muted)', minHeight: '44px' }}
-            >
-              Try again
-            </button>
-          )}
-        </div>
-      )}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {submitted && (
+          <div
+            className="mt-4 rounded-[var(--radius-md)] border p-4 text-sm"
+            style={{
+              borderColor: wasCorrect ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)',
+              backgroundColor: wasCorrect ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
+            }}
+          >
+            <p className="font-semibold mb-1" style={{ color: wasCorrect ? '#22c55e' : '#ef4444' }}>
+              {wasCorrect ? 'Correct!' : 'Incorrect'}
+            </p>
+            <Markdown content={check.explanation} />
+            {!wasCorrect && (
+              <button
+                onClick={() => { setSubmitted(false); setSelected(null); setWasCorrect(null); }}
+                className="mt-2 text-xs underline"
+                style={{ color: 'var(--fg-muted)', minHeight: '44px' }}
+              >
+                Try again
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

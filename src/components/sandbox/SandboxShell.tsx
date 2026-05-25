@@ -170,7 +170,9 @@ export default function SandboxShell({
 
       {/* Result panel */}
       <div className="px-4 pb-4">
-        <ResultPanel outcome={outcome} />
+        <div role="status" aria-live="polite" aria-atomic="true">
+          <ResultPanel outcome={outcome} />
+        </div>
       </div>
     </div>
   );

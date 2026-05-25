@@ -91,10 +91,14 @@ export default function CodeEditor({ language, value, onChange, readOnly = false
   }, [value]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full overflow-auto rounded border border-[var(--border)] text-sm"
-      style={{ fontFamily: 'var(--font-mono)', minHeight: '200px' }}
-    />
+    <>
+      <div
+        ref={containerRef}
+        aria-label={`${language} code editor`}
+        className="w-full overflow-auto rounded border border-[var(--border)] text-sm"
+        style={{ fontFamily: 'var(--font-mono)', minHeight: '200px' }}
+      />
+      <p className="text-xs text-[color:var(--fg-muted)] mt-1">Press Escape, then Tab to exit the editor.</p>
+    </>
   );
 }
