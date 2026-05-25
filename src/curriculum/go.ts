@@ -2078,33 +2078,56 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-6-mcq-debug-1',
-        prompt: `**Production symptom:** A compile error blocks the build pipeline. The error message is:
+        prompt: `**Production symptom:** The CI build pipeline fails at 09:14 UTC with a compile error after a developer added a generic registry for serialisable assets. No binary is produced and the deploy is blocked.
 
 \`\`\`
-./registry.go:18:20: string does not implement Serializable (missing method Bytes() []byte)
+$ go build ./...
+# github.com/acme/platform/pkg/registry
+pkg/registry/registry.go:28:14: string does not implement Serializable (missing method Bytes() []byte)
+pkg/registry/registry.go:29:12: string does not implement Serializable (missing method Bytes() []byte)
 \`\`\`
 
 \`\`\`go
-package main
+// pkg/registry/registry.go
+package registry
 
-import "fmt"
+import (
+\t"fmt"
+\t"log/slog"
+)
 
+// Serializable is the constraint for all items stored in the registry.
+// Every asset type must be able to serialise itself for the cache layer.
 type Serializable interface {
 \tBytes() []byte
+\tContentType() string
 }
 
+// Registry stores and retrieves Serializable assets by key.
 type Registry[T Serializable] struct {
-\titems []T
+\titems map[string]T
+\tlogger *slog.Logger
 }
 
-func (r *Registry[T]) Add(item T) {
-\tr.items = append(r.items, item)
+func New[T Serializable](logger *slog.Logger) *Registry[T] {
+\treturn &Registry[T]{items: make(map[string]T), logger: logger}
 }
 
-func main() {
-\treg := Registry[string]{} // line 18 — string does not satisfy Serializable
-\treg.Add("hello")
-\tfmt.Println(len(reg.items))
+func (r *Registry[T]) Add(key string, item T) {
+\tr.logger.Info("registry: add", "key", key, "bytes", len(item.Bytes()))
+\tr.items[key] = item
+}
+
+func (r *Registry[T]) Get(key string) (T, bool) {
+\tv, ok := r.items[key]
+\treturn v, ok
+}
+
+// main.go — integration wiring (line 28 is where the error fires)
+func Example() {
+\treg := New[string](slog.Default()) // line 28 — string has no Bytes() or ContentType()
+\treg.Add("greeting", "hello")       // line 29
+\tfmt.Println(reg)
 }
 \`\`\``,
         options: [
@@ -2119,30 +2142,48 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-6-mcq-debug-2',
-        prompt: `**Production symptom:** A generic factory function fails to compile at the call site with:
+        prompt: `**Production symptom:** A developer introduces a generic zero-value factory used in config initialisation. The build fails immediately in CI with a type-inference error.
 
 \`\`\`
-./factory.go:24:12: cannot infer T
+$ go build ./pkg/config/...
+# github.com/acme/platform/pkg/config
+pkg/config/defaults.go:47:19: cannot infer T
+pkg/config/defaults.go:48:21: cannot infer T
 \`\`\`
 
 \`\`\`go
-package main
+// pkg/config/defaults.go
+package config
 
-import "fmt"
+import (
+\t"log/slog"
+\t"time"
+)
 
+// Pair holds two zero values of the same type, used for default range bounds.
 type Pair[T any] struct {
-\tFirst, Second T
+\tLow, High T
 }
 
-// T appears only in the return type — inference cannot work
-func MakePair[T any]() Pair[T] {
+// MakeZeroPair returns a Pair where both fields are the zero value for T.
+// T appears only in the return type — the compiler has nothing to infer from.
+func MakeZeroPair[T any]() Pair[T] {
 \tvar zero T
-\treturn Pair[T]{First: zero, Second: zero}
+\treturn Pair[T]{Low: zero, High: zero}
 }
 
-func main() {
-\tp := MakePair() // line 24 — no argument for T to be inferred from
-\tfmt.Println(p)
+// DefaultRanges builds the default numeric and duration config ranges.
+func DefaultRanges(logger *slog.Logger) {
+\t// Lines 47-48: no argument supplied, so T cannot be inferred
+\tintRange := MakeZeroPair()           // line 47 — cannot infer T
+\tdurRange := MakeZeroPair()           // line 48 — cannot infer T
+
+\tlogger.Info("defaults",
+\t\t"int_low", intRange.Low,
+\t\t"dur_low", durRange.Low,
+\t\t"dur_high", durRange.High,
+\t\t"ts", time.Now(),
+\t)
 }
 \`\`\``,
         options: [
@@ -2157,19 +2198,30 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-6-mcq-debug-3',
-        prompt: `**Production symptom:** A generic \`Map\` function compiles and runs correctly in isolation but the following usage fails to compile:
+        prompt: `**Production symptom:** A backend engineer adds a generic transform helper to the billing service pipeline. The build fails in CI 30 minutes before a scheduled deploy.
 
 \`\`\`
-./transform.go:31:14: cannot use userIDs (variable of type []UserID) as type []int in argument to Map
+$ go build ./internal/billing/...
+# github.com/acme/platform/internal/billing
+internal/billing/pipeline.go:52:22: cannot use userIDs (variable of type []UserID) as []int value in argument to transform.Map:
+        cannot use userIDs (variable of type []UserID) as type []int
 \`\`\`
 
 \`\`\`go
-package main
+// internal/billing/types.go
+package billing
 
-import "fmt"
+// UserID is a named type wrapping int to prevent accidental mixing with other IDs.
+type UserID int
 
-type UserID int // named type with underlying type int
+// InvoiceID is a named type for invoice references.
+type InvoiceID int64
 
+// pkg/transform/map.go
+package transform
+
+// Map applies f to every element of s and returns the results.
+// T and U are inferred from the slice and function arguments.
 func Map[T, U any](s []T, f func(T) U) []U {
 \tout := make([]U, len(s))
 \tfor i, v := range s {
@@ -2178,13 +2230,27 @@ func Map[T, U any](s []T, f func(T) U) []U {
 \treturn out
 }
 
-func double(n int) int { return n * 2 }
+// internal/billing/pipeline.go
+package billing
 
-func main() {
-\tuserIDs := []UserID{1, 2, 3}
-\t// Map infers T=UserID, but double expects int — type mismatch
-\tresult := Map(userIDs, double) // line 31
-\tfmt.Println(result)
+import (
+\t"fmt"
+\t"log/slog"
+
+\t"github.com/acme/platform/pkg/transform"
+)
+
+// doubleRaw operates on the raw underlying int, not on UserID.
+func doubleRaw(n int) int { return n * 2 }
+
+// BuildPipeline demonstrates the type-mismatch compilation failure.
+func BuildPipeline(logger *slog.Logger) {
+\tuserIDs := []UserID{101, 202, 303} // type is []UserID
+
+\t// line 52: Map infers T=UserID from userIDs,
+\t// but doubleRaw has signature func(int) int — UserID != int
+\tresult := transform.Map(userIDs, doubleRaw) // compile error here
+\tlogger.Info("pipeline result", "values", fmt.Sprint(result))
 }
 \`\`\``,
         options: [
@@ -2357,13 +2423,19 @@ formatted, err := format.Source(src)
       {
         kind: 'mcq',
         id: 'go-7-mcq-debug-1',
-        prompt: `**Production symptom:** After adding a new \`Status\` value to an enum type, the API returns \`"Status(4)"\` for that value in JSON responses instead of the expected string \`"pending"\`. The string works correctly for existing values 0–3.
+        prompt: `**Production symptom:** At 14:32 UTC, p99 latency on the orders API spikes as clients start receiving malformed status strings. Datadog logs show \`status="Status(4)"\` in order events. Values 0–3 display correctly. The spike correlates with a deploy 10 minutes earlier that added a new order state.
+
+\`\`\`
+# Excerpt from Datadog log stream (14:32:07 UTC)
+{"level":"error","service":"orders","msg":"invalid order status","order_id":"ord_9kQx2","status":"Status(4)","customer_id":"cus_7Rm1p"}
+{"level":"error","service":"orders","msg":"invalid order status","order_id":"ord_3nWv8","status":"Status(4)","customer_id":"cus_2Ks4q"}
+\`\`\`
 
 \`\`\`go
-// types.go
-package main
+// internal/orders/status.go
+package orders
 
-//go:generate stringer -type=Status
+//go:generate stringer -type=Status -output=status_string.go
 type Status int
 
 const (
@@ -2371,11 +2443,26 @@ const (
 \tInactive Status = 1
 \tDeleted  Status = 2
 \tArchived Status = 3
-\tPending  Status = 4 // newly added — but go generate was NOT re-run
+\tPending  Status = 4 // added in this deploy — go generate was NOT re-run
 )
 
-// status_string.go (stale — generated before Pending was added)
-// func (i Status) String() string { switch i { case 0: ... case 3: ... } }
+// MarshalJSON serialises the status as a lowercase string for the API.
+func (s Status) MarshalJSON() ([]byte, error) {
+\t// String() falls back to "Status(4)" when the generated switch has no case for 4
+\treturn []byte(\`"\` + s.String() + \`"\`), nil
+}
+
+// internal/orders/status_string.go  (STALE — last generated before Pending existed)
+// Code generated by "stringer -type=Status"; DO NOT EDIT.
+// func (i Status) String() string {
+//   switch i {
+//   case Active:   return "Active"
+//   case Inactive: return "Inactive"
+//   case Deleted:  return "Deleted"
+//   case Archived: return "Archived"
+//   default:       return "Status(" + strconv.FormatInt(int64(i), 10) + ")"
+//   }
+// }
 \`\`\``,
         options: [
           'The `stringer` tool does not support `iota`-based constants beyond value 3.',
@@ -2389,44 +2476,53 @@ const (
       {
         kind: 'mcq',
         id: 'go-7-mcq-debug-2',
-        prompt: `**Production symptom:** A generic struct-to-map serialiser panics in production on requests that include admin payloads. The panic does not occur for regular user payloads.
+        prompt: `**Production symptom:** The admin API endpoint begins returning HTTP 500 at 09:47 UTC. PagerDuty fires P2. Regular user endpoints are unaffected. Sentry captures the following panic from \`/app/internal/serialise/mapper.go\`.
 
 \`\`\`
-goroutine 1 [running]:
+goroutine 47 [running]:
+runtime/debug.Stack()
+        /usr/local/go/src/runtime/debug/stack.go:24 +0x5b
+main.recoverMiddleware.func1.1()
+        /app/internal/middleware/recover.go:18 +0x6c
+panic(0x10a3e40, 0xc0002b4180)
+
 reflect.Value.Interface(...)
-        /usr/local/go/src/reflect/value.go:1391
-main.toMap(...)
-        /app/serialise/mapper.go:19 +0x1c8
+        /usr/local/go/src/reflect/value.go:1391 +0x13e
+main.toMap({0x10a1200, 0xc0002b4000})
+        /app/internal/serialise/mapper.go:29 +0x1c8
+main.(*AdminHandler).ServeHTTP(0xc000294000, {0x10d3a40, 0xc000190000}, 0xc0001c4000)
+        /app/internal/handlers/admin.go:54 +0x3f1
+
 panic: reflect.Value.Interface: cannot return value obtained from unexported field or method
 \`\`\`
 
 \`\`\`go
-package main
+// internal/serialise/mapper.go
+package serialise
 
 import (
-\t"fmt"
 \t"reflect"
 )
 
+// AdminPayload carries admin-action data; secret is intentionally unexported.
 type AdminPayload struct {
-\tUserID  int
-\tAction  string
-\tsecret  string // unexported field — admin only
+\tUserID    int    \`json:"user_id"\`
+\tAction    string \`json:"action"\`
+\tRequestID string \`json:"request_id"\`
+\tsecret    string // unexported — holds ephemeral auth token, never serialised
 }
 
-func toMap(v any) map[string]any {
+// ToMap converts any struct to a map[string]any for audit logging.
+// It is called for every admin action in handlers/admin.go:54.
+func ToMap(v any) map[string]any {
 \tout := map[string]any{}
 \trv := reflect.ValueOf(v)
 \trt := reflect.TypeOf(v)
 \tfor i := 0; i < rv.NumField(); i++ {
-\t\t// missing IsExported() check
-\t\tout[rt.Field(i).Name] = rv.Field(i).Interface() // panics on 'secret'
+\t\t// BUG: no IsExported() guard — panics when field is unexported
+\t\tout[rt.Field(i).Name] = rv.Field(i).Interface() // line 29: panics on 'secret'
 \t}
 \treturn out
-}
-
-func main() {
-\tfmt.Println(toMap(AdminPayload{UserID: 1, Action: "delete", secret: "tok"}))
 }
 \`\`\``,
         options: [
@@ -2441,38 +2537,64 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-7-mcq-debug-3',
-        prompt: `**Production symptom:** A reflection-based ORM sets exported fields correctly during \`Scan\`, but silently fails to set a newly added \`UpdatedAt\` field. No error is returned and no panic occurs.
+        prompt: `**Production symptom:** After adding an \`UpdatedAt\` column to the \`users\` table, the field is always zero in API responses even though the database correctly returns a timestamp. \`ID\` and \`Name\` populate fine. No error is logged. The issue was introduced in last week's schema migration.
+
+\`\`\`
+# Observed in production query logs (2026-05-22 11:03 UTC)
+# DB returns: id=42, name="alice", updated_at="2026-05-22T10:58:00Z"
+# API response body: {"id":42,"name":"alice","updated_at":"0001-01-01T00:00:00Z"}
+\`\`\`
 
 \`\`\`go
-package main
+// pkg/store/postgres.go
+package store
 
 import (
+\t"context"
+\t"database/sql"
 \t"fmt"
 \t"reflect"
 \t"time"
+
+\t_ "github.com/lib/pq"
 )
 
-type Row struct {
-\tID        int
-\tName      string
-\tUpdatedAt time.Time
+// UserRow maps to the users table.
+type UserRow struct {
+\tID        int       \`db:"id"\`
+\tName      string    \`db:"name"\`
+\tUpdatedAt time.Time \`db:"updated_at"\` // newly added column
 }
 
-func scan(dst any, values map[string]any) {
-\trv := reflect.ValueOf(dst) // dst is Row — not a pointer!
+// scanRow is a lightweight reflection-based scanner used by the in-house ORM.
+// It maps db tag values to struct fields.
+func scanRow(dst any, values map[string]any) error {
+\t// BUG: reflect.ValueOf(dst) where dst is a value type, not *UserRow
+\trv := reflect.ValueOf(dst) // non-addressable copy
 \trt := rv.Type()
 \tfor i := 0; i < rv.NumField(); i++ {
 \t\tfield := rt.Field(i)
-\t\tif val, ok := values[field.Name]; ok {
-\t\t\trv.Field(i).Set(reflect.ValueOf(val)) // panics or silently no-ops
+\t\ttag := field.Tag.Get("db")
+\t\tif val, ok := values[tag]; ok {
+\t\t\t// Set on a non-addressable Value silently fails (or panics in strict mode)
+\t\t\trv.Field(i).Set(reflect.ValueOf(val))
 \t\t}
 \t}
+\treturn nil
 }
 
-func main() {
-\trow := Row{}
-\tscan(row, map[string]any{"ID": 42, "Name": "alice", "UpdatedAt": time.Now()})
-\tfmt.Println(row)
+// QueryUser fetches a single user by ID.
+func QueryUser(ctx context.Context, db *sql.DB, id int) (*UserRow, error) {
+\trow := UserRow{}
+\tvalues := map[string]any{
+\t\t"id":         42,
+\t\t"name":       "alice",
+\t\t"updated_at": time.Now(),
+\t}
+\tif err := scanRow(row, values); err != nil { // passing value, not pointer
+\t\treturn nil, fmt.Errorf("store: scan user %d: %w", id, err)
+\t}
+\treturn &row, nil
 }
 \`\`\``,
         options: [
@@ -2613,36 +2735,60 @@ defer C.free(unsafe.Pointer(cstr))
       {
         kind: 'mcq',
         id: 'go-8-mcq-debug-1',
-        prompt: `**Production symptom:** A service that wraps a C text-processing library shows steady RSS growth of ~2 MB/min under load. Heap profiling shows no Go allocations growing. The C library is known to be correct in isolation.
+        prompt: `**Production symptom:** The \`content-processor\` service shows RSS growing ~2 MB/min under sustained load (>200 req/s). A \`pprof\` heap snapshot shows Go heap is stable at ~40 MB. The C text-normalisation library passes its own valgrind suite cleanly. An on-call engineer captures the following:
+
+\`\`\`
+$ curl -s http://localhost:6060/debug/pprof/heap | go tool pprof -top
+Showing nodes accounting for 41.2MB, 97.3% of 42.3MB total
+      flat  flat%   sum%        cum   cum%
+   38.50MB 91.0% 91.0%    38.50MB 91.0%  runtime.mallocgc
+    2.70MB  6.3% 97.3%     2.70MB  6.3%  bytes.makeSlice
+
+# RSS from /proc/<pid>/status grows ~120 MB over 60 seconds:
+# 14:01 VmRSS: 142 MB
+# 14:02 VmRSS: 264 MB   ← steady climb not reflected in Go heap
+\`\`\`
 
 \`\`\`go
-package main
+// internal/normalise/cgo.go
+package normalise
 
 /*
 #include <stdlib.h>
 #include <string.h>
-char* process(const char* input) {
-    char* out = (char*)malloc(strlen(input) + 1);
-    strcpy(out, input);
+
+// normalise_text returns a malloc'd, NUL-terminated copy of input
+// with whitespace collapsed. Caller must free() the result.
+char* normalise_text(const char* input) {
+    size_t n = strlen(input);
+    char* out = (char*)malloc(n + 1);
+    if (!out) return NULL;
+    // ... whitespace-collapsing logic elided for brevity ...
+    strncpy(out, input, n + 1);
     return out;
 }
 */
 import "C"
-import "fmt"
 
-func processText(s string) string {
-\tcstr := C.CString(s)
-\t// defer C.free(unsafe.Pointer(cstr)) — MISSING
-\tresult := C.process(cstr)
-\tdefer C.free(unsafe.Pointer(result))
-\treturn C.GoString(result)
-}
+import (
+\t"fmt"
+\t"unsafe"
+)
 
-func main() {
-\tfor i := 0; i < 1000000; i++ {
-\t\tprocessText("hello world")
+// NormaliseText calls the C normaliser and returns a Go string.
+func NormaliseText(s string) (string, error) {
+\tif s == "" {
+\t\treturn "", nil
 \t}
-\tfmt.Println("done")
+\tcInput := C.CString(s)
+\t// BUG: C.free(unsafe.Pointer(cInput)) is missing here
+\t// Every call leaks len(s)+1 bytes of C heap.
+\tcResult := C.normalise_text(cInput)
+\tif cResult == nil {
+\t\treturn "", fmt.Errorf("normalise_text: C returned NULL for input len=%d", len(s))
+\t}
+\tdefer C.free(unsafe.Pointer(cResult))
+\treturn C.GoString(cResult), nil
 }
 \`\`\``,
         options: [
@@ -2657,43 +2803,61 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-8-mcq-debug-2',
-        prompt: `**Production symptom:** A Cgo wrapper crashes with a segfault inside C code when processing certain inputs. The crash is non-deterministic and only occurs after the Go garbage collector runs.
+        prompt: `**Production symptom:** The \`ml-inference\` service crashes with a SIGSEGV roughly once every 30 minutes. The crash is non-deterministic and correlates with GC pauses visible in metrics. \`GODEBUG=cgocheck=1\` (the default) emits a check failure first. The C inference library is a vendor-supplied \`.so\` that queues work internally.
 
 \`\`\`
 SIGSEGV: segmentation violation
-PC=0x... m=0 sigcode=1
+PC=0x7f3a2c1d8b20 m=4 sigcode=1
 
-goroutine 1 [syscall]:
-runtime.cgocall(...)
+goroutine 23 [syscall]:
+runtime.cgocall(0x10a3f40, 0xc000497d88)
+        /usr/local/go/src/runtime/cgocall.go:157 +0x5c fp=0xc000497d60 sp=0xc000497d28 pc=0x43e17c
+internal/inference/cgo.(*Engine).Submit(...)
+        /app/internal/inference/cgo.go:58 +0x1a4
+
+cgo: runtime: address space conflict in thread
+panic: runtime error: cgo argument has Go pointer to Go pointer
 \`\`\`
 
 \`\`\`go
-package main
+// internal/inference/cgo.go
+package inference
 
 /*
-#include <string.h>
-void analyse(const char* data, int len) {
-    // stores pointer for async use — violates Cgo rules!
-}
+#cgo LDFLAGS: -linfer -L/usr/local/lib
+#include <infer.h>
+
+// infer_submit queues a batch for async GPU processing.
+// The C library RETAINS the data pointer until the callback fires.
+void infer_submit(const char* data, int len, void (*cb)(int result));
 */
 import "C"
+
 import (
-\t"fmt"
+\t"log/slog"
 \t"unsafe"
 )
 
-var retained unsafe.Pointer // C code stored the Go pointer here
-
-func submit(data []byte) {
-\t// Passing pointer to Go memory; C retains it past the call
-\tC.analyse((*C.char)(unsafe.Pointer(&data[0])), C.int(len(data)))
-\t// GC may move/free data[0]'s backing array after this returns
+// Engine wraps the C inference library.
+type Engine struct {
+\tlogger *slog.Logger
 }
 
-func main() {
-\tbuf := []byte("sensitive payload")
-\tsubmit(buf)
-\tfmt.Println("submitted")
+// Submit sends a payload to the C inference engine.
+// The C library stores the data pointer and reads it on a background thread.
+func (e *Engine) Submit(payload []byte) {
+\tif len(payload) == 0 {
+\t\treturn
+\t}
+\t// BUG: passing a pointer into Go-managed memory to C,
+\t// which retains it past this call boundary.
+\t// The Go GC may move or collect payload's backing array.
+\tC.infer_submit(
+\t\t(*C.char)(unsafe.Pointer(&payload[0])), // Go pointer — must not be retained
+\t\tC.int(len(payload)),
+\t\tnil,
+\t)
+\te.logger.Info("inference: submitted", "bytes", len(payload))
 }
 \`\`\``,
         options: [
@@ -2708,50 +2872,69 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-8-mcq-debug-3',
-        prompt: `**Production symptom:** A Cgo wrapper panics during shutdown when deferred cleanup functions run. The panic message is:
+        prompt: `**Production symptom:** The \`pdf-renderer\` service crashes during graceful shutdown under load. The crash is reproducible when more than 50 requests are in-flight at shutdown time. It does not occur in low-traffic deployments. Sentry captures the following:
 
 \`\`\`
 panic: runtime error: invalid memory address or nil pointer dereference
-[signal SIGSEGV: segmentation violation]
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x7f2c3a1d9044]
 
 goroutine 1 [running]:
-main.cleanup()
-        /app/cgo/wrapper.go:31
+runtime/debug.Stack()
+        /usr/local/go/src/runtime/debug/stack.go:24 +0x65
+main.(*Renderer).Shutdown(0xc0001a4000)
+        /app/internal/renderer/cgo_renderer.go:87 +0x1b3
+main.(*Server).GracefulStop(0xc0001c0000)
+        /app/cmd/server/main.go:134 +0x88
 \`\`\`
 
 \`\`\`go
-package main
+// internal/renderer/cgo_renderer.go
+package renderer
 
 /*
 #include <stdlib.h>
+#include <pdflib.h>
 */
 import "C"
+
 import (
 \t"fmt"
+\t"log/slog"
 \t"unsafe"
 )
 
-func process(s string) string {
-\tif s == "" {
-\t\treturn ""
-\t}
-\tcstr := C.CString(s)
-\tdefer C.free(unsafe.Pointer(cstr))
-\treturn fmt.Sprintf("processed: %s", C.GoString(cstr))
+// Renderer wraps the C PDF generation library.
+type Renderer struct {
+\tlogger *slog.Logger
+\tpending []*C.char // accumulates C strings for batch cleanup at shutdown
 }
 
-func cleanup(ptrs []*C.char) {
-\tfor _, p := range ptrs {
-\t\tC.free(unsafe.Pointer(p)) // double-free if already freed by defer
+// Render converts markdown to PDF bytes using the C library.
+func (r *Renderer) Render(markdown string) ([]byte, error) {
+\tif markdown == "" {
+\t\treturn nil, fmt.Errorf("renderer: empty input")
 \t}
+\tcMd := C.CString(markdown)
+\tdefer C.free(unsafe.Pointer(cMd)) // freed here when Render returns
+\tr.pending = append(r.pending, cMd) // BUG: also registered for Shutdown cleanup
+
+\tcResult := C.pdf_render(cMd)
+\tif cResult == nil {
+\t\treturn nil, fmt.Errorf("renderer: pdf_render returned NULL")
+\t}
+\tdefer C.free(unsafe.Pointer(cResult))
+
+\tresult := C.GoBytes(unsafe.Pointer(cResult), C.int(C.strlen((*C.char)(unsafe.Pointer(cResult)))))
+\tr.logger.Info("renderer: rendered", "input_len", len(markdown), "output_len", len(result))
+\treturn result, nil
 }
 
-func main() {
-\tcstr := C.CString("hello")
-\tdefer C.free(unsafe.Pointer(cstr)) // freed here at end of main
-\tptrs := []*C.char{cstr}
-\tcleanup(ptrs)                       // also freed here — double-free!
-\tfmt.Println(C.GoString(cstr))
+// Shutdown frees all accumulated C strings — but many are already freed by defer in Render.
+func (r *Renderer) Shutdown() {
+\tfor _, p := range r.pending {
+\t\tC.free(unsafe.Pointer(p)) // double-free: Render's defer already freed these
+\t}
+\tr.pending = nil
 }
 \`\`\``,
         options: [
@@ -2916,27 +3099,47 @@ func FuzzReverse(f *testing.F) {
       {
         kind: 'mcq',
         id: 'go-9-mcq-debug-1',
-        prompt: `**Production symptom:** A benchmark shows unexpectedly low ns/op numbers — 10× faster than the actual operation should be. A colleague suspects the compiler is optimising away the work. Which pattern explains this and how is it fixed?
+        prompt: `**Production symptom:** An engineer runs a new benchmark for the checksum hot-path and reports suspiciously fast results — 0.31 ns/op vs the expected ~8 ns/op. A code reviewer suspects the benchmark is not measuring real work.
+
+\`\`\`
+$ go test -bench=BenchmarkChecksum -benchmem ./internal/checksum/
+goos: linux
+goarch: amd64
+pkg: github.com/acme/platform/internal/checksum
+cpu: Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz
+BenchmarkChecksum-8    1000000000    0.3142 ns/op    0 B/op    0 allocs/op
+PASS
+ok      github.com/acme/platform/internal/checksum    0.358s
+
+# Expected based on manual timing: ~8 ns/op for a 24-byte input
+\`\`\`
 
 \`\`\`go
-package main
+// internal/checksum/checksum.go
+package checksum
+
+// Compute returns a fast polynomial hash of data.
+// It is a pure function with no side effects.
+func Compute(data []byte) uint64 {
+\tvar h uint64 = 14695981039346656037 // FNV offset basis
+\tfor _, v := range data {
+\t\th ^= uint64(v)
+\t\th *= 1099511628211 // FNV prime
+\t}
+\treturn h
+}
+
+// internal/checksum/checksum_bench_test.go
+package checksum_test
 
 import "testing"
 
-func BenchmarkHash(b *testing.B) {
-\tdata := []byte("benchmark input payload")
-\tfor i := 0; i < b.N; i++ {
-\t\t_ = computeHash(data) // result discarded — DCE candidate
-\t}
-}
+var payload = []byte("benchmark input payload") // 23 bytes
 
-// computeHash is a pure function with no side effects
-func computeHash(data []byte) uint64 {
-\tvar h uint64
-\tfor _, v := range data {
-\t\th = h*31 + uint64(v)
+func BenchmarkChecksum(b *testing.B) {
+\tfor i := 0; i < b.N; i++ {
+\t\t_ = Compute(payload) // result assigned to blank identifier — DCE candidate
 \t}
-\treturn h
 }
 \`\`\``,
         options: [
@@ -2951,15 +3154,47 @@ func computeHash(data []byte) uint64 {
       {
         kind: 'mcq',
         id: 'go-9-mcq-debug-2',
-        prompt: `**Production symptom:** A fuzz test finds a crash and saves the failing input to \`testdata/fuzz/FuzzParse/\`. The input is a 4 000-byte binary blob. The engineer wants the minimal reproducing input to understand the root cause. What is the correct workflow?
+        prompt: `**Production symptom:** A fuzz test for the binary packet parser crashes overnight in CI. The fuzzer saves a failing corpus entry. The on-call engineer finds a 3 847-byte binary blob in the corpus and wants to understand the minimal input that triggers the bug before writing a fix.
+
+\`\`\`
+$ go test -fuzz=FuzzParsePacket -fuzztime=60s ./pkg/parser/
+fuzz: elapsed: 0s, gathering baseline coverage: 0/3 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 3/3 completed, now fuzzing with 8 workers
+fuzz: elapsed: 23s, execs: 1042318 (45318/sec), new interesting: 41 (total: 44)
+--- FAIL: FuzzParsePacket (23.18s)
+    fuzzing process hung or terminated unexpectedly: exit status 2
+    Failing input written to testdata/fuzz/FuzzParsePacket/b07f3e1a2c9d
+    To re-run:
+    go test -run=FuzzParsePacket/b07f3e1a2c9d ./pkg/parser/
+
+$ ls -lh testdata/fuzz/FuzzParsePacket/
+-rw-r--r-- 1 ci ci 3.8K May 23 02:41 b07f3e1a2c9d
+\`\`\`
 
 \`\`\`go
-func FuzzParse(f *testing.F) {
-\tf.Add([]byte("ok"))
+// pkg/parser/parser_fuzz_test.go
+package parser_test
+
+import (
+\t"testing"
+
+\t"github.com/acme/platform/pkg/parser"
+)
+
+// FuzzParsePacket fuzzes the binary packet parser for panics and invariant violations.
+func FuzzParsePacket(f *testing.F) {
+\t// Seed corpus: valid minimal packets
+\tf.Add([]byte{0x01, 0x00, 0x00, 0x00}) // type=1, length=0
+\tf.Add([]byte{0x02, 0x00, 0x01, 0x00, 0xFF}) // type=2, length=1, payload=0xFF
+
 \tf.Fuzz(func(t *testing.T, data []byte) {
-\t\tp, err := Parse(data)
-\t\tif err == nil && p.Size < 0 {
-\t\t\tt.Errorf("negative size: %d", p.Size)
+\t\tpkt, err := parser.ParsePacket(data)
+\t\tif err != nil {
+\t\t\treturn // parse errors are expected for malformed input
+\t\t}
+\t\t// Invariant: a successfully parsed packet must have non-negative payload length
+\t\tif pkt.PayloadLen < 0 {
+\t\t\tt.Errorf("negative PayloadLen after successful parse: %d", pkt.PayloadLen)
 \t\t}
 \t})
 }
@@ -2976,28 +3211,55 @@ func FuzzParse(f *testing.F) {
       {
         kind: 'mcq',
         id: 'go-9-mcq-debug-3',
-        prompt: `**Production symptom:** A sub-test spawns a goroutine that calls \`t.Error\` after the sub-test has already finished. The test output includes:
+        prompt: `**Production symptom:** The checkout service test suite fails intermittently — roughly 1 in 30 CI runs. When it fails the entire test binary panics rather than just reporting a failed assertion. The failure does not reproduce locally. The CI log shows:
 
 \`\`\`
-panic: testing: t.Error called after test finished
-goroutine 18 [running]:
-testing.(*common).Error(...)
-        /usr/local/go/src/testing/testing.go:982
-main_test.TestProcess.func1.1()
-        /app/process_test.go:29
+--- FAIL: TestCheckoutHandler/async_inventory_check (0.00s)
+panic: testing: t.Error called after test finished [recovered]
+        panic: testing: t.Error called after test finished
+
+goroutine 94 [running]:
+testing.(*common).Error(0xc0004a2000, {0xc000312080, 0x1, 0x1})
+        /usr/local/go/src/testing/testing.go:982 +0x5f
+github.com/acme/platform/internal/checkout_test.TestCheckoutHandler.func2.1()
+        /app/internal/checkout/handler_test.go:58 +0x1d4
+created by github.com/acme/platform/internal/checkout_test.TestCheckoutHandler.func2
+        /app/internal/checkout/handler_test.go:49 +0x198
+exit status 2
+FAIL    github.com/acme/platform/internal/checkout    0.312s
 \`\`\`
 
 \`\`\`go
-func TestProcess(t *testing.T) {
-\tt.Run("async", func(t *testing.T) {
-\t\tgo func() {
-\t\t\ttime.Sleep(100 * time.Millisecond)
-\t\t\tresult := process("input")
-\t\t\tif result == "" {
-\t\t\t\tt.Error("expected non-empty result") // called after subtest ended
+// internal/checkout/handler_test.go
+package checkout_test
+
+import (
+\t"net/http"
+\t"net/http/httptest"
+\t"testing"
+\t"time"
+
+\t"github.com/acme/platform/internal/checkout"
+)
+
+func TestCheckoutHandler(t *testing.T) {
+\thandler := checkout.NewHandler(checkout.Config{Timeout: 200 * time.Millisecond})
+
+\tt.Run("async_inventory_check", func(t *testing.T) {
+\t\trec := httptest.NewRecorder()
+\t\treq, _ := http.NewRequest(http.MethodPost, "/checkout", nil)
+
+\t\t// Spawn goroutine to assert on async side-effect
+\t\tgo func() { // line 49
+\t\t\ttime.Sleep(150 * time.Millisecond) // wait for handler's async work
+\t\t\tbody := rec.Body.String()
+\t\t\tif body == "" {
+\t\t\t\tt.Error("expected non-empty response body") // line 58 — t already done
 \t\t\t}
 \t\t}()
-\t\t// subtest returns immediately, goroutine is still running
+
+\t\thandler.ServeHTTP(rec, req)
+\t\t// sub-test returns here; goroutine still sleeping
 \t})
 }
 \`\`\``,
@@ -3171,29 +3433,53 @@ srv.Close()    // <- forcible
       {
         kind: 'mcq',
         id: 'go-10-mcq-debug-1',
-        prompt: `**Production symptom:** After deploying a log-level change to reduce noise, \`DEBUG\` messages still appear in production logs. The operator set \`LOG_LEVEL=warn\` but the service keeps emitting \`level=DEBUG\` lines.
+        prompt: `**Production symptom:** Following a config change at 16:45 UTC to reduce log verbosity in production, DEBUG-level lines continue to appear in the Datadog log stream. The Kubernetes deployment manifest sets \`LOG_LEVEL=warn\` as an environment variable. Restarting the pod does not help.
+
+\`\`\`
+# Datadog query: service:payments env:prod level:debug  (16:46–16:52 UTC)
+{"level":"DEBUG","service":"payments","msg":"db query start","query":"SELECT ...","ts":"2026-05-24T16:46:02Z"}
+{"level":"DEBUG","service":"payments","msg":"db query end","duration_ms":4,"ts":"2026-05-24T16:46:02Z"}
+{"level":"WARN","service":"payments","msg":"slow query","duration_ms":320,"ts":"2026-05-24T16:46:07Z"}
+
+# env var confirmed present in the running pod:
+$ kubectl exec -n prod payments-7d9f6b-xkp2q -- env | grep LOG_LEVEL
+LOG_LEVEL=warn
+\`\`\`
 
 \`\`\`go
-package main
+// internal/observability/logger.go
+package observability
 
 import (
 \t"log/slog"
 \t"os"
 )
 
-func newLogger(levelStr string) *slog.Logger {
+// NewLogger builds a JSON slog logger at the level specified by levelStr.
+// levelStr accepts: "debug", "info", "warn", "error" (case-insensitive).
+func NewLogger(levelStr string) *slog.Logger {
 \tvar level slog.Level
 \tif err := level.UnmarshalText([]byte(levelStr)); err != nil {
+\t\t// fallback to Info on parse failure
 \t\tlevel = slog.LevelInfo
 \t}
-\t// BUG: opts passed by value — LevelVar not used, level is a fixed snapshot
 \topts := &slog.HandlerOptions{Level: level}
 \treturn slog.New(slog.NewJSONHandler(os.Stdout, opts))
 }
 
+// cmd/payments/main.go
+package main
+
+import (
+\t"os"
+
+\t"github.com/acme/platform/internal/observability"
+)
+
 func main() {
-\tlogger := newLogger(os.Getenv("LOG_LEVEL"))
-\tlogger.Debug("starting up", "pid", os.Getpid())
+\t// LOG_LEVEL env var is "warn" in production
+\tlogger := observability.NewLogger(os.Getenv("LOG_LEVEL"))
+\tlogger.Debug("starting up", "pid", os.Getpid()) // should be filtered — but isn't
 \tlogger.Warn("low disk space")
 }
 \`\`\``,
@@ -3209,31 +3495,69 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-10-mcq-debug-2',
-        prompt: `**Production symptom:** The service hangs during rolling deploy. Kubernetes sends SIGTERM but the pod never reaches \`Terminated\` state, forcing a \`SIGKILL\` after the grace period. Logs show \`"shutdown initiated"\` but nothing after.
+        prompt: `**Production symptom:** During a rolling deploy the \`inventory\` service pods hang for the full \`terminationGracePeriodSeconds\` (60 s) before Kubernetes force-kills them with SIGKILL. In-flight requests are dropped. Logs confirm SIGTERM was received and shutdown was initiated, but drain never completes.
+
+\`\`\`
+# kubectl logs inventory-6c8d9f-w2xp4 --previous (last lines before SIGKILL)
+{"level":"INFO","msg":"shutdown initiated","ts":"2026-05-24T11:03:42Z"}
+# ... nothing further — process killed after 60s grace period ...
+
+# kubectl describe pod inventory-6c8d9f-w2xp4
+  Reason:       OOMKilled -> Error
+  Exit Code:    137   ← SIGKILL (128+9)
+  Last State:   Terminated
+\`\`\`
 
 \`\`\`go
+// cmd/inventory/main.go
 package main
 
 import (
 \t"context"
+\t"log/slog"
 \t"net/http"
 \t"os/signal"
 \t"syscall"
+\t"time"
 )
 
 func main() {
-\tsrv := &http.Server{Addr: ":8080", Handler: http.DefaultServeMux}
+\tlogger := slog.Default()
+\tmux := http.NewServeMux()
+\tmux.HandleFunc("/inventory", handleInventory)
 
-\tctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+\tsrv := &http.Server{
+\t\tAddr:         ":8080",
+\t\tHandler:      mux,
+\t\tReadTimeout:  5 * time.Second,
+\t\tWriteTimeout: 10 * time.Second,
+\t}
+
+\t// ctx is cancelled when SIGTERM arrives
+\tctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 \tdefer stop()
 
-\tgo srv.ListenAndServe()
+\tgo func() {
+\t\tif err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+\t\t\tlogger.Error("listen", "err", err)
+\t\t}
+\t}()
 
-\t<-ctx.Done() // SIGTERM received
-\t// BUG: shutdown context derived from the already-cancelled ctx
+\tlogger.Info("server started", "addr", srv.Addr)
+\t<-ctx.Done() // blocks until SIGTERM
+
+\tlogger.Info("shutdown initiated")
+
+\t// BUG: shutCtx is derived from ctx, which is already cancelled
 \tshutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 \tdefer cancel()
-\tsrv.Shutdown(shutCtx) // shutCtx is already Done — returns immediately
+
+\t// shutCtx.Done() is already closed — Shutdown returns immediately
+\t// without waiting for in-flight requests to complete
+\tif err := srv.Shutdown(shutCtx); err != nil {
+\t\tlogger.Error("shutdown error", "err", err)
+\t}
+\tlogger.Info("shutdown complete") // never reached
 }
 \`\`\``,
         options: [
@@ -3248,34 +3572,60 @@ func main() {
       {
         kind: 'mcq',
         id: 'go-10-mcq-debug-3',
-        prompt: `**Production symptom:** The OpenTelemetry collector shows an ever-growing number of open spans. Memory in the OTel SDK increases over time. Traces never appear complete in Jaeger. The issue correlates with error paths in the handler.
+        prompt: `**Production symptom:** The Jaeger UI shows an ever-growing queue of incomplete traces for the \`orders\` service. OTel SDK memory climbs ~50 MB/hr. Traces for successful checkouts complete and display correctly; traces for failed or rejected orders never appear in Jaeger. The anomaly started after error-handling was added to the order pipeline last sprint.
+
+\`\`\`
+# Grafana — OTel SDK process memory (orders service, last 2 hours)
+# 10:00  142 MB
+# 11:00  194 MB   ← +52 MB/hr
+# 12:00  246 MB
+
+# Jaeger trace count query (last 1 hour)
+# operationName=processOrder  status=OK       → 4 312 complete traces
+# operationName=processOrder  status=Error    →     0 complete traces  ← never exported
+\`\`\`
 
 \`\`\`go
-package main
+// internal/orders/processor.go
+package orders
 
 import (
 \t"context"
-\t"errors"
+\t"fmt"
+
 \t"go.opentelemetry.io/otel"
+\t"go.opentelemetry.io/otel/attribute"
 \t"go.opentelemetry.io/otel/codes"
+\t"go.opentelemetry.io/otel/trace"
 )
 
-func processOrder(ctx context.Context, orderID string) error {
-\ttracer := otel.Tracer("orders")
-\tctx, span := tracer.Start(ctx, "processOrder")
-\t// BUG: defer span.End() is missing on error paths
+var tracer = otel.Tracer("github.com/acme/platform/internal/orders")
 
-\tif err := validateOrder(orderID); err != nil {
+// ProcessOrder validates and charges a single order.
+// Called for every POST /checkout request.
+func ProcessOrder(ctx context.Context, orderID string, amount int64) error {
+\tctx, span := tracer.Start(ctx, "ProcessOrder",
+\t\ttrace.WithAttributes(
+\t\t\tattribute.String("order.id", orderID),
+\t\t\tattribute.Int64("order.amount_cents", amount),
+\t\t),
+\t)
+\t// BUG: defer span.End() is missing — only the success path calls span.End()
+
+\tif err := validateOrder(ctx, orderID, amount); err != nil {
 \t\tspan.SetStatus(codes.Error, err.Error())
-\t\treturn err // span never ended!
+\t\tspan.RecordError(err)
+\t\treturn fmt.Errorf("orders: validate %s: %w", orderID, err) // span never ended
 \t}
 
-\tif err := chargePayment(ctx, orderID); err != nil {
+\tif err := chargePayment(ctx, orderID, amount); err != nil {
 \t\tspan.SetStatus(codes.Error, err.Error())
-\t\treturn err // span never ended!
+\t\tspan.RecordError(err)
+\t\treturn fmt.Errorf("orders: charge %s: %w", orderID, err) // span never ended
 \t}
 
-\tspan.End()
+\tspan.SetStatus(codes.Ok, "")
+\tspan.End() // only reached on the success path
 \treturn nil
 }
 \`\`\``,
