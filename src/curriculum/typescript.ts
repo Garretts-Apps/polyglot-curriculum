@@ -8,9 +8,7 @@ export const typescriptPhases: Phase[] = [
     level: 1,
     title: 'JS Fundamentals, TypeScript Style',
     timeEstimate: '4–6 hours',
-    intro: `TypeScript is a typed superset of JavaScript that compiles to plain JS. Before diving into its type system, you need a solid grip on the JavaScript fundamentals that sit underneath — primitive values, \`const\`/\`let\`, control flow, functions, and basic Node CLI I/O — because TypeScript simply adds type annotations on top of code you already understand.
-
-In this phase you write valid TypeScript from day one: every variable gets an explicit type annotation or a clear inferred type, and you use \`tsc --strict\` to catch mistakes before runtime. **Build locally**: a \`cli/greet.ts\` Node CLI (\`tsx\` or \`bun run\`) that takes argv name and prints greeting with ISO timestamp. By the end you can write a small CLI, describe all its data with primitive types, and explain why TypeScript is worth the extra characters.`,
+    intro: `By the end of this phase, you'll read everyday TypeScript with confidence — primitive types, \`const\`/\`let\`, control flow, function annotations, and the Node CLI shape that wraps it all. You'll also recognise the difference between \`any\`, \`unknown\`, and an inferred type at a glance. To build the muscle, you'll write \`cli/greet.ts\` locally: a \`tsx\`-runnable Node CLI that reads \`process.argv\`, validates the input, and prints a greeting plus ISO timestamp, with zero \`any\` and a green \`tsc --noEmit --strict\`.`,
     topics: [
       {
         label: 'TypeScript in 5 minutes',
@@ -49,11 +47,17 @@ In this phase you write valid TypeScript from day one: every variable gets an ex
       {
         kind: 'mcq',
         id: 'ts1-mcq1',
-        prompt: 'Which TypeScript type annotation correctly describes a variable that holds a whole number?',
-        options: ['`int`', '`number`', '`integer`', '`float`'],
-        correctIndex: 1,
+        prompt:
+          'A teammate ships this CLI helper under `tsc --strict` and `noUncheckedIndexedAccess`. Which line fails to compile?\n```typescript\nfunction greet(argv: string[]): string {\n  const name: string = argv[2];        // L1\n  if (!name) return "Hello, stranger"; // L2\n  return `Hello, ${name}`;             // L3\n}\n```',
+        options: [
+          'L1 — `argv[2]` is `string | undefined`, not assignable to `string`',
+          'L2 — `string` values cannot be used in a boolean condition',
+          'L3 — template literals require an explicit `.toString()` call',
+          'No error — the code compiles cleanly',
+        ],
+        correctIndex: 0,
         explanation:
-          "TypeScript inherits JavaScript's single `number` type (IEEE 754 double), which covers integers and floats. There is no `int` or `integer` primitive. See the TS Handbook → Everyday Types.",
+          'With `noUncheckedIndexedAccess`, indexing an array returns `T | undefined` to reflect that the index might be out of bounds. The fix is `const name = argv[2] ?? "stranger"` (or narrow with `if (typeof argv[2] !== "string") ...`). See TS Handbook → tsconfig → noUncheckedIndexedAccess.',
       },
       {
         kind: 'mcq',
@@ -130,9 +134,7 @@ In this phase you write valid TypeScript from day one: every variable gets an ex
     level: 2,
     title: 'The TypeScript Type System',
     timeEstimate: '5–8 hours',
-    intro: `TypeScript's type system is structural, not nominal — types are compatible when their shapes match. This phase covers the constructs you reach for every day: interfaces and type aliases, union and intersection types, literal types, and the narrowing / type-guard patterns that let you write safe code without runtime bloat.
-
-You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with proper generic type annotations, and learn when to prefer an \`interface\` over a \`type\` alias. **Build locally**: a \`cart.ts\` Node CLI that models a small e-commerce cart with \`Product\`, \`CartItem\`, and \`Cart\` types, a \`total()\` function, and a discriminated union for \`PaymentMethod\`. By the end you can model any real-world data domain and write functions that TypeScript can verify exhaustively.`,
+    intro: `By the end of this phase, you'll read structural types fluently — interfaces, type aliases, unions and intersections, literal types, and the narrowing patterns (\`typeof\`, \`in\`, discriminated unions) that turn runtime checks into compile-time guarantees. You'll also pick up the \`map\`/\`filter\`/\`reduce\` element-type inference that powers most real codebases. To build the muscle, you'll write \`cart.ts\` locally: a small e-commerce cart with \`Product\`/\`CartItem\`/\`Cart\` types, an exhaustively-checked \`PaymentMethod\` discriminated union, and a \`total()\` function — all under \`tsc --noEmit --strict\`.`,
     topics: [
       {
         label: 'Interfaces',
@@ -248,9 +250,7 @@ You will also explore array methods (\`map\`, \`filter\`, \`reduce\`) with prope
     level: 3,
     title: 'Modules, Async/Await & Error Handling',
     timeEstimate: '6–8 hours',
-    intro: `Modern TypeScript is written in ES modules (\`import\`/\`export\`), runs asynchronous code with \`async\`/\`await\`, and fetches remote data with the global Fetch API (Node 18+). This phase closes the gap between "I can write typed functions" and "I can build a real networked app."
-
-You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Promise<T>\` automatically, how to model errors with discriminated unions, and how to use \`AbortController\` for timeouts. **Build locally**: a \`fetcher.ts\` CLI that fetches a URL, parses JSON, prints top-level keys, with proper error handling and \`AbortController\` timeout.`,
+    intro: `By the end of this phase, you'll read async TypeScript with confidence — ES module imports, \`Promise<T>\` typing, \`async\`/\`await\` flow, fetch with \`AbortController\` timeouts, and \`Result\`-style discriminated unions for errors that never \`throw\`. You'll also recognise the difference between \`Promise.all\` and \`Promise.allSettled\` and when each is the right tool. To build the muscle, you'll write \`fetcher.ts\` locally: a CLI that fetches a URL with a 1s abort timeout, narrows the \`Result\` union, parses JSON, and prints top-level keys — runnable via \`tsx fetcher.ts <url>\`.`,
     topics: [
       {
         label: 'ES Modules in TypeScript',
@@ -304,16 +304,16 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         kind: 'mcq',
         id: 'ts3-mcq2',
         prompt:
-          'Which `tsconfig` option enables the whole suite of strict checks (noImplicitAny, strictNullChecks, etc.) with a single flag?',
+          'You need to fetch three URLs in parallel and surface a per-URL status report — even if some fail. Which call shape is correct?\n```typescript\ntype Outcome = { url: string; ok: boolean; status?: number };\nasync function audit(urls: string[]): Promise<Outcome[]> {\n  // ?\n}\n```',
         options: [
-          '`"noImplicitAny": true`',
-          '`"strict": true`',
-          '`"esModuleInterop": true`',
-          '`"isolatedModules": true`',
+          '`await Promise.all(urls.map(u => fetch(u)))` — rejects the whole batch on the first failure',
+          '`await Promise.allSettled(urls.map(u => fetch(u)))` — resolves a per-URL `{ status: "fulfilled" | "rejected" }` array',
+          '`await Promise.race(urls.map(u => fetch(u)))` — resolves with the first response and aborts the others',
+          '`await Promise.any(urls.map(u => fetch(u)))` — rejects only when every URL fails',
         ],
         correctIndex: 1,
         explanation:
-          '`"strict": true` is the umbrella flag that activates `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, and several others at once. See tsconfig reference.',
+          '`Promise.allSettled` is the right tool when you want per-input outcomes regardless of individual failures. `Promise.all` short-circuits on the first rejection, `Promise.race` and `Promise.any` only return a single result. See MDN → Promise.allSettled.',
       },
       {
         kind: 'mcq',
@@ -380,9 +380,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 4,
     title: 'Generics, Utility Types & Testing',
     timeEstimate: '8–10 hours',
-    intro: `Generics are TypeScript's answer to reusability without sacrificing type safety. A single \`Stack<T>\` implementation works for numbers, strings, or any other type — and the compiler tracks which \`T\` you used. This phase covers generic functions, generic interfaces, constraints (\`extends\`), mapped types, conditional types, and the built-in utility types (\`Partial\`, \`Required\`, \`Pick\`, \`Omit\`, \`Record\`, \`ReturnType\`…).
-
-**Build locally**: a generic \`db.ts\` typed wrapper around an in-memory store with \`add<T>\`, \`find<T>\`, \`delete<T>\` and full type narrowing. You'll also get your first taste of the testing ecosystem with Vitest.`,
+    intro: `By the end of this phase, you'll read generic library code with confidence — \`<T extends ...>\` constraints, \`const T\` for literal inference, mapped types, conditional types with \`infer\`, and the utility-type vocabulary (\`Partial\`, \`Pick\`, \`Omit\`, \`Record\`, \`ReturnType\`, \`Parameters\`, \`NonNullable\`). You'll also recognise when widening hurts you and how \`satisfies\` keeps inference narrow. To build the muscle, you'll write \`db.ts\` locally: a typed in-memory store with \`add<T>\`/\`find<T>\`/\`delete<T>\`, plus a Vitest suite that covers the happy path and the not-found case via \`pnpm vitest\`.`,
     topics: [
       {
         label: 'Generics — TypeScript handbook',
@@ -422,25 +420,26 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         kind: 'mcq',
         id: 'ts4-mcq1',
         prompt:
-          'What does `type Keys<T> = keyof T` produce when `T = { name: string; age: number }`?',
+          'You are designing a typed `getProp` library helper. What signature makes the third call below a compile error?\n```typescript\nfunction getProp<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\nconst user = { name: "Ada", age: 36 };\ngetProp(user, "name");    // ok → string\ngetProp(user, "age");     // ok → number\ngetProp(user, "missing"); // ?\n```',
         options: [
-          '`string | number` (the value types)',
-          '`"name" | "age"` (a union of the key names)',
-          '`{ name: string; age: number }` (the same type)',
-          '`Array<string>` (an array of key strings)',
+          'The third call compiles — `"missing"` widens to `string`',
+          'The third call type-errors — `"missing"` is not assignable to `"name" | "age"`',
+          'The third call returns `undefined` at runtime with no type error',
+          'The signature is invalid — `T[K]` is not valid syntax',
         ],
         correctIndex: 1,
         explanation:
-          '`keyof T` produces a union of the literal key names of `T`. For `{ name: string; age: number }` that is `"name" | "age"`. See TS Handbook → Keyof Type Operator.',
+          '`K extends keyof T` constrains `K` to the literal union of `T`\'s keys. For `user`, that is `"name" | "age"`, so `"missing"` is rejected at compile time. `T[K]` is an indexed-access type and is the correct return shape. See TS Handbook → Keyof Type Operator and Indexed Access Types.',
       },
       {
         kind: 'mcq',
         id: 'ts4-mcq2',
-        prompt: 'Which utility type makes all properties of `T` optional?',
-        options: ['`Required<T>`', '`Partial<T>`', '`Readonly<T>`', '`Pick<T, K>`'],
+        prompt:
+          'You are writing a React `<Settings>` form that mutates a typed config one field at a time via a typed `update()` helper. Which utility correctly types the `patch` argument?\n```typescript\ninterface Config { theme: "light" | "dark"; volume: number; muted: boolean }\nfunction update(current: Config, patch: ___<Config>): Config {\n  return { ...current, ...patch };\n}\nupdate(cfg, { volume: 80 }); // must compile\nupdate(cfg, {});             // must compile (no-op merge)\n```',
+        options: ['`Required<Config>`', '`Partial<Config>`', '`Readonly<Config>`', '`Pick<Config, "volume">`'],
         correctIndex: 1,
         explanation:
-          '`Partial<T>` maps every property of `T` to its optional (`?`) equivalent. `Required<T>` does the opposite. See TS Handbook → Utility Types.',
+          '`Partial<T>` maps every property of `T` to its optional (`?`) equivalent — the canonical "patch" shape for partial-update helpers and `setState` reducers. `Required<T>` does the opposite, `Readonly<T>` blocks reassignment, and `Pick` locks you to one key. See TS Handbook → Utility Types.',
       },
       {
         kind: 'mcq',
@@ -476,16 +475,16 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         kind: 'mcq',
         id: 'ts4-mcq5',
         prompt:
-          'Given `type User = { id: number; name: string; email: string; password: string }`, what is `Omit<User, "password" | "email">`?',
+          'You write a `toPublic()` serializer that must strip sensitive fields before returning a user to an API client. Which utility-type pair correctly enforces "no `password` or `passwordHash` leaks the function"?\n```typescript\ntype User = { id: number; name: string; email: string; password: string; passwordHash: string };\ntype PublicUser = ___<User, "password" | "passwordHash">;\nfunction toPublic(u: User): PublicUser {\n  const { password, passwordHash, ...rest } = u;\n  return rest;\n}\n```',
         options: [
-          '`{ password: string; email: string }`',
-          '`{ id: number; name: string }`',
-          '`{ id: number; name: string; email: string; password: string }`',
-          '`never`',
+          '`Pick` — selects only `password` and `passwordHash`',
+          '`Omit` — returns `User` minus `password` and `passwordHash`',
+          '`Partial` — makes the listed keys optional but still present',
+          '`Required` — has no effect on field membership',
         ],
         correctIndex: 1,
         explanation:
-          '`Omit<T, K>` returns a type identical to `T` minus the keys in `K`. Removing `password` and `email` leaves `{ id; name }`. See TS Handbook → Utility Types.',
+          '`Omit<T, K>` removes the named keys, producing exactly the public shape the API contract requires. `Pick` would be the inverse (selecting only those keys). This pattern is everywhere in real backends — DB rows in, response DTOs out. See TS Handbook → Utility Types.',
       },
       {
         kind: 'mcq',
@@ -512,9 +511,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 5,
     title: 'Advanced Types & Type-Level Programming',
     timeEstimate: '10–14 hours',
-    intro: `TypeScript 4.x–5.x introduced features that blur the line between types and computation: template literal types, recursive types, distributive conditional types, variance annotations, and \`infer\` patterns that let you extract type information from deeply nested structures.
-
-**Build locally**: a \`type-lab.ts\` Node script that defines and exercises five type utilities (\`DeepPartial<T>\`, \`FlattenPromise<T>\`, \`UnionToIntersection<U>\`, \`PathsOf<T>\`, and a re-implementation of \`Awaited<T>\`), each with a \`satisfies\`-based type test. The script logs a small sanity-check value to stdout for each utility.`,
+    intro: `By the end of this phase, you'll read advanced type-level TypeScript with confidence — template literal types, distributive conditionals, variance annotations (\`in\`/\`out\`), \`infer\` extraction, and recursive mapped types like \`DeepPartial\`. You'll also recognise why \`satisfies\` plus \`as const\` produces narrower inference than either alone. To build the muscle, you'll write \`type-lab.ts\` locally: five utilities (\`DeepPartial<T>\`, \`FlattenPromise<T>\`, \`UnionToIntersection<U>\`, \`PathsOf<T>\`, a re-implemented \`Awaited<T>\`) each gated by a \`satisfies\` type test and a runtime \`console.log\` sanity check.`,
     topics: [
       {
         label: 'Template Literal Types',
@@ -645,9 +642,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 6,
     title: 'Library Authoring & Declaration Files',
     timeEstimate: '8–12 hours',
-    intro: `Writing a library is a different discipline from writing an application: every type you expose becomes a public contract that consumers depend on. This phase covers the full publishing pipeline — strict \`tsconfig\` settings, hand-crafting \`.d.ts\` declaration files, dual ESM/CJS output with the \`exports\` field in \`package.json\`, type-only imports and exports to keep bundles lean, and declaration merging to extend third-party types.
-
-**Build locally**: a tiny utility library (\`packages/tiny-utils\`) with \`src/index.ts\`, dual ESM/CJS output, a hand-written \`.d.ts\` entry, and TSDoc comments on every export. A consumer script demonstrates \`import type\` usage and verifies the package via \`node\` after \`tsc --build\`.`,
+    intro: `By the end of this phase, you'll read library code with confidence — hand-written \`.d.ts\` files, the \`exports\` field in \`package.json\` (dual ESM/CJS, conditional resolution), \`import type\` erasure, declaration merging, branded nominal types, and the TSDoc tags (\`@deprecated\`, \`@param\`, \`@returns\`) that drive the TS language service. You'll also recognise why \`isolatedModules\` matters for esbuild/swc consumers. To build the muscle, you'll write \`packages/tiny-utils\` locally: a dual-output library with a hand-written \`.d.ts\` entry, TSDoc on every export, and a consumer script verified via \`node --import=tsx consumer.ts\` after \`pnpm build\`.`,
     topics: [
       {
         label: 'Declaration Files (.d.ts)',
@@ -677,7 +672,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
       {
         label: 'TSDoc — JSDoc for TypeScript',
         url: 'https://tsdoc.org/',
-        note: '@param, @returns, @remarks — drives IntelliSense hover docs',
+        note: '@param, @returns, @remarks, @deprecated — read by `tsserver` and any TSDoc-aware lint rule',
       },
     ],
     deliverable:
@@ -747,26 +742,26 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         kind: 'mcq',
         id: 'ts6-mcq5',
         prompt:
-          'Which export is *erased* at compile time and never appears in the emitted JS?',
+          'You publish a library that exposes `UserId` and `OrderId` — both backed by `string`, but never interchangeable. Which "brand" pattern makes line L3 a compile error without any runtime overhead?\n```typescript\ntype Brand<T, B> = T & { readonly __brand: B };\nexport type UserId = Brand<string, "UserId">;\nexport type OrderId = Brand<string, "OrderId">;\n\ndeclare function getOrder(id: OrderId): void;\nconst rawId: string = "u-42";\ngetOrder(rawId);                      // L1\ngetOrder(rawId as UserId);            // L2\ngetOrder(rawId as OrderId);           // L3 (we want this rejected)\n```',
         options: [
-          '`export function helper() {}`',
-          '`export const VERSION = "1.0";`',
-          '`export type Foo = string;`',
-          '`export default class A {}`',
+          'Add `as const` to the brand literal',
+          'It is impossible — `string & { __brand }` collapses back to `string`',
+          'L3 already type-errors only if `Brand` uses a unique symbol or unique private property instead of a writable string literal',
+          'L3 is the *correct* pattern — L1 and L2 are the errors; L3 explicitly opts in to the brand',
         ],
-        correctIndex: 2,
+        correctIndex: 3,
         explanation:
-          '`export type` (and `export interface`) are type-only constructs and are stripped at compile time. The other forms produce runtime JavaScript exports.',
+          'Brand types are entirely type-level — they cost nothing at runtime. L1 fails because a bare `string` is not a branded `OrderId`. L2 wrongly brands as `UserId`, which is also not assignable to `OrderId`. L3 is the explicit, *opt-in* cast you use at trust boundaries (after validation), so it must compile. See TS Handbook → Nominal Types & Branding.',
       },
       {
         kind: 'mcq',
         id: 'ts6-mcq6',
         prompt:
-          'Which TSDoc tag adds a `@deprecated` marker that VS Code will visually strike through at call sites?',
+          'You are publishing a library and want callers of an old function to see a strike-through and a console-style warning from the TypeScript Language Service. Which TSDoc tag drives that behaviour?\n```typescript\n/**\n * Adds two numbers.\n * @___ Use `sum(a, b)` instead. Will be removed in v3.0.\n */\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```',
         options: ['`@obsolete`', '`@deprecated`', '`@removed`', '`@warning`'],
         correctIndex: 1,
         explanation:
-          '`@deprecated` is recognised by the TypeScript language service and surfaces in editor tooling. See tsdoc.org for the full tag list.',
+          '`@deprecated` is the standard TSDoc tag recognised by the TypeScript Language Service. Any editor that talks to `tsserver` (or `tsc --noEmit` in CI with a TSDoc-aware linter) treats marked symbols as deprecated. See tsdoc.org for the full tag list.',
       },
     ],
   },
@@ -778,9 +773,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 7,
     title: 'Modern React & Next.js 16 Patterns',
     timeEstimate: '10–16 hours',
-    intro: `React 19 and Next.js 16 App Router introduce a new mental model: components can be async, data fetching happens on the server, and the client bundle ships only the JS users actually need. This phase maps TypeScript concepts onto that model — typing \`use()\`, server/client component boundaries, Suspense boundaries, transitions, and the React Compiler's assumptions about pure functions.
-
-**Build locally**: a Next.js App Router blog with RSC, dynamic routes, server actions for comments, and Suspense streaming. Full strict TypeScript, \`params\` typed as \`Promise<{ slug: string }>\`, and a typed server action calling \`revalidatePath\`.`,
+    intro: `By the end of this phase, you'll read React 19 + Next.js 16 App Router code with confidence — async server components, \`params: Promise<{ slug: string }>\`, the \`"use client"\` and \`"use server"\` boundaries, \`use(promise)\` Suspense integration, typed \`<form action={...}>\` server actions, and \`ReactNode\` vs \`JSX.Element\` props. You'll also recognise the prop-typing patterns the React Compiler depends on. To build the muscle, you'll write a Next.js App Router blog locally: RSC pages, dynamic \`[slug]\` routes, a typed server action for comments calling \`revalidatePath\`, and Suspense streaming — all green under \`pnpm typecheck\` and \`pnpm build\`.`,
     topics: [
       {
         label: 'React TypeScript guide (react.dev)',
@@ -921,9 +914,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 8,
     title: 'State Machines, Advanced Testing & Accessibility',
     timeEstimate: '12–16 hours',
-    intro: `Production-grade UIs have states that are hard to reason about — loading, error, empty, populated, editing. XState models these explicitly as finite state machines or statecharts, and TypeScript types each state and event, making impossible states truly impossible to represent in code.
-
-**Build locally**: a \`forms-machine.ts\` Node script that defines a typed XState v5 machine for a multi-step form (\`idle → filling → submitting → success | error\`) and runs Vitest unit tests for each transition. A Playwright spec runs against a small Next.js page that drives the same machine in the browser.`,
+    intro: `By the end of this phase, you'll read production UI state-machine code with confidence — XState v5 \`setup({ types: ... }).createMachine\`, typed events and context, \`assign\` transitions, Vitest \`describe\`/\`it.each\` tables, Playwright locator assertions like \`expect(locator).toBeVisible()\`, and the ARIA attributes (\`aria-busy\`, \`aria-live\`) that lib.dom.d.ts already types for you. You'll also recognise why \`Record<TrafficLight, TrafficLight>\` makes a transition table total. To build the muscle, you'll write \`forms-machine.ts\` locally: a typed XState v5 machine (\`idle → filling → submitting → success | error\`), Vitest tests for each transition (\`pnpm vitest\`), and a Playwright spec (\`pnpm playwright test\`) verifying the happy path against a small Next.js page.`,
     topics: [
       {
         label: 'XState v5 — TypeScript',
@@ -1018,16 +1009,16 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
         kind: 'mcq',
         id: 'ts8-mcq5',
         prompt:
-          'Which aria attribute is correctly typed by `lib.dom.d.ts` and the right choice for a busy-state region (e.g. loading spinner) per WCAG 2.2?',
+          'Your React 19 toast region must announce *new* status messages to a screen reader without stealing focus or interrupting the user. Which combination is the correct, lib.dom.d.ts-typed pattern?\n```typescript\n// type: HTMLAttributes<HTMLDivElement>\n<div role="status" aria-live="___" aria-atomic="true">\n  {message}\n</div>\n```',
         options: [
-          '`aria-busy="true"`',
-          '`aria-loading="spinner"`',
-          '`role="loading"`',
-          '`data-busy`',
+          '`assertive` — interrupts the current screen-reader announcement immediately',
+          '`polite` — announces after the current speech finishes, the default for non-critical updates',
+          '`off` — disables announcements entirely, used for purely visual changes',
+          '`busy` — pauses announcements until the region is no longer loading',
         ],
-        correctIndex: 0,
+        correctIndex: 1,
         explanation:
-          '`aria-busy="true"` informs assistive technologies that the element is currently being updated. `aria-loading` is not a real ARIA attribute, and `data-busy` is not semantic.',
+          '`aria-live="polite"` waits for the current announcement to finish — the right default for status messages and toasts. `assertive` is reserved for critical, time-sensitive content (errors, expirations). `aria-atomic="true"` makes the screen reader announce the whole region, not just the diff. See MDN → ARIA: live regions and WCAG 2.2 → Status messages.',
       },
       {
         kind: 'mcq',
@@ -1054,9 +1045,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 9,
     title: 'Build Tooling Internals',
     timeEstimate: '14–20 hours',
-    intro: `Modern TypeScript projects are compiled by tools that are not \`tsc\`: esbuild, swc, Vite, and Turbopack all transpile TypeScript orders of magnitude faster than the compiler, because they skip type checking and operate on each file independently. Understanding that pipeline — what is stripped (type annotations), what is transformed (decorators, JSX), and what errors can only be caught by \`tsc\` — makes you a far more effective engineer.
-
-**Build locally**: a tiny ts-to-js transformer with the TS Compiler API that strips type annotations from a single file. The CLI accepts an input path and writes the stripped output to stdout, exiting non-zero on parse errors.`,
+    intro: `By the end of this phase, you'll read build-tool pipelines with confidence — what esbuild/swc strip per-file vs what only \`tsc --noEmit\` catches, how \`isolatedModules\` keeps single-file transpilers honest, the \`vite.config.ts\` \`plugins\` array vs the \`tsconfig.json\` Language Service \`plugins\` field, and the TS Compiler API entry points (\`ts.createSourceFile\`, \`ts.createProgram\`). You'll also recognise the regex/AST trade-off when grepping source vs walking a syntax tree. To build the muscle, you'll write a tiny ts-to-js transformer locally: a CLI driven by the TS Compiler API that strips type annotations from a single file, writes to stdout, and exits non-zero on parse errors — runnable via \`tsx strip.ts path/to/file.ts\`.`,
     topics: [
       {
         label: 'esbuild — How it works',
@@ -1187,9 +1176,7 @@ You will learn how \`Promise<T>\` is typed, how \`async\` functions return \`Pro
     level: 10,
     title: 'Compiler Plugins, Language Service & TS Internals',
     timeEstimate: '20–30 hours',
-    intro: `The final level is about understanding TypeScript from the inside out: how the checker resolves types, how language service plugins add custom diagnostics and completions, and how to contribute to — or at least intelligently read — the TypeScript source itself.
-
-**Build locally**: a TS Language Service plugin (npm package) that adds a custom diagnostic when a Promise is awaited inside a loop (e.g. \`for (const x of xs) await fn(x)\`). The plugin registers via \`tsconfig.json#plugins\` and surfaces the warning in any TypeScript-aware editor.`,
+    intro: `By the end of this phase, you'll read TS compiler internals with confidence — \`NoInfer<T>\` and \`const T\` inference control, TS 5.5 inferred type predicates from filter callbacks, contravariance tricks like \`UnionToIntersection\`, Language Service plugin shape (the \`create(info)\` factory and proxied \`getSemanticDiagnostics\`), and the \`tsc --generateTrace\` flag for performance debugging. You'll also recognise the difference between editor-facing \`tsconfig.json#plugins\` and bundler plugins. To build the muscle, you'll write a TS Language Service plugin locally: an npm package that emits a custom diagnostic when a Promise is \`await\`ed inside a loop, registered via \`tsconfig.json#plugins\` and exercised by the TS test runner.`,
     topics: [
       {
         label: 'Writing a TS Language Service Plugin',
