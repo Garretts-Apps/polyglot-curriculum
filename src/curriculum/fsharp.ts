@@ -7,7 +7,7 @@ export const fsharpPhases: Phase[] = [
     level: 1,
     title: 'F# Fundamentals — let, Inference, Pipelines',
     timeEstimate: '4-6 hours',
-    intro: `F# is a functional-first language on .NET. Unlike C# or Java, you rarely write types explicitly — the compiler infers them from usage. The \`let\` keyword binds a name to a value (immutable by default), and the pipe operator \`|>\` threads data through a chain of functions in a readable left-to-right style.\n\nIn this phase you will write your first F# bindings, discover how immutability shapes code structure, build simple functions, and pipe data through transformation chains. Work locally with \`dotnet fsi\` (the F# Interactive REPL) or as a \`.fsx\` script — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and you are ready.`,
+    intro: `By the end of this phase, you'll read everyday F# fluently — \`let\` bindings, type inference, curried function signatures like \`int -> int -> int\`, and pipelines built from \`|>\` and \`List.map\`/\`filter\`/\`sum\`. You'll predict pipeline output without running it, and tell at a glance whether \`add 5\` is a partial application or a full call. To build the muscle, you'll write \`greet.fsx\` locally with \`dotnet fsi\` — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and run \`dotnet fsi greet.fsx -- Ada\` to see your first F# program in action.`,
     topics: [
       {
         label: 'F# Language Overview (learn.microsoft.com)',
@@ -136,7 +136,7 @@ export const fsharpPhases: Phase[] = [
     level: 2,
     title: 'Records, Discriminated Unions & Pattern Matching',
     timeEstimate: '5-7 hours',
-    intro: `F#'s type system is where its expressiveness really shines. **Records** are lightweight named tuples with structural equality and copy-and-update syntax (\`{ record with field = newValue }\`). **Discriminated Unions (DUs)** model data that can be one of several named cases — the functional equivalent of sealed class hierarchies but far more concise.\n\n**Pattern matching** with \`match\` exhaustively deconstructs both record fields and DU cases at compile time. Combined with the \`Option\` and \`Result\` types (built-in DUs), you eliminate null-reference errors and encode errors into the type system itself. Work locally with \`dotnet fsi\` to run these examples.`,
+    intro: `By the end of this phase, you'll read F# domain models the way real codebases write them — records with copy-and-update (\`{ user with Age = 31 }\`), discriminated unions for finite states (\`type OrderState = Pending | Confirmed | Shipped\`), and \`match\` expressions that the compiler exhaustively checks. You'll also know when \`Option.map\` is wrong and you need \`Option.bind\` (functor vs monad in practice). To build the muscle, you'll write a \`wordcount\` console app locally with \`dotnet new console -lang F#\`, using \`Seq.groupBy\` + \`Map\` and sorting descending by count.`,
     topics: [
       {
         label: 'Records',
@@ -265,7 +265,7 @@ export const fsharpPhases: Phase[] = [
     level: 3,
     title: 'Modules, Namespaces, Classes & IO',
     timeEstimate: '5-7 hours',
-    intro: `F# code is organised into **modules** (the primary unit) and optionally **namespaces** (for .NET interop). Modules can be opened with \`open\` and nest freely. For .NET interoperability — consuming C# libraries or exposing an API — F# also supports **classes** with members, interfaces, and inheritance, though idiomatic F# prefers modules of functions over classes.\n\n**Exception handling** uses \`try/with\` and the \`exn\` hierarchy. **IO** is done through \`System.IO\` just as in C#, and F# makes simple file processing concise with \`File.ReadAllLines\` piped through list combinators. Use \`dotnet fsi\` for the examples in this phase.`,
+    intro: `By the end of this phase, you'll read multi-file F# projects the way they ship — \`module\` and \`namespace\` declarations, \`open\` directives, \`[<RequireQualifiedAccess>]\` modules, and \`try/with | :? System.IOException as ex ->\` blocks that turn .NET exceptions into \`Result\` values. You'll know when F# code is calling a C#-style class member vs a curried module function. To build the muscle, you'll write a \`wordstats\` console app locally with \`dotnet new console -lang F#\` — it reads a text file via \`System.IO\`, exposes helpers from a \`StringUtils\` module, and converts \`FileNotFoundException\` into a typed error.`,
     topics: [
       {
         label: 'Modules',
@@ -299,16 +299,16 @@ export const fsharpPhases: Phase[] = [
         kind: 'mcq',
         id: 'fsharp-3-mcq-1',
         prompt:
-          'In F#, what is the difference between a **module** and a **namespace**?',
+          'What does this F# pipeline print, and why?\n```fsharp\nlet subtract a b = a - b\nlet result = 10 |> subtract 3\nprintfn "%d" result\n```',
         options: [
-          'They are identical — the keywords are interchangeable',
-          'A namespace can contain values and functions directly; a module cannot',
-          'A module can contain values, functions, and types directly; a namespace can only contain modules and types (no bare `let` bindings)',
-          'Namespaces are only used in .NET assemblies; modules are for scripts only',
+          '`7`  — the pipe passes `10` as the first argument of `subtract`',
+          '`-7` — the pipe passes `10` as the *last* argument, so this is `subtract 3 10` = `3 - 10`',
+          'Compile error: `subtract` is not curried',
+          '`13`',
         ],
-        correctIndex: 2,
+        correctIndex: 1,
         explanation:
-          'Namespaces in F# are purely organisational containers for types and modules — they cannot hold `let` bindings directly. Modules can hold values, functions, types, and nested modules. See learn.microsoft.com/fsharp namespaces reference.',
+          '`x |> f a` desugars to `f a x`, threading `x` as the **final** argument. So `10 |> subtract 3` is `subtract 3 10 = 3 - 10 = -7`. This is the classic pitfall when piping into multi-arg functions — argument order matters. Use a lambda (`fun x -> subtract x 3`) or flip your function definition when this bites.',
       },
       {
         kind: 'mcq',
@@ -394,7 +394,7 @@ export const fsharpPhases: Phase[] = [
     level: 4,
     title: 'Generics, HOFs, Currying & Computation Expressions',
     timeEstimate: '6-8 hours',
-    intro: `F# functions are curried by default — a two-argument function \`f a b\` is actually \`f a\` returning another function that accepts \`b\`. This enables **partial application**: fix some arguments early and pass the resulting function around. Combined with **higher-order functions** (functions that accept or return functions), currying makes F# combinators extremely composable.\n\n**Computation expressions** (CEs) are F#'s mechanism for abstracting over effectful or sequenced computations. The built-in \`async { }\`, \`option { }\` (via community libraries), and \`result { }\` builders let you write imperative-looking code that is actually monadic. This phase also covers **units of measure** — a compile-time type safety feature unique to F# that prevents accidentally mixing metres with feet.`,
+    intro: `By the end of this phase, you'll read curried signatures and partial applications without flinching — \`add 5\` returning \`int -> int\`, \`greet "Hello"\` baking a prefix into a \`string -> string\`, and \`List.map (sprintf "id=%d")\` projecting through a partially-applied formatter. You'll also read \`result { let! x = ... }\` and \`async { let! y = ... }\` computation expressions and predict whether they short-circuit, plus tell at a glance why \`float<m> + float<ft>\` is a compile error. To build the muscle, you'll write a \`notes\` CLI locally with \`dotnet new console -lang F#\`, using DUs for commands, partial application for handlers, and \`System.Text.Json\` for persistence.`,
     topics: [
       {
         label: 'Generics',
@@ -523,7 +523,7 @@ export const fsharpPhases: Phase[] = [
     level: 5,
     title: 'Type Providers — JSON, CSV & SQL',
     timeEstimate: '6-8 hours',
-    intro: `**Type providers** are one of F#'s killer features: a compiler plugin that generates types at design time by inspecting real data (a JSON file, CSV schema, database connection string). You get full IntelliSense and type safety over external data without hand-writing DTOs.\n\n\`FSharp.Data\` provides the most-used providers: \`JsonProvider\`, \`CsvProvider\`, and \`HtmlProvider\`. \`SQLProvider\` (separate package) generates types from a live database schema. This phase works best in a local dotnet project or VS Code with Ionide. Reference \`FSharp.Data\` from a \`.fsx\` script with \`#r "nuget: FSharp.Data"\` and run via \`dotnet fsi\`.`,
+    intro: `By the end of this phase, you'll read F# scripts that use **type providers** — \`JsonProvider<"sample.json">\`, \`CsvProvider<"data.csv">\`, \`SQLProvider<connectionString>\` — and predict the strongly-typed properties they expose at compile time without runtime reflection. You'll know when to prefer a provider over a hand-written DTO, and which trade-offs (compile-time sample dependency, design-time tooling cost on huge schemas) come with the convenience. To build the muscle, you'll write a CSV report tool locally with \`dotnet fsi report.fsx\` — reference the package via \`#r "nuget: FSharp.Data, 6.4.0"\` and pipe \`CsvProvider\` rows through \`Seq.sortByDescending\` and \`Seq.truncate\`.`,
     topics: [
       {
         label: 'FSharp.Data — Overview',
@@ -652,7 +652,7 @@ export const fsharpPhases: Phase[] = [
     level: 6,
     title: 'Authoring Computation Expressions',
     timeEstimate: '7-9 hours',
-    intro: `Computation expressions are not magic — they are syntactic sugar over a **builder object** with methods like \`Bind\`, \`Return\`, \`Zero\`, and optionally \`Combine\`, \`Delay\`, and \`Run\`. Once you know the protocol, you can build your own CE for any monad-like pattern: validation, logging, state threading, async I/O, etc.\n\nThis phase walks through building a minimal \`ResultBuilder\` from scratch, understanding the desugaring rules, and then extending it to support \`for\` loops and \`while\` loops inside the CE. You will also study monadic patterns such as \`>>=\` (bind), \`>=>\` (Kleisli composition), and the relationship between CEs and the \`Option\`, \`Result\`, and \`Async\` types.`,
+    intro: `By the end of this phase, you'll read CE-using F# code the way it appears in production — \`result { let! a = parseAge raw; let! b = parseEmail raw; return { Age = a; Email = b } }\` — and trace it to the underlying \`Bind\`/\`Return\` builder methods that drive it. You'll predict whether a hand-written CE short-circuits or accumulates, and recognise the \`>=>\` (Kleisli) composition pattern from *Railway Oriented Programming*. To build the muscle, you'll write a \`result { }\` computation expression locally with \`dotnet new console -lang F#\` — define a \`ResultBuilder\` with \`Bind\`/\`Return\` and a CLI demo that chains validations.`,
     topics: [
       {
         label: 'Computation Expressions — Full Reference',
@@ -777,7 +777,7 @@ export const fsharpPhases: Phase[] = [
     level: 7,
     title: 'Web with Giraffe & Saturn',
     timeEstimate: '8-10 hours',
-    intro: `**Giraffe** is a thin functional wrapper over ASP.NET Core that exposes HTTP handler composition via the \`>=>\` (fish) operator — each handler is \`HttpContext -> Task<HttpContext option>\`. **Saturn** builds on Giraffe and adds a higher-level opinionated layer with \`router { }\`, \`application { }\`, and \`controller { }\` computation expressions inspired by Phoenix (Elixir).\n\nF# web development is fully .NET-compatible: all ASP.NET middleware, dependency injection, and hosting APIs work. This phase builds a small REST API, covering routing, JSON serialization with System.Text.Json, middleware, and basic DI in F# style. Work is done in a local \`dotnet new web\` project.`,
+    intro: `By the end of this phase, you'll read Giraffe and Saturn web code fluently — the \`HttpHandler\` signature \`HttpFunc -> HttpContext -> Task<HttpContext option>\`, the \`>=>\` fish composition for sequencing handlers, \`choose [...]\` for first-match routing, and Saturn's \`router { }\`/\`application { }\` computation expressions. You'll predict why a handler chain returns 404 vs 200 by reading the composition alone. To build the muscle, you'll write a Giraffe HTTP server locally with \`dotnet new web -lang F#\`, then add \`/todos\` endpoints with in-memory storage and JSON serialization via the built-in \`System.Text.Json\` integration — \`dotnet run\` serves it.`,
     topics: [
       {
         label: 'Giraffe Documentation',
@@ -906,7 +906,7 @@ export const fsharpPhases: Phase[] = [
     level: 8,
     title: 'Parser Combinators with FParsec',
     timeEstimate: '8-10 hours',
-    intro: `**FParsec** is an F# port of the Haskell Parsec library. It lets you build parsers by composing small primitive parsers (parse a digit, parse a quoted string, skip whitespace) using operators and combinators — no separate grammar file, no code generation, just ordinary F# values.\n\nTypical applications: expression evaluators, configuration file parsers, small scripting languages, and data format decoders. This phase builds a complete arithmetic expression parser that handles operator precedence and parentheses, producing an AST that is then evaluated.`,
+    intro: `By the end of this phase, you'll read FParsec parser definitions and predict the language they accept — \`pchar 'a' >>. pchar 'b' <|> pchar 'c'\` accepts \`"ab"\` or \`"c"\`, \`chainl1 term op\` builds a left-associative chain, and \`createParserForwardedToRef\` enables recursive grammars with operator precedence. You'll know when you need \`attempt\` to enable backtracking after partial consumption. To build the muscle, you'll write an FParsec arithmetic expression parser locally with \`dotnet new console -lang F#\` + \`dotnet add package FParsec\`, exposing it as a CLI calculator that handles \`+\`, \`*\`, and parentheses.`,
     topics: [
       {
         label: 'FParsec Documentation',
@@ -1031,7 +1031,7 @@ export const fsharpPhases: Phase[] = [
     level: 9,
     title: 'Concurrency — MailboxProcessor & Channels',
     timeEstimate: '7-9 hours',
-    intro: `F# has first-class support for the **actor model** through \`MailboxProcessor<'Msg>\` (also called \`Agent\`). Each agent owns its own message queue; other agents or threads post messages to it. Because message processing is sequential within an agent, you avoid shared-state concurrency bugs without locks.\n\nThis phase covers building agents that accumulate state, routing messages between agents, and the relationship with .NET \`System.Threading.Channels\` for high-throughput pipelines. We also touch on Akka.NET's F# API (\`Akka.FSharp\`) for distributed actor systems. F# 8 also supports \`task { }\` computation expressions for async/await interop with .NET libraries.`,
+    intro: `By the end of this phase, you'll read F# concurrent code the way it ships — \`MailboxProcessor<Msg>\` agents with \`inbox.Receive()\` loops, \`AsyncReplyChannel<T>\` round-trips via \`PostAndAsyncReply\`, and the difference between cold \`async { }\` (must be started) and hot \`task { }\` (starts immediately, interops with C#). You'll predict whether \`PostAndReply\` deadlocks or returns the right count after a batch of \`Post\`s. To build the muscle, you'll write a MailboxProcessor-based agent pool locally with \`dotnet new console -lang F#\` — a CLI driver that fans out parallel HTTP downloads with bounded concurrency.`,
     topics: [
       {
         label: 'MailboxProcessor (learn.microsoft.com)',
@@ -1156,7 +1156,7 @@ export const fsharpPhases: Phase[] = [
     level: 10,
     title: 'Domain Modeling, DDD & Fable Full-Stack',
     timeEstimate: '10-14 hours',
-    intro: `Scott Wlaschin's *Domain Modeling Made Functional* demonstrates how F#'s type system encodes business rules so that **illegal states are unrepresentable**. A \`NonEmptyString\` is a different type than \`string\`; an \`Order\` in state \`Confirmed\` carries different data than one in state \`Pending\`. This phase covers constrained primitive types, state machines as DUs, total functions, and the workflow composition pattern.\n\n**Fable** compiles F# to JavaScript, enabling true full-stack F# with shared domain types between server (Saturn/Giraffe) and client (React via Feliz, or Elmish architecture). We also touch on **performance tuning** with \`ValueType\` structs, \`Span<T>\` interop, and \`inline\` functions.`,
+    intro: `By the end of this phase, you'll read DDD-style F# the way Scott Wlaschin writes it — \`type EmailAddress = private EmailAddress of string\` with a smart constructor returning \`Result<EmailAddress, string>\`, state machines as DUs (\`Pending -> Confirmed -> Shipped\`), workflows typed as \`Input -> Async<Result<Output, DomainError>>\`, and \`Result.bind\` chains that short-circuit cleanly. You'll spot the difference between \`Result.map ship\` (returns nested \`Result<Result<_,_>,_>\`) and \`Result.bind ship\` (returns flat \`Result<_,_>\`). To build the muscle, you'll write a domain-modeling exercise locally with \`dotnet new console -lang F#\` — model an order/inventory invariant with DUs + records and a console-app driver that enforces illegal states are unrepresentable.`,
     topics: [
       {
         label: 'Domain Modeling Made Functional (book site)',
