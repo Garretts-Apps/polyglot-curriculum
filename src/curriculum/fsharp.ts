@@ -127,6 +127,51 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'F# uses lexical scoping with indentation-defined blocks. A `let` binding is visible from the point of declaration until the indentation level drops below the enclosing scope. See learn.microsoft.com/fsharp on let bindings.',
       },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-debug-1',
+        prompt:
+          'Your colleague expected `7` but got `-7` from this pipeline. What is the fix?\n```fsharp\nlet subtract a b = a - b\nlet result = 10 |> subtract 3\nprintfn "%d" result  // prints -7, expected 7\n```',
+        options: [
+          'Switch to `10 |> (fun x -> subtract x 3)` — `|>` threads `10` as the **last** argument, so `10 |> subtract 3` is `subtract 3 10 = -7`',
+          'Change `subtract` to use `+` — `-` is broken in F#',
+          'Add `let mutable` to enable proper subtraction',
+          'Use `|>>` instead of `|>` for argument-flipping behaviour',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`x |> f a` desugars to `f a x`, so the piped value becomes the **last** argument. `10 |> subtract 3` evaluates as `subtract 3 10 = 3 - 10 = -7`. The fix is to flip the order — either use a lambda `(fun x -> subtract x 3)` or redefine `subtract` so the value to subtract from is the last parameter.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-debug-2',
+        prompt:
+          'In `dotnet fsi`, this REPL line errors. What is the fix?\n```\n> x = 5;;\n\n  x = 5;;\n  ^^^^^\n\nstdin(1,1): error FS0039: The value or constructor \'x\' is not defined.\n```',
+        options: [
+          'Restart `dotnet fsi` — the REPL crashed silently',
+          'Add `let` — `x = 5` is a **comparison** (returns `bool`); a binding requires `let x = 5`',
+          'Use `:=` instead of `=` for assignment in F#',
+          'Quote the value: `x = "5"`',
+        ],
+        correctIndex: 1,
+        explanation:
+          'In F# `=` is equality, not assignment. Without `let`, the REPL sees `x = 5` as "compare the undefined identifier `x` to `5`" and complains that `x` is not in scope. Always introduce a binding with `let x = 5;;` in `fsi`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-1-mcq-debug-3',
+        prompt:
+          'This compile error appears in `Program.fs`:\n```\nFS0001: This expression was expected to have type \'string\' but here has type \'int\'\n    at Program.fs:5:9\n```\nThe code:\n```fsharp\nlet greet (name: string) =\n    printfn "Hello, %s" name\n\ngreet 42\n```\nWhat\'s the fix?',
+        options: [
+          'Remove the type annotation `(name: string)` — F# will infer the right type',
+          'Change `printfn "%s"` to `%d` to match the argument',
+          'Call it with a string: `greet "World"` — `greet` is declared to take a `string`, but `42 : int` is being passed',
+          'Add `[<EntryPoint>]` above `greet`',
+        ],
+        correctIndex: 2,
+        explanation:
+          'The signature `greet : string -> unit` requires a `string` argument. Passing `42` (an `int`) triggers FS0001. Either change the call site to `greet "42"` / `greet "World"`, or convert: `greet (string 42)`. Removing the annotation would just push the type error to the call site differently.',
+      },
     ],
   },
 
@@ -255,6 +300,51 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`Option.bind : (\'a -> Option<\'b>) -> Option<\'a> -> Option<\'b>` flattens nested options. Using `Option.map` here would yield `Option<Option<int>>`. `bind` is the monadic combinator for chaining fallible lookups.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-debug-1',
+        prompt:
+          'You ship this and customer support reports random crashes. The build emitted this warning, but warnings are not errors in the project:\n```\nFS0025: Incomplete pattern matches on this expression. For example, the value \'Blue\' may indicate a case not covered by the pattern(s).\n    at Domain.fs:8:5\n```\nThe code:\n```fsharp\ntype Color = Red | Green | Blue\n\nlet describe c =\n    match c with\n    | Red   -> "warm"\n    | Green -> "fresh"\n```\nWhat is the correct fix?',
+        options: [
+          'Add `| Blue -> "cool"` (or `| _ -> ...`) — the match was missing the `Blue` case, causing `MatchFailureException` at runtime',
+          'Wrap the match in a `try/with` and swallow the exception',
+          'Mark the function `[<Inline>]` to disable exhaustiveness checking',
+          'Change `Color` to a class so DU exhaustiveness no longer applies',
+        ],
+        correctIndex: 0,
+        explanation:
+          'FS0025 means the compiler proved the match is non-exhaustive. At runtime, calling `describe Blue` throws `MatchFailureException`. The fix is to add the missing case explicitly (`| Blue -> "cool"`) or — only as a last resort — a wildcard `| _ -> ...`. Treat FS0025 as an error in your project settings to catch this at build time.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-debug-2',
+        prompt:
+          'This compiles but throws `MatchFailureException` at runtime when called with `"abc"`:\n```fsharp\nlet (|Int|) (s: string) =\n    match System.Int32.TryParse s with\n    | true, n -> Int n\n    | _       -> failwith "not an int"\n\nlet describe input =\n    match input with\n    | Int n -> sprintf "%d squared = %d" n (n*n)\n\nprintfn "%s" (describe "abc")\n```\nWhat is the correct fix?',
+        options: [
+          'Convert `(|Int|)` (total) to a partial active pattern `(|Int|_|)` returning `int option`, and add a wildcard case to handle `None`',
+          'Wrap the whole program in `try/with` to ignore the exception',
+          'Use `int s` directly inside `match` — active patterns are broken',
+          'Replace `failwith` with `printfn`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'A **total** active pattern `(|Int|)` claims to handle every input — so the compiler does not warn about missing fall-through. When a string is not an integer, `failwith` blows up. The idiomatic fix is a **partial** active pattern `let (|Int|_|) s = match Int32.TryParse s with true, n -> Some n | _ -> None`, and a `match` with `| Int n -> ... | _ -> ...`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-2-mcq-debug-3',
+        prompt:
+          'You try to update a record and get this error:\n```\nFS0001: This expression was expected to have type \'Person\' but here has type \'{ Name: string; Age: int }\'\n```\nThe code:\n```fsharp\ntype Person = { Name: string; Age: int }\n\nlet ada = { Name = "Ada"; Age = 36 }\nlet older = { Name = ada.Name; Age = ada.Age + 1 }\n```\nWhich rewrite both fixes the error **and** is idiomatic?',
+        options: [
+          '`let older : Person = { Name = ada.Name; Age = ada.Age + 1 }` — add an explicit annotation everywhere',
+          '`let older = { ada with Age = ada.Age + 1 }` — copy-and-update preserves the nominal type and only changes what you mean to change',
+          '`ada.Age <- ada.Age + 1` — mutate in place',
+          '`let older = Person(ada.Name, ada.Age + 1)` — construct via positional syntax',
+        ],
+        correctIndex: 1,
+        explanation:
+          'When the same field set matches more than one record type in scope, F# may pick the wrong one (or fail to disambiguate). Copy-and-update `{ ada with Age = ada.Age + 1 }` carries the nominal type from `ada`, so the result is unambiguously `Person`, and it documents intent better than retyping every field.',
       },
     ],
   },
@@ -385,6 +475,51 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'Idiomatic F# wraps a throwing .NET API in `try/with` and converts the exception into an `Error` case. `File.ReadAllLines` returns `string[]`, so `Array.toList` produces the desired `string list`. Result-aware combinator libraries (FsToolkit) provide shortcuts, but the raw pattern is the foundation.',
       },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-debug-1',
+        prompt:
+          '`dotnet build` fails with:\n```\nFS0039: The value, namespace, type or module \'StringUtils\' is not defined.\n    at Program.fs:3:5\n```\nThe project file lists:\n```\n<Compile Include="Program.fs" />\n<Compile Include="StringUtils.fs" />\n```\nWhat is the fix?',
+        options: [
+          'Add `open System.StringUtils` at the top of `Program.fs`',
+          'Reorder the `.fsproj` so `StringUtils.fs` is compiled **before** `Program.fs` — F# enforces top-down file order',
+          'Rename `StringUtils.fs` to `_StringUtils.fs` to make it visible',
+          'Delete the `.fsproj` and let F# auto-detect file order',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Unlike C#, F# compiles files in the order they appear in the `.fsproj`. A file can only reference modules defined in **earlier** files. The fix is to move `<Compile Include="StringUtils.fs" />` above `<Compile Include="Program.fs" />` so `Program.fs` can `open StringUtils`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-debug-2',
+        prompt:
+          'Your service runs out of file handles in production. The hot path looks like this:\n```fsharp\nlet readFirstLine path =\n    let reader = new System.IO.StreamReader(path: string)\n    reader.ReadLine()\n```\nWhat is the fix?',
+        options: [
+          'Mark `reader` as `mutable`',
+          'Replace `let reader = new ...` with `use reader = new ...` so the `StreamReader` (and its underlying `FileStream`) is disposed when the function returns',
+          'Call `System.GC.Collect()` after `ReadLine` to free the handle',
+          'Wrap the call in `lock readerLock (fun () -> ...)` — handle exhaustion is a concurrency issue',
+        ],
+        correctIndex: 1,
+        explanation:
+          '`let` does not call `Dispose`. Every invocation of `readFirstLine` leaks an OS file handle. `use` (F# equivalent of C#\'s `using`) attaches the binding\'s `IDisposable.Dispose()` to the end of the enclosing scope, so the handle is released as soon as `readFirstLine` returns. `GC.Collect` is the wrong tool — relying on the finalizer to release OS resources is unreliable and slow.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-3-mcq-debug-3',
+        prompt:
+          'This compiles but crashes at runtime with `System.IO.FileNotFoundException` instead of returning an `Error`:\n```fsharp\nlet readConfig path =\n    try\n        Ok (System.IO.File.ReadAllText path)\n    with\n    | :? System.FormatException -> Error "bad format"\n```\nWhat is the fix?',
+        options: [
+          'Add a catch-all branch `| ex -> Error ex.Message` (or specifically `| :? System.IO.FileNotFoundException as ex -> Error ex.Message`) — the typed pattern only catches the exact subtype listed',
+          'Replace `:?` with `:>` to enable covariant catching',
+          'Wrap the call in `async { ... }` — synchronous IO does not raise exceptions',
+          '`Ok` always succeeds — change to `Result.Ok`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`:? System.FormatException` is a typed pattern that only catches `FormatException` and its subtypes — `FileNotFoundException` is a sibling, not a subtype, so the exception propagates out of `try/with` and crashes the caller. Add the specific case (`| :? System.IO.FileNotFoundException as ex -> Error ex.Message`) or a final wildcard (`| ex -> Error ex.Message`) to cover unanticipated errors.',
+      },
     ],
   },
 
@@ -513,6 +648,51 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 2,
         explanation:
           'Units of measure are checked statically. Adding `float<m>` to `float<ft>` is a compile-time error. You must explicitly convert via a conversion factor, e.g. `altitude * 0.3048<m/ft>`. See learn.microsoft.com/fsharp units of measure.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-debug-1',
+        prompt:
+          'Your ASP.NET Core controller (C#) calls the following F# function and gets `System.Threading.Tasks.Task\\`1[Microsoft.FSharp.Control.FSharpAsync\\`1[System.Int32]]` instead of an `int`. The F#:\n```fsharp\nlet fetchCount () : Async<int> = async {\n    do! Async.Sleep 10\n    return 42\n}\n```\nThe C# call site:\n```csharp\nvar count = await MyModule.fetchCount();\n```\nWhat is the right fix?',
+        options: [
+          'Change the F# return type to `Task<int>` by wrapping with `Async.StartAsTask`, or rewrite as `task { ... }` so C# `await` gets an `int` directly',
+          'Add `[<EntryPoint>]` to `fetchCount`',
+          'Tell C# to `await await` twice',
+          '`Async<int>` is already a `Task<int>` — restart the runtime',
+        ],
+        correctIndex: 0,
+        explanation:
+          'F# `Async<\'T>` is **not** the same as .NET `Task<\'T>` — C# `await` cannot directly consume `Async`. At the API boundary, either bridge with `Async.StartAsTask : Async<\'T> -> Task<\'T>`, or define the function as `task { ... }` so it returns `Task<int>` natively. Keeping `async { }` is fine for F#-only code; switch to `task { }` (or bridge) at any C# interop seam.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-debug-2',
+        prompt:
+          'This compiles but the result has the wrong type — `Option<Option<int>>` instead of `Option<int>`:\n```fsharp\nlet users = Map.ofList [("ada", "Ada")]\nlet ages = Map.ofList [("Ada", 36)]\n\nlet ageOf key =\n    Map.tryFind key users\n    |> Option.map (fun name -> Map.tryFind name ages)\n\nlet result : int option = ageOf "ada"  // FS0001: expected int option, got int option option\n```\nWhat is the fix?',
+        options: [
+          'Replace `Option.map` with `Option.bind` — `bind` flattens `Option<Option<int>>` to `Option<int>`, which is what you want when the inner function itself returns an `Option`',
+          'Cast with `:?> int option`',
+          'Add `Option.get` at the end',
+          'Wrap the inner call in `Some` again',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`Option.map : (\'a -> \'b) -> \'a option -> \'b option`. When the mapping function returns `int option`, `b = int option`, giving you `int option option`. `Option.bind : (\'a -> \'b option) -> \'a option -> \'b option` flattens automatically — use it whenever the continuation itself produces an `Option`. The same pattern applies to `Result.map` vs `Result.bind`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-4-mcq-debug-3',
+        prompt:
+          'Your `result { }` workflow runs even on `Error`, which surprises you:\n```fsharp\nlet validateAge a = if a > 0 then Ok a else Error "age must be positive"\nlet expensiveAudit a = printfn "auditing %d" a; Ok (a * 2)\n\nlet pipeline a =\n    result {\n        let x = validateAge a   // note: `let`, not `let!`\n        let! audited = expensiveAudit a\n        return audited\n    }\n\npipeline -5 |> ignore  // prints "auditing -5"\n```\nWhat is the fix?',
+        options: [
+          'Change `let x = validateAge a` to `let! x = validateAge a` — without the bang, the CE never inspects the `Result` and never short-circuits on `Error`',
+          'Move `expensiveAudit` outside the CE',
+          'Use `do!` instead of `let`',
+          '`result { }` does not support short-circuiting — switch to `option { }`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`let` inside a CE is a plain non-monadic binding — it just stores the value (here `Result<int,string>`) and the CE moves on. Only `let!` calls `Bind`, which is where short-circuiting on `Error` happens. The fix is `let! x = validateAge a`. If you do not need `x`, use `do! validateAge a |> Result.map ignore` or similar.',
       },
     ],
   },
@@ -643,6 +823,51 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'Type providers are a design-time feature: they run during compilation and may slow down editor responsiveness on very large schemas. They generate erased or generative types, so runtime access is just normal property access — no reflection cost. See learn.microsoft.com/fsharp type providers tutorial.',
       },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-debug-1',
+        prompt:
+          'Your production CSV report tool started throwing `System.FormatException: Input string was not in a correct format` at row 1 today. The code, unchanged for months:\n```fsharp\ntype Customers = CsvProvider<"sample.csv">  // sample header: Id,Name,Score (Score is int)\nlet rows = Customers.Load("/data/today.csv").Rows\nrows |> Seq.iter (fun r -> printfn "%d: %s = %d" r.Id r.Name r.Score)\n```\nA teammate just changed `Score` in upstream CSVs from `42` to `42.5`. What is the cause?',
+        options: [
+          'Type providers infer schema from `sample.csv` at **compile time** — `Score` was inferred as `int`. Today\'s CSV has `42.5` which fails the `int` parse at runtime. Update the sample CSV to include a decimal, or set `Schema="Score=decimal"` on `CsvProvider`, and rebuild',
+          '`CsvProvider` caches types in `/tmp` — clear the cache and it will re-infer',
+          'F# scripts re-read the sample at runtime — the issue is filesystem permissions',
+          'The CSV provider broke in a NuGet update — pin the previous version',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Type providers freeze the inferred schema at compile time. If your sample only ever had integer scores, the generated `Score` property has type `int`, and any decimal value in production throws at parse time. Fixes: (1) update the sample to include a `42.5` so the provider infers `decimal`, (2) pass `Schema="Score=decimal"` to `CsvProvider`, or (3) move to a hand-written DTO if upstream schemas drift often.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-debug-2',
+        prompt:
+          'You added a brand-new column to `users.csv` in production, but the F# CSV provider does not show it on `row`:\n```fsharp\ntype Users = CsvProvider<"sample.csv">  // sample.csv has Id,Name\n// production users.csv now has Id,Name,Email\nlet email = Users.Load("/data/users.csv").Rows |> Seq.head |> fun r -> r.Email\n// error FS0039: The field, constructor or member \'Email\' is not defined\n```\nWhat is the fix?',
+        options: [
+          'Update `sample.csv` to include the `Email` column **and** rebuild — the generated row type comes from the sample, not the runtime file',
+          'Add `[<DynamicAttribute>]` to `Users`',
+          'Use `row.["Email"]` — typed properties are case-sensitive',
+          'CSV provider does not support extra columns — switch to JSON',
+        ],
+        correctIndex: 0,
+        explanation:
+          'CsvProvider generates the row type from the **sample** at compile time. Adding `Email` to production CSVs doesn\'t change the generated type — the compiler never re-reads the live file. The fix is to update `sample.csv` (which lives in the repo) to include `Email`, rebuild, and then `row.Email` becomes available. This is the design-time vs runtime split that type providers force you to manage.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-5-mcq-debug-3',
+        prompt:
+          'Editor IntelliSense for `JsonProvider` suddenly hangs for ~30s every time you type a `.`:\n```fsharp\ntype Tx = JsonProvider<"transactions.json">  // 250 MB file\n```\nWhat is the most likely cause and fix?',
+        options: [
+          'The IDE crashed — restart it',
+          'JsonProvider re-runs schema inference on the full 250 MB sample every keystroke. Shrink the sample to a few representative records (e.g., 1 MB), or use `SampleIsList=true` with a tiny array, and keep the large file for runtime loading',
+          'Type providers are not supported in `.fsx` scripts',
+          'Add `[<NoCompilerInline>]` to disable provider inlining',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Type providers run inside the compiler/IDE on the sample you point at. A 250 MB sample means every type-check pass re-parses it, which kills IntelliSense responsiveness. Best practice: keep `sample.json` small but structurally representative; load the production file at runtime via `Tx.Load("…")`. This is the design-time tooling cost the docs warn about.',
+      },
     ],
   },
 
@@ -767,6 +992,51 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`Zero` is required when a CE branch produces no value (e.g., a one-armed `if` or an empty `else`). For `option {}` it would typically be `None`; for `result {}` it is often left unimplemented because every branch must produce an explicit value.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-debug-1',
+        prompt:
+          'Your `result { }` wrapper compiles but the inferred type is `Result<unit, string>` instead of `Result<int, string>`:\n```fsharp\nlet doublePositive a =\n    result {\n        let! n = if a > 0 then Ok a else Error "non-positive"\n        printfn "got %d" n\n        n * 2  // intended: yield n*2 as the result\n    }\n```\nWhat is the fix?',
+        options: [
+          'Add `return` before `n * 2` — without `return`/`return!` the last expression\'s value is dropped and the CE infers `unit`',
+          'Add `[<EntryPoint>]` to `doublePositive`',
+          'Wrap `n * 2` in `Ok` directly',
+          'Replace `result {}` with `async {}` so the value bubbles up',
+        ],
+        correctIndex: 0,
+        explanation:
+          'In a CE every yielding branch must use `return` (calls `builder.Return`) or `return!` (calls `builder.ReturnFrom`). Without either, `n * 2` is just an expression-statement and the CE falls through to `Zero`/`unit`. The fix is `return n * 2`. If you already had a `Result<int,string>` to forward, you would write `return! existingResult`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-debug-2',
+        prompt:
+          'You wrap an existing `Result` in a CE and the type is now `Result<Result<int, string>, string>`:\n```fsharp\nlet validate a : Result<int, string> = if a > 0 then Ok a else Error "non-positive"\n\nlet wrapped a =\n    result {\n        return validate a   // type: Result<Result<int, string>, string>\n    }\n```\nWhat is the fix?',
+        options: [
+          'Use `return!` instead of `return` — `return!` calls `ReturnFrom`, which forwards the existing wrapped value without re-wrapping',
+          'Cast with `:?> Result<int, string>`',
+          'Replace `result { }` with `option { }`',
+          'Move the call out of the CE and `|>` it through `Result.bind id`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`return x` wraps `x` in the computation: for `result`, `Return v = Ok v`. So returning a `Result<int,string>` gives `Ok (Ok 5)` / `Ok (Error "...")`. Use `return! existingResult`, which calls `builder.ReturnFrom` and forwards the value as-is. Same applies to `async { return! task }` etc.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-6-mcq-debug-3',
+        prompt:
+          'This CE compiles but `printfn` runs even when the validation should short-circuit:\n```fsharp\ntype ResultBuilder() =\n    member _.Bind(m, f) = match m with Ok v -> f v | Error e -> Error e\n    member _.Return(v) = Ok v\nlet result = ResultBuilder()\n\nlet processUser name age =\n    result {\n        let n = if String.length name > 0 then Ok name else Error "name empty"\n        printfn "got name"\n        let! a = if age > 0 then Ok age else Error "non-positive age"\n        return (n, a)  // (n is Result<string,string>, not string)\n    }\n\nprocessUser "" 30 |> ignore  // prints "got name"\n```\nWhat is the fix?',
+        options: [
+          'Change `let n = ...` to `let! n = ...` so the `Result` is unwrapped via `Bind` and `Error "name empty"` short-circuits before `printfn`',
+          'Move `printfn` after `return`',
+          'Add a `member _.Combine` to the builder',
+          '`if` expressions must be wrapped in `Ok` twice — change `Ok name` to `Ok (Ok name)`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`let` is a plain binding — the `Result` value sits there untouched and the CE proceeds to `printfn` regardless. Only `let!` invokes `builder.Bind`, which is where `Error` causes short-circuit. The fix is `let! n = if ... then Ok name else Error "name empty"`. Then on `Error`, `Bind` returns `Error` immediately and never reaches `printfn`.',
       },
     ],
   },
@@ -897,6 +1167,51 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'Saturn uses the `application { }` CE to configure the host, services, middleware, and router. It wraps `WebHost.CreateDefaultBuilder` and ASP.NET Core hosting configuration in F# style. See saturnframework.org/docs.html.',
       },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-debug-1',
+        prompt:
+          '`GET /greet/Ada/42` returns 404 even though you intended to match it. The router:\n```fsharp\nlet greetHandler (name: string) (age: int) : HttpHandler =\n    fun next ctx -> text (sprintf "Hello %s (%d)" name age) next ctx\n\nlet webApp =\n    choose [\n        routef "/greet/%s/%d" greetHandler  // FS0001: tuple expected\n    ]\n```\nWhat is the fix?',
+        options: [
+          '`routef "/greet/%s/%d"` passes a **tuple** to the handler. Change `greetHandler` to `fun (name, age) -> ...` (single parameter destructuring), not two curried arguments',
+          'Use `routeBind` instead of `routef`',
+          '`routef` only supports a single `%s` — drop `%d`',
+          'Register a `Json` serializer for tuples',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Giraffe\'s `routef` with multiple format specifiers passes the parsed segments as a **tuple** to the handler. The signature must be `(name: string * age: int) -> HttpHandler`, i.e. `let greetHandler (name, age) = fun next ctx -> ...`. Curried `name age` will not type-check against the expected `(string * int) -> HttpHandler` shape.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-debug-2',
+        prompt:
+          'Your `POST /todos` handler returns 500 with `System.Text.Json.JsonException: The JSON value could not be converted to Todo`. The handler:\n```fsharp\nlet createTodo : HttpHandler =\n    fun next ctx -> task {\n        let! todo = ctx.BindJsonAsync<Todo>()\n        // ... save todo, return Created\n        return! Successful.CREATED todo next ctx\n    }\n```\nGiraffe is using its default `Newtonsoft.Json` serializer but you registered `System.Text.Json` for outgoing responses only. What is the fix?',
+        options: [
+          'Register the same `System.Text.Json` serializer for **both** request binding and response writing via `services.AddSingleton<IJsonSerializer>(SystemTextJson.Serializer(...))` — `BindJsonAsync` uses the configured `IJsonSerializer` to deserialise',
+          'Manually call `JsonSerializer.Deserialize<Todo>(rawBody)`',
+          'Change `Todo` to a class — records cannot be deserialised',
+          '`BindJsonAsync` always uses `Newtonsoft.Json` — there is no fix',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Giraffe routes JSON in/out through the registered `IJsonSerializer`. If you only register one for outgoing, incoming `BindJsonAsync` still uses the default and may fail on F# record/DU shapes (e.g., camelCase, options). Register a single serializer (`SystemTextJson.Serializer(jsonOptions)` configured for F#) in `ConfigureServices`, and both bind and `json` helper use the same rules.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-7-mcq-debug-3',
+        prompt:
+          'You compose middleware with `>=>` but the auth handler runs **after** the route handler, leaking unauthenticated responses. The composition:\n```fsharp\nlet webApp =\n    choose [\n        route "/secret" >=> text "shhh"\n        >=> requiresAuth  // intended to gate access\n    ]\n```\nWhat is the fix?',
+        options: [
+          'Reorder to `requiresAuth >=> route "/secret" >=> text "shhh"` — `>=>` sequences left-to-right, so the auth check must come **first** for it to be able to short-circuit by returning `None`',
+          'Replace `>=>` with `|>`',
+          '`choose` already enforces auth on every branch',
+          'Add `[<RequireAuth>]` attribute to `webApp`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`a >=> b >=> c` runs `a` first, then `b`, then `c`. Each step can short-circuit by returning `None`. The auth handler has to run **before** the route emits a response, otherwise the response is already written by the time auth gets to reject. Put cross-cutting handlers (auth, content-type) at the front of the chain.',
+      },
     ],
   },
 
@@ -1022,6 +1337,51 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'FParsec operator precedence groups this as `(pchar \'a\' >>. pchar \'b\') <|> pchar \'c\'`. So the parser accepts either the sequence `"ab"` (discarding the `\'a\'` and returning `\'b\'`) or the single character `"c"`. Use parentheses if you want different grouping.',
       },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-debug-1',
+        prompt:
+          'Your parser rejects `"ace"` even though one of the alternatives should match it:\n```fsharp\nopen FParsec\nlet abc = pstring "abc"\nlet ace = pstring "ace"\nlet p = abc <|> ace\n\nrun p "ace"\n// Failure: Expecting: \'abc\'\n//     Error in Ln: 1 Col: 2\n//     ace\n//      ^\n```\nWhat is the fix?',
+        options: [
+          'Wrap the first branch with `attempt`: `let p = attempt abc <|> ace` — `<|>` only backtracks if the left parser fails **without consuming input**; `pstring "abc"` consumed `\'a\'` before failing on `\'c\'`',
+          'Reorder to `ace <|> abc` — alphabetic order is required',
+          'Replace `<|>` with `<|>>` (the strict-or operator)',
+          'Use `pstringCI` for case-insensitive matching',
+        ],
+        correctIndex: 0,
+        explanation:
+          'FParsec is **predictive** by default — `<|>` will only try the right branch if the left failed atomically (zero characters consumed). `pstring "abc"` consumed `\'a\'` and `\'c\'` before failing, so backtracking is disabled and the error sticks. `attempt abc` makes the left parser backtrack on failure, restoring the input position so `ace` can try.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-debug-2',
+        prompt:
+          'Your recursive `expr` parser stack-overflows on parse:\n```fsharp\nopen FParsec\n\nlet rec expr = parse {\n    let! lhs = pint32\n    let! _   = pchar \'+\'\n    let! rhs = expr  // recurse!\n    return lhs + rhs\n}\n\nrun expr "1+2+3"  // StackOverflowException\n```\nWhat is the FParsec-idiomatic fix?',
+        options: [
+          'Use `createParserForwardedToRef` to break the recursion: declare a forwarded-to-ref `expr`, build it from non-recursive primitives + `chainl1`, then assign it via `exprRef.Value <- ...`',
+          'Add `[<TailCall>]` attribute on `expr`',
+          'Wrap the body in `lazy { ... }`',
+          'Switch to `attempt expr`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Eager recursion via `let rec` evaluates the body immediately when the parser is constructed, blowing the stack before any input is read. FParsec\'s idiom is `let expr, exprRef = createParserForwardedToRef<...>()` which gives you a placeholder you can reference now and define later (after building the rest of the grammar). Combined with `chainl1`, it expresses left-recursive operator grammars cleanly.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-8-mcq-debug-3',
+        prompt:
+          'Your parser succeeds when it should fail — `"42abc"` returns `Success(42, "abc")` and you wanted a parse error for the trailing garbage:\n```fsharp\nlet p = pint32\nrun p "42abc"  // Success(42, ...) — but "abc" is unconsumed\n```\nWhat is the fix?',
+        options: [
+          'End the parser with `eof`: `let p = pint32 .>> eof` — `eof` succeeds only when the input is fully consumed',
+          'Use `runParserOnString` instead of `run`',
+          'Replace `pint32` with `manyTill pint32 (pstring "")`',
+          'Pass `EnableEOF=true` to `run`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`run` does **not** require the parser to consume the entire input; it returns whatever `pint32` matched (`42`) and leaves `"abc"` in the buffer. Sequence with `eof`: `pint32 .>> eof` (or `.>> spaces .>> eof` to allow trailing whitespace). Now `"42abc"` will fail at `eof` with a useful error.',
+      },
     ],
   },
 
@@ -1146,6 +1506,51 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           '`Channel<T>` from `System.Threading.Channels` provides bounded/unbounded MPSC/MPMC queues with backpressure, optimised for high-throughput pipelines. `MailboxProcessor` is a higher-level actor with a per-agent unbounded queue and is better when you want stateful sequential handlers.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-debug-1',
+        prompt:
+          '`PostAndReply` hangs forever in production. The agent code:\n```fsharp\ntype Msg = GetCount of AsyncReplyChannel<int>\n\nlet counter = MailboxProcessor.Start(fun inbox ->\n    let rec loop count = async {\n        let! msg = inbox.Receive()\n        match msg with\n        | GetCount channel ->\n            // forgot channel.Reply(count)!\n            return! loop count\n    }\n    loop 0)\n\nlet n = counter.PostAndReply(GetCount)  // blocks forever\n```\nWhat is the cause and fix?',
+        options: [
+          'The agent must call `channel.Reply(count)` — `PostAndReply` blocks until `Reply` is invoked on the channel. Without it, the caller waits indefinitely',
+          '`PostAndReply` is async — switch to `PostAndAsyncReply`',
+          '`MailboxProcessor.Start` requires `inbox.Defer()` first',
+          'Add `let! _ = Async.SwitchToThreadPool()` at the top of `loop`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'The reply channel is a one-shot promise. The agent must call `channel.Reply(value)` exactly once for `PostAndReply`/`PostAndAsyncReply` to unblock. Forgetting `Reply` causes the caller to hang forever. The fix is `| GetCount channel -> channel.Reply(count); return! loop count`. Adding a timeout to `PostAndReply` (`counter.PostAndReply(GetCount, timeout = 5000)`) is also good defensive practice.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-debug-2',
+        prompt:
+          'Your agent processes only the **first** message and then ignores everything. The code:\n```fsharp\ntype Msg = Incr | GetCount of AsyncReplyChannel<int>\n\nlet counter = MailboxProcessor.Start(fun inbox ->\n    async {\n        let mutable count = 0\n        let! msg = inbox.Receive()  // only once!\n        match msg with\n        | Incr -> count <- count + 1\n        | GetCount ch -> ch.Reply count\n    })\n```\nWhat is the fix?',
+        options: [
+          'Wrap the receive in a recursive `let rec loop () = async { let! msg = inbox.Receive(); ... return! loop () }` so the agent keeps consuming messages',
+          'Use `inbox.ReceiveAll()` to drain the queue once',
+          'Mark the lambda `recursive` to enable auto-loop',
+          'Increase the mailbox capacity',
+        ],
+        correctIndex: 0,
+        explanation:
+          'An agent\'s body runs once. To stay alive, it must explicitly loop. The idiom is `let rec loop state = async { let! msg = inbox.Receive(); ... return! loop newState }`, then start with `loop initial`. Without `return! loop ...`, the workflow completes after the first message and the agent silently dies.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-9-mcq-debug-3',
+        prompt:
+          'A nested `PostAndReply` deadlocks the whole process. The agent code:\n```fsharp\nlet agentA = MailboxProcessor.Start(fun inbox ->\n    let rec loop () = async {\n        let! (ch: AsyncReplyChannel<int>) = inbox.Receive()\n        let answer = agentB.PostAndReply(fun rc -> rc)  // BAD: synchronous call inside agent loop\n        ch.Reply(answer)\n        return! loop ()\n    }\n    loop ())\n```\nWhat is the fix?',
+        options: [
+          'Replace the inner `PostAndReply` with `let! answer = agentB.PostAndAsyncReply(fun rc -> rc)` — synchronous `PostAndReply` blocks the agent\'s thread, which blocks other messages and any reply that would unblock it; the async variant cooperates with the agent\'s message loop',
+          'Make `agentA` and `agentB` share a `lock`',
+          'Use `Async.RunSynchronously` around the call',
+          'Spawn a new agent per request',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Inside an agent\'s `async { }` loop you must use async equivalents. `PostAndReply` blocks the current thread, which is the thread the agent uses to process the next message — it can never return because the agent that owes you a reply may itself depend on the blocked agent. `PostAndAsyncReply` yields back to the scheduler so other work can progress.',
       },
     ],
   },
@@ -1275,6 +1680,51 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'Workflows encode three concerns: I/O (so they return `Async` or `Task`), failure (so they return `Result` with a domain-specific error DU), and an explicit input-to-object contract. Composing such workflows uses `AsyncResult.bind` or a `asyncResult { }` CE. See *Domain Modeling Made Functional*.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-debug-1',
+        prompt:
+          'In a `Domain.fs` module, a teammate added this to "fix" a validation bug:\n```fsharp\nmodule Domain =\n    type EmailAddress = private EmailAddress of string\n\n    module EmailAddress =\n        let create (s: string) =\n            if s.Contains "@" then Ok (EmailAddress s)\n            else Error "missing @"\n\n        let value (EmailAddress s) = s\n\n    // NEW: convenience helper\n    let unsafeMake (s: string) : EmailAddress = EmailAddress s\n```\nWhat invariant did they break, and what is the right fix?',
+        options: [
+          'Delete `unsafeMake`. The whole point of `private` on the case constructor is that the **only** way to build an `EmailAddress` is via the validating `create` smart constructor. `unsafeMake` re-opens the door to invalid emails and defeats "illegal states unrepresentable"',
+          'Mark `unsafeMake` as `[<Obsolete>]` and ship it',
+          'Add a runtime check inside `unsafeMake`',
+          '`private` is decorative — the invariant cannot be enforced anyway',
+        ],
+        correctIndex: 0,
+        explanation:
+          'A smart-constructor DU with `private` makes the type a *fortress*: every value in the system has passed `create`, so downstream code can rely on the invariant without re-checking. An "unsafe" escape hatch within the same module compiles (it lives inside the privacy boundary) and silently destroys the guarantee. Delete it; if you genuinely need to skip validation (e.g., trusted seed data), funnel through `create` and `Result.defaultWith`.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-debug-2',
+        prompt:
+          'Your order state machine permits illegal transitions because the code is structured this way:\n```fsharp\ntype OrderState = Pending | Confirmed | Shipped | Cancelled\n\ntype Order = {\n    Id: int\n    mutable State: OrderState\n}\n\nlet ship (o: Order) =\n    o.State <- Shipped  // happily ships a Cancelled order\n```\nWhat is the DDD-idiomatic fix?',
+        options: [
+          'Remove `mutable`. Make `Order` immutable and write `ship : Order -> Result<Order, string>` that pattern-matches on the current state, returning `Ok { o with State = Shipped }` only when transitioning from `Confirmed`, otherwise `Error "cannot ship from ..."`',
+          'Add a `lock` around `o.State <- Shipped`',
+          'Throw an exception inside the `ship` function',
+          'Use `mutable` but add `inline` to enforce checks',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Direct mutation lets any caller jump to any state, ignoring the state machine. Immutable records + transition functions returning `Result<Order, DomainError>` make the legal transitions explicit and the illegal ones syntactically impossible to fake. Going further, you can model each state as its own type (`PendingOrder`, `ConfirmedOrder`, ...) so the transition functions can\'t even be called on the wrong state.',
+      },
+      {
+        kind: 'mcq',
+        id: 'fsharp-10-mcq-debug-3',
+        prompt:
+          'In your Elmish view, every keystroke in a text input causes the whole page to flicker. The update is pure:\n```fsharp\ntype Msg = NameChanged of string\n\nlet update msg (model: Model) =\n    match msg with\n    | NameChanged n -> { model with Name = n }, Cmd.none\n\nlet view model dispatch =\n    Html.div [\n        Html.input [ prop.value model.Name; prop.onChange (NameChanged >> dispatch) ]\n        ExpensiveSubtree model  // re-rendered on every keystroke\n    ]\n```\nWhat is the right optimisation?',
+        options: [
+          'Memoise the expensive subtree via `React.memo` / `Html.fragment` with `key`, or use `Program.withReactBatched` so unrelated parts of the tree are not re-rendered for unrelated state changes. The reducer should remain pure',
+          'Mutate `model.Name` in place to skip the diff',
+          'Return `Cmd.ofSub` from `update` to defer rendering',
+          'Move `ExpensiveSubtree` into `update` so it only runs once',
+        ],
+        correctIndex: 0,
+        explanation:
+          'In Elmish, every `update` produces a new model and the entire `view` re-runs. The `view` function itself is cheap (it just produces a virtual-DOM description), but expensive sub-components need memoisation (Feliz `React.memo` / `React.useMemo`) so they only re-render when their inputs actually change. Do **not** introduce mutation — that breaks time-travel debugging and predictable state. Keep `update` pure; optimise rendering separately.',
       },
     ],
   },
