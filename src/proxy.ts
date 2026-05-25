@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
-  matcher: ["/((?!_next/static|favicon.ico).*)"],
+  // PWA assets (manifest, service worker, app icons, apple-touch-icon) are excluded so
+  // browsers can fetch them without a Basic-Auth round-trip. The install flow is sensitive
+  // to extra 401 challenges on Safari iOS, and these files contain no secrets.
+  // `_next/image` is also excluded so Next.js image optimisation doesn't hit auth on every
+  // resize request.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|apple-touch-icon.png).*)",
+  ],
 };
 
 /** Constant-time string comparison safe for edge runtime (no crypto.timingSafeEqual). */
