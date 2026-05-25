@@ -117,7 +117,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-1-mcq-7',
         prompt:
-          'This stack trace appears when running the script:\n```\nTraceback (most recent call last):\n  File "main.py", line 7, in <module>\n    last = items[len(items)]\n           ~~~~~^^^^^^^^^^^^^\nIndexError: list index out of range\n```\nHere is the code:\n```python\ndef main() -> None:\n    items = ["apple", "banana", "cherry"]\n    last = items[len(items)]\n    print(last)\n\nif __name__ == "__main__":\n    main()\n```\nWhich fix is correct?',
+          'Sentry shows 4.2K errors/hour from `/api/feed`. A customer complains: "my most recent post never shows up on the homepage". The trace points at this handler:\n```\nTraceback (most recent call last):\n  File "/app/api/feed.py", line 38, in get_latest\n    latest = posts[len(posts)]\n             ~~~~~^^^^^^^^^^^^^\nIndexError: list index out of range\n```\nThe file:\n```python\n# /app/api/feed.py\nfrom fastapi import APIRouter, HTTPException\nfrom app.services.posts import fetch_recent_posts\n\nrouter = APIRouter(prefix="/api/feed")\n\n@router.get("/latest")\ndef get_latest(user_id: int) -> dict:\n    """Return the user\'s most recent post for the homepage card."""\n    posts = fetch_recent_posts(user_id, limit=10)\n    if not posts:\n        raise HTTPException(status_code=404, detail="no posts yet")\n    # line 38 — pick the newest post\n    latest = posts[len(posts)]\n    return {"user_id": user_id, "post": latest}\n```\nWhich 1-line fix unbreaks production?',
         options: [
           'Change `items[len(items)]` to `items[len(items) - 1]` (or `items[-1]`).',
           'Change `items[len(items)]` to `items[len(items) + 1]`.',
@@ -132,7 +132,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-1-mcq-8',
         prompt:
-          'A teammate reports this error:\n```\nTypeError: unsupported operand type(s) for +: \'int\' and \'str\'\n```\nThe code is:\n```python\ndef total(price: int, tax_rate: str) -> int:\n    return price + (price * tax_rate)\n\nif __name__ == "__main__":\n    print(total(100, "0.08"))\n```\nWhich line is the bug and what is the fix?',
+          'Users report intermittent 500s on `/api/checkout` whenever a regional tax rate is sourced from a YAML config (which loads numbers as strings unless quoted right). Sentry trace:\n```\nTraceback (most recent call last):\n  File "/app/api/checkout.py", line 54, in checkout\n    grand_total = compute_total(line_item.price, region.tax_rate)\n  File "/app/services/pricing.py", line 18, in compute_total\n    return price + (price * tax_rate)\nTypeError: unsupported operand type(s) for +: \'int\' and \'str\'\n```\nThe service module:\n```python\n# /app/services/pricing.py\nfrom decimal import Decimal\n\n# Called from /api/checkout for every cart line.\n# `tax_rate` is loaded from regions.yaml — recently re-edited by ops.\ndef compute_total(price: int, tax_rate: str) -> int:\n    """Return price plus tax. Treats tax_rate as a multiplier."""\n    return price + (price * tax_rate)  # line 18\n```\nGiven the trace, what is the most likely root cause AND the right fix?',
         options: [
           'The caller passes `"0.08"` as a string. Pass `0.08` as a float and accept `tax_rate: float`.',
           'The bug is `return price + (price * tax_rate)`. Use `str(price * tax_rate)`.',
@@ -147,7 +147,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-1-mcq-9',
         prompt:
-          'You try to run this script and Python refuses to start with:\n```\n  File "demo.py", line 3\n    if x > 0\n            ^\nSyntaxError: expected \':\'\n```\nThe code is:\n```python\ndef sign(x: int) -> str:\n    if x > 0\n        return "positive"\n    if x < 0:\n        return "negative"\n    return "zero"\n```\nWhich line is the bug?',
+          'CI is red on every PR — the test suite never even starts:\n```\n$ pytest tests/ -q\nERROR collecting tests/unit/test_sign.py\n  File "/app/services/math_utils.py", line 9\n    if x > 0\n            ^\nSyntaxError: expected \':\'\n!!! Interrupted: 1 error during collection !!!\n```\nThe file under test:\n```python\n# /app/services/math_utils.py\n"""Pure-function helpers used by the order-pricing pipeline."""\nfrom __future__ import annotations\n\n\ndef sign(x: int) -> str:\n    """Return "positive", "negative", or "zero" for the given int."""\n    if x > 0\n        return "positive"\n    if x < 0:\n        return "negative"\n    return "zero"\n```\nWhere would you look FIRST AND what is the fix?',
         options: [
           'Line 3 — missing colon after `if x > 0`.',
           'Line 4 — the `return` is indented too deeply.',
@@ -289,7 +289,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-2-mcq-7',
         prompt:
-          'This output is wrong — only `[1, 3]` should remain after removing all evens:\n```\nInput:  [1, 2, 3, 4]\nOutput: [1, 3, 4]\n```\nThe code is:\n```python\ndef remove_evens(xs: list[int]) -> list[int]:\n    for x in xs:\n        if x % 2 == 0:\n            xs.remove(x)\n    return xs\n\nif __name__ == "__main__":\n    print(remove_evens([1, 2, 3, 4]))\n```\nWhich fix is correct?',
+          'A QA engineer files: "Even-numbered transaction IDs are supposed to be excluded from the nightly export, but a few keep sneaking through. Looks random." Reproducing locally with a synthetic batch:\n```\n$ python -m jobs.export.repro\nInput  : [1, 2, 3, 4]\nExpected (odd-only): [1, 3]\nActual : [1, 3, 4]   # the trailing 4 survived\n```\nThe step that prunes evens:\n```python\n# /jobs/export/clean.py\nfrom __future__ import annotations\n\n\ndef remove_evens(xs: list[int]) -> list[int]:\n    """Drop every even transaction id in place and return the list.\n\n    Used as the last filter before writing the nightly CSV — running on a\n    list of ~50K ids in production.\n    """\n    for x in xs:\n        if x % 2 == 0:\n            xs.remove(x)\n    return xs\n```\nGiven the input/output, what is the root cause AND the safer rewrite?',
         options: [
           'Do not mutate `xs` while iterating it. Build a new list: `return [x for x in xs if x % 2 != 0]`.',
           'Change `xs.remove(x)` to `xs.pop(x)`.',
@@ -304,7 +304,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-2-mcq-8',
         prompt:
-          'The expected output is `key1=alpha`, but the script crashes:\n```\nTraceback (most recent call last):\n  File "demo.py", line 8, in main\n    for k, v in d:\nValueError: too many values to unpack (expected 2)\n```\nThe code:\n```python\ndef main() -> None:\n    d = {"key1": "alpha", "key2": "beta"}\n    for k, v in d:\n        print(f"{k}={v}")\n\nif __name__ == "__main__":\n    main()\n```\nWhich line is the bug?',
+          'A new feature-flag dumper crashes the startup job on every deploy. Logs:\n```\n2026-05-24T14:02:11Z [config-dump] starting...\nTraceback (most recent call last):\n  File "/app/scripts/dump_flags.py", line 22, in main\n    dump_flags(load_flags())\n  File "/app/scripts/dump_flags.py", line 14, in dump_flags\n    for k, v in flags:\nValueError: too many values to unpack (expected 2)\n```\nThe script:\n```python\n# /app/scripts/dump_flags.py\n"""Print every feature flag in `name=value` form for the boot log."""\nfrom __future__ import annotations\n\n\ndef load_flags() -> dict[str, bool]:\n    return {"checkout_v2": True, "new_search": False, "ai_summary": True}\n\n\ndef dump_flags(flags: dict[str, bool]) -> None:\n    for k, v in flags:\n        print(f"{k}={v}")\n\n\ndef main() -> None:\n    dump_flags(load_flags())\n\n\nif __name__ == "__main__":\n    main()\n```\nWhich line is the bug AND what is the 1-line fix?',
         options: [
           'Line `for k, v in d:` — iterating a dict yields KEYS only. Use `d.items()` to get `(key, value)` pairs.',
           'Line `d = {"key1": "alpha", ...}` — the dict literal is invalid.',
@@ -319,7 +319,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-2-mcq-9',
         prompt:
-          'Why does this debug print show the SAME list twice instead of two independent lists?\n```\n[1, 99]\n[1, 99]\n```\nCode:\n```python\ndef build_pair() -> tuple[list[int], list[int]]:\n    base = [1]\n    a = base\n    b = base\n    b.append(99)\n    return a, b\n\nif __name__ == "__main__":\n    a, b = build_pair()\n    print(a)\n    print(b)\n```\nWhich fix is correct?',
+          'A user files: "When I add an item to my cart on the storefront, the SAME item appears in the admin preview cart too." The integration test that exposes it:\n```\n$ pytest tests/integration/test_cart.py::test_independent_carts -q\n>       assert customer_cart == [1]\nE       assert [1, 99] == [1]\nE         Left contains 1 more item: 99\n```\nThe service factory:\n```python\n# /app/services/cart_factory.py\nfrom __future__ import annotations\n\n\ndef build_pair() -> tuple[list[int], list[int]]:\n    """Return (customer_cart, admin_preview_cart) — must be INDEPENDENT.\n\n    The admin preview is allowed to mutate its own cart for what-if pricing\n    without touching the customer\'s real cart.\n    """\n    base: list[int] = [1]\n    customer_cart = base\n    admin_preview_cart = base\n    admin_preview_cart.append(99)  # admin tweak\n    return customer_cart, admin_preview_cart\n```\nWhat\'s the root cause AND the right fix?',
         options: [
           '`a` and `b` reference the SAME list. Use `a = base.copy(); b = base.copy()` (or `list(base)`).',
           'Use `b = base.append(99)` directly.',
@@ -461,7 +461,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-3-mcq-7',
         prompt:
-          "A teammate's script never writes the file fully — runs that crash leave the data partially flushed or empty:\n```python\ndef save_lines(path: str, lines: list[str]) -> None:\n    f = open(path, \"w\", encoding=\"utf-8\")\n    for line in lines:\n        f.write(line + \"\\n\")\n        if not line:\n            raise ValueError(\"blank line\")\n    f.close()\n```\nWhich line is the bug and what is the fix?",
+          'On-call ticket: "Nightly export occasionally produces empty/truncated CSVs and `lsof` shows leaked file descriptors on the worker pod." Sentry trace from one of the failing runs:\n```\nTraceback (most recent call last):\n  File "/srv/jobs/exports/csv_writer.py", line 19, in save_lines\n    raise ValueError("blank line")\nValueError: blank line\n```\nThe writer:\n```python\n# /srv/jobs/exports/csv_writer.py\n"""Write export rows to disk. Called from the nightly Celery beat schedule."""\nfrom __future__ import annotations\n\n\ndef save_lines(path: str, lines: list[str]) -> None:\n    """Write each line to `path` (utf-8, newline-terminated).\n\n    Raises ValueError if any line is blank — blank lines indicate a bug\n    upstream in the row builder and must abort the export.\n    """\n    f = open(path, "w", encoding="utf-8")\n    for line in lines:\n        f.write(line + "\\n")\n        if not line:\n            raise ValueError("blank line")\n    f.close()\n```\nWhy is the file leaked AND what is the 1-line fix?',
         options: [
           'The manual `open` / `close` leaks the file on the `raise`. Use `with open(path, "w", encoding="utf-8") as f:` so close runs on exception.',
           'Change `"w"` to `"a"` (append mode).',
@@ -476,7 +476,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-3-mcq-8',
         prompt:
-          'Production logs show this circular-import crash on startup:\n```\nImportError: cannot import name \'User\' from partially initialized module \'models\' (most likely due to a circular import)\n```\nThe project has two files:\n```python\n# models.py\nfrom services import notify\n\nclass User:\n    pass\n```\n```python\n# services.py\nfrom models import User\n\ndef notify(u: User) -> None:\n    print(u)\n```\nWhich fix is best?',
+          'After merging a "tiny refactor", the entire web service refuses to boot in staging:\n```\n[2026-05-24T09:11:02Z] gunicorn: starting api.wsgi:application\nTraceback (most recent call last):\n  File "/app/api/wsgi.py", line 3, in <module>\n    from app.models import User\n  File "/app/app/models.py", line 4, in <module>\n    from app.services import notify\n  File "/app/app/services.py", line 3, in <module>\n    from app.models import User\nImportError: cannot import name \'User\' from partially initialized module \'app.models\' (most likely due to a circular import) (/app/app/models.py)\n```\nThe two modules:\n```python\n# /app/app/models.py\nfrom __future__ import annotations\nfrom dataclasses import dataclass\nfrom app.services import notify  # used by User.save()\n\n\n@dataclass\nclass User:\n    id: int\n    email: str\n\n    def save(self) -> None:\n        # persist then notify subscribers\n        notify(self)\n```\n```python\n# /app/app/services.py\nfrom __future__ import annotations\nfrom app.models import User  # used in the type hint below\n\n\ndef notify(u: User) -> None:\n    """Push a `user.saved` event onto the bus."""\n    print(f"event: user.saved id={u.id}")\n```\nWhich fix unbreaks staging without losing the type hint?',
         options: [
           'Break the cycle: import `User` inside the `notify` function body (`def notify(u): from models import User; ...`) or move the shared type to a third module.',
           'Add `import sys; sys.path.append(...)` to both files.',
@@ -491,7 +491,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-3-mcq-9',
         prompt:
-          'A class refuses to instantiate:\n```\nTraceback (most recent call last):\n  File "shop.py", line 14, in <module>\n    item = Item("widget", 10)\nTypeError: __init__() takes 2 positional arguments but 3 were given\n```\nThe class:\n```python\nclass Item:\n    def __init__(name: str, price: float) -> None:\n        self.name = name\n        self.price = price\n```\nWhich line is the bug?',
+          'A junior dev opened a PR and CI fails with a single error before any test runs:\n```\n$ pytest tests/unit/test_catalog.py::test_create_item -q\n>       item = Item("widget", 10)\nE       TypeError: Item.__init__() takes 2 positional arguments but 3 were given\n\ntests/unit/test_catalog.py:14: TypeError\n```\nThe model under test:\n```python\n# /app/catalog/models.py\nfrom __future__ import annotations\nfrom dataclasses import dataclass\n\n\nclass Item:\n    """Catalog item — name + price in cents.\n\n    Manually written (not @dataclass) because we needed custom validation.\n    """\n\n    def __init__(name: str, price: float) -> None:\n        if price < 0:\n            raise ValueError("price must be non-negative")\n        self.name = name\n        self.price = price\n\n    def __repr__(self) -> str:\n        return f"Item(name={self.name!r}, price={self.price})"\n```\nWhich line is the bug AND the 1-character fix?',
         options: [
           '`def __init__(name: str, price: float)` is missing the explicit `self` parameter. Should be `def __init__(self, name: str, price: float)`.',
           'The class needs `@classmethod` on `__init__`.',
@@ -633,7 +633,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-4-mcq-7',
         prompt:
-          'A user reports that `add_item` keeps polluting the shared list across calls:\n```\n>>> add_item("a")\n[\'a\']\n>>> add_item("b")\n[\'a\', \'b\']   # expected just [\'b\']\n```\nCode:\n```python\ndef add_item(item: str, items: list[str] = []) -> list[str]:\n    items.append(item)\n    return items\n```\nWhich line is the bug?',
+          'A user reports their search history accumulates duplicates ACROSS sessions: "I searched X yesterday, log out, log back in fresh, and my history still shows X." Sentry shows no errors. Repro:\n```\n>>> from app.search.history import add_item\n>>> add_item("first_user_query")\n[\'first_user_query\']\n>>> # imagine a brand new request from a different user...\n>>> add_item("second_user_query")\n[\'first_user_query\', \'second_user_query\']   # expected just [\'second_user_query\']\n```\nThe helper:\n```python\n# /app/search/history.py\nfrom __future__ import annotations\n\n\ndef add_item(item: str, items: list[str] = []) -> list[str]:\n    """Append `item` to the per-request history list and return it.\n\n    Each call should start from an empty list when no explicit `items`\n    is passed in.\n    """\n    items.append(item)\n    return items\n```\nWhat is the root cause AND the correct rewrite?',
         options: [
           'The mutable default `items: list[str] = []` is evaluated ONCE at definition and shared by every call. Use `items: list[str] | None = None` and inside the function do `if items is None: items = []`.',
           'The `append` should be `extend`.',
@@ -648,7 +648,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-4-mcq-8',
         prompt:
-          'pytest reports this failure:\n```\n>       assert result == expected\nE       assert {\'a\': 1, \'b\': 2} == {\'a\': 1, \'b\': 2, \'c\': 3}\nE         Common items: {\'a\': 1, \'b\': 2}\nE         Right contains 1 more item: {\'c\': 3}\n```\nThe test:\n```python\ndef test_merge():\n    a = {"a": 1}\n    b = {"b": 2, "c": 3}\n    expected = {"a": 1, "b": 2, "c": 3}\n    result = a | {"b": 2}\n    assert result == expected\n```\nWhich line is the bug?',
+          'CI fails 1/20 runs with a flaky-looking dict-merge test — but the failure is deterministic on the runner that finally caught it:\n```\n$ pytest tests/unit/test_config_merge.py::test_merge -q\n>       assert result == expected\nE       AssertionError: assert {\'a\': 1, \'b\': 2} == {\'a\': 1, \'b\': 2, \'c\': 3}\nE         Common items: {\'a\': 1, \'b\': 2}\nE         Right contains 1 more item: {\'c\': 3}\nE         Use -v to see the full diff\n\ntests/unit/test_config_merge.py:11: AssertionError\n```\nThe test:\n```python\n# /tests/unit/test_config_merge.py\n"""Verify the env-var override merge that ships config to /etc/app.toml."""\nfrom __future__ import annotations\n\n\ndef test_merge() -> None:\n    a: dict[str, int] = {"a": 1}\n    b: dict[str, int] = {"b": 2, "c": 3}\n    expected = {"a": 1, "b": 2, "c": 3}\n    result = a | {"b": 2}\n    assert result == expected\n```\nWhich line is the bug AND the fix?',
         options: [
           '`result = a | {"b": 2}` only merges one key. Should be `result = a | b` to include both `b` and `c`.',
           'Dict union `|` is not allowed; use `dict.update`.',
@@ -663,7 +663,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-4-mcq-9',
         prompt:
-          'mypy reports:\n```\nuser.py:6: error: Item "None" of "str | None" has no attribute "upper"\n```\nCode:\n```python\ndef get_email(user: dict) -> str | None:\n    return user.get("email")\n\ndef normalise(user: dict) -> str:\n    email = get_email(user)\n    return email.upper()\n```\nWhich fix satisfies mypy AND avoids a runtime `AttributeError` when email is missing?',
+          'A CI gate (`mypy --strict`) blocks the PR that introduces a new user-normalisation step:\n```\n$ mypy --strict apps/web/lib/users.py\napps/web/lib/users.py:14: error: Item "None" of "str | None" has no attribute "upper"  [union-attr]\nFound 1 error in 1 file (checked 1 source file)\n```\nAnd a teammate notes "we already had a NoneType crash in prod last quarter from the same shape." The file:\n```python\n# /apps/web/lib/users.py\nfrom __future__ import annotations\nfrom typing import Any\n\n\ndef get_email(user: dict[str, Any]) -> str | None:\n    """Return user[\'email\'] if present, else None."""\n    return user.get("email")\n\n\ndef normalise(user: dict[str, Any]) -> str:\n    """Return the email upper-cased for downstream matching."""\n    email = get_email(user)\n    return email.upper()  # line 14\n```\nWhich fix satisfies mypy AND avoids the runtime `AttributeError`?',
         options: [
           'Guard before dereferencing: `if email is None: raise ValueError("missing email"); return email.upper()` — mypy narrows `email` to `str` after the check.',
           'Cast: `return cast(str, email).upper()` — silences mypy without runtime safety.',
@@ -810,7 +810,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-5-mcq-7',
         prompt:
-          'A custom Generic container behaves oddly when used with subclasses:\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Animal: ...\n\n@dataclass\nclass Dog(Animal): ...\n\nclass Box[T]:\n    def __init__(self, value: T) -> None:\n        self.value = value\n    def replace(self, new: T) -> None:\n        self.value = new\n\ndog_box: Box[Dog] = Box(Dog())\nanimal_box: Box[Animal] = dog_box  # mypy: this is an error\n```\nWhy does mypy reject the assignment?',
+          'A PR adding a generic `Box` to the shared types lib fails CI on the type-check job:\n```\n$ mypy --strict packages/shared/box.py\npackages/shared/box.py:24: error: Incompatible types in assignment (expression has type "Box[Dog]", variable has type "Box[Animal]")  [assignment]\nFound 1 error in 1 file (checked 1 source file)\n```\nThe module:\n```python\n# /packages/shared/box.py\n"""Tiny mutable container used by the inventory matcher."""\nfrom __future__ import annotations\nfrom dataclasses import dataclass\n\n\n@dataclass\nclass Animal:\n    name: str\n\n\n@dataclass\nclass Dog(Animal):\n    breed: str = "mutt"\n\n\nclass Box[T]:\n    def __init__(self, value: T) -> None:\n        self.value = value\n\n    def replace(self, new: T) -> None:\n        self.value = new\n\n\ndog_box: Box[Dog] = Box(Dog(name="Rex"))\n# line 24 — should this be allowed?\nanimal_box: Box[Animal] = dog_box\n```\nWhy is mypy correct to reject this AND what would make it safe?',
         options: [
           '`Box[T]` is INVARIANT in T (the default). Mutable containers cannot be covariant — `animal_box.replace(Cat())` would corrupt the Dog-only invariant. To allow covariance you would need a read-only Protocol with `T` covariant.',
           'mypy is buggy — `Dog` is a subclass of `Animal`, so `Box[Dog]` is a `Box[Animal]`.',
@@ -825,7 +825,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-5-mcq-8',
         prompt:
-          'A `match` for shapes never reaches the `Rectangle` branch — the wildcard fires instead:\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Rectangle:\n    w: int\n    h: int\n\ndef area(shape) -> int:\n    match shape:\n        case Rectangle(w, h):\n            return w * h\n        case _:\n            return 0\n\nif __name__ == "__main__":\n    print(area(Rectangle(3, 4)))\n```\nThe call prints `0`. Why?',
+          'A pricing rule that uses `match` returns `0` for every rectangle SKU — production invoices are silently zeroing out. Local repro:\n```\n$ python -m apps.pricing.area_repro\narea(Rectangle(3, 4)) -> 0   # expected 12\n```\nThe pricing module:\n```python\n# /apps/pricing/shapes.py\nfrom __future__ import annotations\nfrom dataclasses import dataclass\n\n\n@dataclass\nclass Rectangle:\n    w: int\n    h: int\n\n\ndef area(shape: object) -> int:\n    """Return area in mm^2 for the supported shape kinds."""\n    match shape:\n        case Rectangle(w, h):\n            return w * h\n        case _:\n            return 0\n\n\nif __name__ == "__main__":\n    print(f"area(Rectangle(3, 4)) -> {area(Rectangle(3, 4))}")\n```\nWhy does the `Rectangle` branch never match AND what is the safest rewrite?',
         options: [
           'Positional class patterns need `__match_args__`. `@dataclass` sets it automatically — but `Rectangle(w, h)` only works if `__match_args__ = ("w", "h")` exists. Older Python (<3.10) lacks this. On 3.10+, the fix is to ensure no module shadowing AND use keyword patterns: `case Rectangle(w=w, h=h):`.',
           'You must register `Rectangle` with `match.register` before use.',
@@ -840,7 +840,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-5-mcq-9',
         prompt:
-          'mypy complains:\n```\nerror: Argument 1 has incompatible type "dict[str, object]"; expected "User"\n```\nThe code:\n```python\nfrom typing import TypedDict\n\nclass User(TypedDict):\n    name: str\n    age: int\n\ndef parse(raw: dict[str, object]) -> User:\n    return raw  # mypy hates this\n```\nWhy does mypy reject this and what is the safe fix?',
+          'Boundary code that ingests an external webhook (Stripe payload) fails the strict type-check gate:\n```\n$ mypy --strict apps/web/webhooks/stripe.py\napps/web/webhooks/stripe.py:18: error: Incompatible return value type (got "dict[str, object]", expected "User")  [return-value]\nFound 1 error in 1 file (checked 1 source file)\n```\nThe handler:\n```python\n# /apps/web/webhooks/stripe.py\n"""Parse the customer payload off the incoming Stripe webhook body."""\nfrom __future__ import annotations\nimport json\nfrom typing import TypedDict\n\n\nclass User(TypedDict):\n    name: str\n    age: int\n\n\ndef parse(raw_body: bytes) -> User:\n    """Decode `raw_body` (JSON) into our internal User TypedDict."""\n    raw: dict[str, object] = json.loads(raw_body)\n    # line 18 — we trust Stripe… right?\n    return raw\n```\nWhy is mypy correct to reject this AND what is the safe boundary fix?',
         options: [
           'TypedDict is structural — mypy needs proof that the keys and value types match. Validate at the boundary: `if "name" in raw and isinstance(raw["name"], str) and ...: return User(name=..., age=...)`. For real boundaries, use Pydantic.',
           'Add `User.from_dict(raw)` — mypy treats classmethods as authoritative.',
@@ -981,7 +981,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-6-mcq-7',
         prompt:
-          'A `TaskGroup` example hangs forever instead of finishing in ~1 second:\n```python\nimport asyncio\n\nasync def slow(d: float) -> None:\n    await asyncio.sleep(d)\n\nasync def main() -> None:\n    async with asyncio.TaskGroup() as tg:\n        tg.create_task(slow(1.0))\n        await asyncio.Event().wait()\n\nasyncio.run(main())\n```\nWhy does it hang?',
+          'A new background ingestion worker never exits — Kubernetes kills the pod after the 5-minute grace period on every deploy. The supervisor log shows it pegged at "running" forever:\n```\n[ingest-worker] 2026-05-24T08:00:01Z  starting batch\n[ingest-worker] 2026-05-24T08:00:02Z  scheduled slow_task(1.0)\n[ingest-worker] 2026-05-24T08:05:00Z  SIGTERM (k8s preStop)\n[ingest-worker] 2026-05-24T08:05:30Z  SIGKILL (terminationGracePeriodSeconds)\n```\nThe entrypoint:\n```python\n# /services/ingest/worker.py\n"""Long-running ingestion worker. Should drain a batch then exit cleanly."""\nfrom __future__ import annotations\nimport asyncio\n\n\nasync def slow_task(d: float) -> None:\n    """Simulate one unit of work."""\n    await asyncio.sleep(d)\n\n\nasync def main() -> None:\n    async with asyncio.TaskGroup() as tg:\n        tg.create_task(slow_task(1.0))\n        # "stay alive until shutdown signal"\n        await asyncio.Event().wait()\n\n\nif __name__ == "__main__":\n    asyncio.run(main())\n```\nWhy does the worker never exit AND what is the correct shutdown pattern?',
         options: [
           '`asyncio.Event().wait()` waits forever on an Event that is never set. The `async with TaskGroup` does not exit until ALL tasks AND the body complete, so the body itself blocks forever.',
           '`TaskGroup` cannot be used with `async with`.',
@@ -996,7 +996,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-6-mcq-8',
         prompt:
-          'An async file-handling helper crashes:\n```\nTypeError: object NoneType can\'t be used in \'await\' expression\n```\nCode:\n```python\nimport asyncio\n\nasync def write_log(path: str, msg: str) -> None:\n    with open(path, "a") as f:\n        await f.write(msg + "\\n")\n\nasyncio.run(write_log("/tmp/app.log", "hello"))\n```\nWhich line is the bug?',
+          'A FastAPI endpoint that writes an audit log crashes on the first request after deploy:\n```\nTraceback (most recent call last):\n  File "/app/api/audit.py", line 22, in log_event\n    await f.write(msg + "\\n")\nTypeError: object NoneType can\'t be used in \'await\' expression\n\nINFO:     127.0.0.1:51422 - "POST /api/events HTTP/1.1" 500 Internal Server Error\n```\nThe helper:\n```python\n# /app/api/audit.py\n"""Append-only audit log for compliance. Called from every mutating endpoint."""\nfrom __future__ import annotations\nimport asyncio\n\n\nasync def write_log(path: str, msg: str) -> None:\n    """Append `msg` (plus newline) to the audit log at `path`.\n\n    Called from request handlers — must not block the event loop noticeably.\n    """\n    with open(path, "a") as f:\n        await f.write(msg + "\\n")  # line 22\n\n\nasync def log_event(event: str) -> None:\n    await write_log("/var/log/app/audit.log", event)\n```\nWhich line is the bug AND what is the right fix for an async handler?',
         options: [
           'Built-in `open()` is SYNC — `f.write` returns `None`, not a coroutine. Either drop `await` (sync I/O inside async is bad but works for tiny writes) or use the async-friendly `aiofiles.open(...)` library.',
           'Change `"a"` to `"ab"` (binary append).',
@@ -1011,7 +1011,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-6-mcq-9',
         prompt:
-          'A run-of-the-mill cleanup function leaks file handles in production:\n```python\nfrom contextlib import asynccontextmanager\n\n@asynccontextmanager\nasync def session():\n    s = open_session()\n    yield s\n    s.close()\n```\nUnder load the logs show `ResourceWarning: unclosed connection`. Which fix is correct?',
+          'Under sustained load the API leaks DB connections. After ~20 minutes the pool is exhausted and `/api/orders` starts returning 503s. Per-request log:\n```\n[2026-05-24T11:14:02Z] WARN  sqlalchemy.pool: connection pool exhausted (10/10 in use)\n[2026-05-24T11:14:02Z] ERROR /api/orders -> 503 (timeout waiting for connection)\n[2026-05-24T11:14:02Z] sys:1: ResourceWarning: unclosed connection <Connection ...>\n```\nThe session helper:\n```python\n# /app/db/session.py\n"""Async session factory used by every route via Depends(get_session)."""\nfrom __future__ import annotations\nfrom contextlib import asynccontextmanager\nfrom typing import AsyncIterator\nfrom app.db.engine import open_session, AsyncSession\n\n\n@asynccontextmanager\nasync def session() -> AsyncIterator[AsyncSession]:\n    """Yield a session that MUST be closed when the request ends."""\n    s = await open_session()\n    yield s\n    await s.close()\n```\nWhy is `close()` being skipped AND what is the standard fix?',
         options: [
           'Wrap with try/finally so close runs even on exception: `try: yield s\\nfinally: s.close()`.',
           'Replace `@asynccontextmanager` with `@contextmanager`.',
@@ -1147,7 +1147,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-7-mcq-6',
         prompt:
-          'A cProfile report on a slow CLI shows the top entry by cumulative time:\n```\n   ncalls  tottime  cumtime  filename:lineno(function)\n  1000000   0.852    1.205   query.py:14(_to_dict)\n```\nThe function:\n```python\ndef _to_dict(row):\n    return {col: row[col] for col in COLUMNS}\n```\n`COLUMNS` is a list of 50 strings. The function is called 1M times. What is the most impactful optimisation?',
+          'The nightly analytics ETL ballooned from 8 minutes to 42 minutes after a "small refactor". cProfile on a 1M-row slice:\n```\n$ python -m cProfile -s cumulative -o etl.prof jobs/etl/run.py\n$ python -c "import pstats; pstats.Stats(\'etl.prof\').sort_stats(\'cumulative\').print_stats(8)"\n         42_482_004 function calls in 38.221 seconds\n\n   Ordered by: cumulative time\n   ncalls  tottime   cumtime  filename:lineno(function)\n        1   0.012    38.221   jobs/etl/run.py:48(main)\n        1   0.420    34.180   jobs/etl/transform.py:22(transform_rows)\n  1000000   0.852     1.205   jobs/etl/query.py:14(_to_dict)\n  1000000   0.391     0.391   jobs/etl/query.py:18(<dictcomp>)\n  ...\n```\nThe hot function:\n```python\n# /jobs/etl/query.py\nfrom __future__ import annotations\n\nCOLUMNS: list[str] = ["id", "user_id", "amount_cents", "currency", "..."]  # 50 cols\n\n\ndef _to_dict(row: tuple) -> dict[str, object]:\n    """Pivot one DB row tuple into a dict keyed by column name."""\n    return {col: row[col] for col in COLUMNS}  # line 18\n```\nCalled 1M times per run. What\'s the highest-impact optimisation — and what is a common DISTRACTOR fix?',
         options: [
           'Call this function fewer times — process the data in batches with NumPy/pandas instead of row-by-row. The micro-optimisation `dict(zip(COLUMNS, row))` is marginal; the cure is to vectorise.',
           'Replace the dict comprehension with `for` loop and `dict.__setitem__`.',
@@ -1162,7 +1162,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-7-mcq-7',
         prompt:
-          'A long-running daemon\'s memory grows unbounded. A `tracemalloc` diff between two snapshots shows:\n```\n/app/cache.py:23: size=1.4 GiB (+1.2 GiB), count=12000 (+10000), average=124 KiB\n```\nThe line:\n```python\n_CACHE: dict[str, bytes] = {}\n\ndef remember(key: str, blob: bytes) -> None:\n    _CACHE[key] = blob   # line 23\n```\nWhich fix is correct?',
+          'Memory grows ~50 MB/hr in production but not in dev — the worker pod is OOMKilled every 36 hours and PagerDuty pages every other night. After enabling `tracemalloc` and taking two snapshots 1 hour apart:\n```\n$ python -m diag.mem_diff snapshots/a.bin snapshots/b.bin\nTop 5 differences (by size):\n  /app/services/cache.py:23: size=1.4 GiB (+1.2 GiB), count=12000 (+10000), average=124 KiB\n  /app/services/cache.py:24: size=14 MiB (+12 MiB), count=12000 (+10000)\n  ...\n```\nThe cache module:\n```python\n# /app/services/cache.py\n"""Process-local memo for expensive S3 blobs."""\nfrom __future__ import annotations\n\n_CACHE: dict[str, bytes] = {}\n\n\ndef remember(key: str, blob: bytes) -> None:\n    """Store `blob` under `key` so subsequent requests skip S3."""\n    _CACHE[key] = blob          # line 23\n    _CACHE[f"{key}.meta"] = b"" # line 24\n\n\ndef recall(key: str) -> bytes | None:\n    return _CACHE.get(key)\n```\nWhat is the correct fix AND what is a common WRONG fix that wastes a sprint?',
         options: [
           'Bound the cache: replace `_CACHE: dict` with `functools.lru_cache` on a wrapping function, or use `cachetools.LRUCache(maxsize=...)`. An unbounded dict grows forever.',
           'Call `del _CACHE` periodically from another thread.',
@@ -1177,7 +1177,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-7-mcq-8',
         prompt:
-          'Threading does not speed up a CPU-bound numeric loop — `htop` shows one core pegged at 100%, others idle:\n```python\nimport threading\n\ndef burn() -> None:\n    n = 0\n    for _ in range(50_000_000):\n        n += 1\n\nts = [threading.Thread(target=burn) for _ in range(8)]\nfor t in ts: t.start()\nfor t in ts: t.join()\n```\nWhat is the actual fix?',
+          'A data-science engineer reports: "I added threads to my hashing pipeline expecting a 16x speedup on this 16-core box. Wall-clock is IDENTICAL to single-threaded." `htop` during the run:\n```\nCPU0 [|||||||||||||||||||||||||||||  100%]\nCPU1 [                                  1%]\nCPU2 [                                  0%]\n... (CPU3-CPU15 all idle)\n```\nThe script:\n```python\n# /jobs/analytics/burn.py\n"""Compute a derived metric — should saturate every core."""\nfrom __future__ import annotations\nimport threading\n\n\ndef burn() -> None:\n    """Tight pure-Python CPU loop (no C-extension calls)."""\n    n = 0\n    for _ in range(50_000_000):\n        n += 1\n\n\nif __name__ == "__main__":\n    threads = [threading.Thread(target=burn) for _ in range(8)]\n    for t in threads:\n        t.start()\n    for t in threads:\n        t.join()\n```\nWhat is the diagnostic signature, the root cause, AND the actual fix?',
         options: [
           'Use `multiprocessing.Process` (or `concurrent.futures.ProcessPoolExecutor`). The GIL serialises Python bytecode across threads in one interpreter; only separate processes truly parallelise pure-Python CPU work.',
           'Replace `range(50_000_000)` with `range(50_000_000, 1)` for a fast path.',
@@ -1341,7 +1341,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-8-mcq-7',
         prompt:
-          'A POST `/tasks` returns this 422 to the client:\n```json\n{\n  "detail": [\n    {\n      "type": "missing",\n      "loc": ["body", "title"],\n      "msg": "Field required",\n      "input": {"description": "buy milk"}\n    }\n  ]\n}\n```\nThe model:\n```python\nfrom pydantic import BaseModel\n\nclass TaskCreate(BaseModel):\n    title: str\n    description: str | None = None\n```\nWhat does the 422 mean and what should the client do?',
+          'A mobile-team engineer pings: "POST /api/tasks is giving us a 422 we don\'t understand — Sentry shows 1.8K of these in the last hour from the iOS app." The response body:\n```json\nHTTP/1.1 422 Unprocessable Entity\ncontent-type: application/json\n\n{\n  "detail": [\n    {\n      "type": "missing",\n      "loc": ["body", "title"],\n      "msg": "Field required",\n      "input": {"description": "buy milk"}\n    }\n  ]\n}\n```\nThe route + model on the server side:\n```python\n# /services/tasks/api.py\nfrom __future__ import annotations\nfrom fastapi import APIRouter, status\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix="/api/tasks")\n\n\nclass TaskCreate(BaseModel):\n    title: str\n    description: str | None = None\n\n\nclass TaskOut(BaseModel):\n    id: int\n    title: str\n    description: str | None\n\n\n@router.post("", status_code=status.HTTP_201_CREATED, response_model=TaskOut)\nasync def create_task(payload: TaskCreate) -> TaskOut:\n    """Create a task. `title` required, `description` optional."""\n    return TaskOut(id=1, title=payload.title, description=payload.description)\n```\nWhat does the 422 mean AND what should the mobile client do?',
         options: [
           'The request body is missing the required `title` field. Pydantic validation rejected it before the route function ran. The client must send `{"title": "...", "description": "..."}`.',
           'The server hit a database error. The client should retry.',
@@ -1356,7 +1356,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-8-mcq-8',
         prompt:
-          'A FastAPI service crashes at startup with:\n```\nRecursionError: maximum recursion depth exceeded in comparison\n  File ".../app.py", line 14, in get_db\n    return Depends(get_db)\n```\nThe code:\n```python\nfrom fastapi import Depends\n\ndef get_db(session = Depends(get_db)):\n    return session\n```\nWhich line is the bug and what is the fix?',
+          'A FastAPI service crashes during gunicorn boot — every replica enters a CrashLoopBackOff:\n```\n$ kubectl logs -n prod orders-api-7f9c -p\n[2026-05-24T07:02:01Z] INFO  gunicorn.error: starting gunicorn 22.0.0\n[2026-05-24T07:02:01Z] INFO  uvicorn: started server process [12]\n[2026-05-24T07:02:01Z] ERROR Traceback (most recent call last):\n  File "/app/api/main.py", line 7, in <module>\n    from app.api.deps import get_db\n  File "/app/api/deps.py", line 14, in <module>\n    def get_db(session = Depends(get_db)):\nRecursionError: maximum recursion depth exceeded\n```\nThe (broken) deps module:\n```python\n# /app/api/deps.py\n"""Shared FastAPI dependencies (DB session, current user, ...)."""\nfrom __future__ import annotations\nfrom fastapi import Depends\nfrom app.db.engine import AsyncSession\n\n\n# Intent: every route does `session: AsyncSession = Depends(get_db)`\ndef get_db(session: AsyncSession = Depends(get_db)) -> AsyncSession:\n    return session\n```\nWhy does FastAPI/Python explode here AND what is the proper provider pattern?',
         options: [
           'A dependency cannot depend on itself — that creates an infinite resolution cycle. Inject the underlying session-maker instead: `def get_db(maker = Depends(get_sessionmaker)): yield maker()`.',
           'Add `@functools.lru_cache` to `get_db`.',
@@ -1371,7 +1371,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-8-mcq-9',
         prompt:
-          'A FastAPI route returns a Pydantic model but the client receives an error:\n```\n{"detail": "Internal Server Error"}\n```\nThe server log shows:\n```\nsqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can\'t call await_only() here\n```\nThe code:\n```python\n@app.get("/items/{id}")\ndef read_item(id: int, session = Depends(get_session)):\n    item = session.get(Item, id)\n    return item\n```\nWhich line is the bug?',
+          'A new GET endpoint returns 500 for every call after deploy. Client sees:\n```\nHTTP/1.1 500 Internal Server Error\n{"detail": "Internal Server Error"}\n```\nServer log:\n```\n[2026-05-24T13:08:11Z] ERROR uvicorn.error: Exception in ASGI application\nTraceback (most recent call last):\n  File "/app/api/items.py", line 21, in read_item\n    item = session.get(Item, id)\n  File "/usr/local/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 3403, in get\n    ...\nsqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can\'t call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)\n```\nThe handler + deps:\n```python\n# /app/api/items.py\nfrom __future__ import annotations\nfrom fastapi import APIRouter, Depends\nfrom sqlalchemy.ext.asyncio import AsyncSession\nfrom app.api.deps import get_session  # yields an AsyncSession\nfrom app.models import Item\n\nrouter = APIRouter(prefix="/items")\n\n\n@router.get("/{id}")\ndef read_item(id: int, session: AsyncSession = Depends(get_session)) -> Item | None:\n    """Look up a single item by id."""\n    item = session.get(Item, id)  # line 21\n    return item\n```\nWhich line is the bug AND what are the two possible fixes?',
         options: [
           '`def read_item` is a sync function but `get_session` returns an `AsyncSession`. Either make the route `async def` and `await session.get(...)`, or use a sync session.',
           'Replace `session.get(Item, id)` with `session.fetch(Item, id)`.',
@@ -1518,7 +1518,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-9-mcq-7',
         prompt:
-          'Hypothesis fails a test and shrinks to a small example:\n```\nFalsifying example: test_round_trip(s=\'\\x00\')\nAssertionError: assert decode(encode(s)) == s\n```\nThe code under test:\n```python\nimport base64\n\ndef encode(s: str) -> str:\n    return base64.b64encode(s.encode("ascii")).decode("ascii")\n\ndef decode(s: str) -> str:\n    return base64.b64decode(s).decode("ascii")\n```\nWhat does the `\\x00` failure tell you?',
+          'A Hypothesis property test you wrote last week is finally failing on the strict CI run (max_examples=5000):\n```\n$ pytest tests/property/test_token_codec.py -q\nFalsifying example: test_round_trip(\n    s=\'\\x00\',\n)\nE  AssertionError: assert decode(encode(s)) == s\nE   +  where None = decode(...)\n\ntests/property/test_token_codec.py:11: AssertionError\n```\nThe utility under test (used to encode share-link tokens):\n```python\n# /app/security/token_codec.py\n"""Base64 codec for opaque share-link tokens.\n\nDocs claim: "round-trips any user string".\n"""\nfrom __future__ import annotations\nimport base64\n\n\ndef encode(s: str) -> str:\n    return base64.b64encode(s.encode("ascii")).decode("ascii")\n\n\ndef decode(s: str) -> str:\n    return base64.b64decode(s).decode("ascii")\n```\nThe test:\n```python\n# /tests/property/test_token_codec.py\nfrom hypothesis import given, strategies as st\nfrom app.security.token_codec import encode, decode\n\n\n@given(s=st.text())\ndef test_round_trip(s: str) -> None:\n    assert decode(encode(s)) == s\n```\nWhat does the `\\x00` shrunk example tell you AND what is the correct fix (not "delete the test")?',
         options: [
           'The code assumes ASCII-only input. `\\x00` (NUL byte) round-trips through base64, but non-ASCII input would crash `s.encode("ascii")`. Add input validation or use `"utf-8"` everywhere.',
           'Hypothesis is buggy — it should not generate `\\x00`.',
@@ -1534,7 +1534,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-9-mcq-8',
         prompt:
-          'A pytest fixture is supposed to clean up a temp DB after each test, but the cleanup never runs and disk fills up:\n```python\nimport pytest, tempfile, os\n\n@pytest.fixture(scope="function")\ndef temp_db():\n    f = tempfile.NamedTemporaryFile(delete=False)\n    return f.name\n    os.unlink(f.name)  # never executes\n```\nWhich line is the bug and what is the fix?',
+          'CI runners keep filling up `/tmp` and failing later jobs with `No space left on device`. The test suite uses a per-test temp DB fixture:\n```\n$ df -h /tmp\nFilesystem      Size  Used Avail Use% Mounted on\ntmpfs           2.0G  2.0G     0 100% /tmp\n\n$ ls /tmp/tmp* | wc -l\n8421\n```\nThe fixture (no failures in the tests themselves — they all pass):\n```python\n# /tests/integration/conftest.py\n"""Shared fixtures for the integration suite."""\nfrom __future__ import annotations\nimport os\nimport tempfile\nimport pytest\n\n\n@pytest.fixture(scope="function")\ndef temp_db() -> str:\n    """Create a temp file to back a per-test sqlite DB, clean up after."""\n    f = tempfile.NamedTemporaryFile(delete=False, suffix=".sqlite")\n    return f.name\n    # cleanup\n    os.unlink(f.name)\n```\nWhich line is the bug AND what is the idiomatic pytest fix?',
         options: [
           'Code after `return` never runs. Use `yield` for fixture teardown: `yield f.name` then `os.unlink(f.name)` after.',
           'Add `del f` after the return.',
@@ -1549,7 +1549,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-9-mcq-9',
         prompt:
-          'Structured logs in JSON look right on the console but Datadog cannot parse them:\n```json\n{"level": "INFO", "msg": "user logged in", "user_id": 42}\n```\nbut Datadog shows them as raw text. The logging setup:\n```python\nimport logging, json\n\nclass JsonFormatter(logging.Formatter):\n    def format(self, record):\n        return json.dumps({"level": record.levelname, "msg": record.msg, **record.args})\n\nlog = logging.getLogger("app")\nlog.addHandler(logging.StreamHandler())\n```\nWhich line is the bug?',
+          'Datadog shows your service\'s logs as un-parsed text instead of structured JSON — the search bar can find them by substring but `@user_id:42` filters return nothing. A dev claims "but JSON prints correctly to the terminal in dev." Container stdout in prod:\n```\n2026-05-24T15:01:12Z app: user logged in\n2026-05-24T15:01:13Z app: order 88241 created\n```\nThe logging setup:\n```python\n# /app/observability/logging_setup.py\n"""Process-wide logging config. Imported from app.main on boot."""\nfrom __future__ import annotations\nimport json\nimport logging\nfrom typing import Any\n\n\nclass JsonFormatter(logging.Formatter):\n    """Emit each record as a single-line JSON object Datadog can parse."""\n\n    def format(self, record: logging.LogRecord) -> str:\n        payload: dict[str, Any] = {\n            "level": record.levelname,\n            "msg": record.getMessage(),\n            "logger": record.name,\n        }\n        return json.dumps(payload)\n\n\ndef configure_logging() -> None:\n    log = logging.getLogger("app")\n    log.setLevel(logging.INFO)\n    log.addHandler(logging.StreamHandler())\n```\nWhich line is the bug AND the 1-line fix?',
         options: [
           'The handler has no formatter set. Add `handler.setFormatter(JsonFormatter())` before `addHandler`. Without it, the handler uses the default text formatter and your JSON formatter never runs.',
           '`json.dumps` cannot handle `record.args`.',
@@ -1701,7 +1701,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-10-mcq-7',
         prompt:
-          'Running `pip install -e .` against a Cython project fails:\n```\nerror: Microsoft Visual C++ 14.0 or greater is required.\n  ... clang: command not found\nERROR: Failed building wheel for fastcount\n```\n`pyproject.toml` says:\n```toml\n[build-system]\nrequires = ["setuptools", "wheel"]\nbuild-backend = "setuptools.build_meta"\n```\nWhich line is the bug?',
+          'A new contributor opens an issue: "Following the README, `pip install -e .` fails immediately on macOS and on a fresh Ubuntu 24.04 box."\n```\n$ pip install -e .\nProcessing /home/dev/fastcount\n  Installing build dependencies ... done\n  Getting requirements to build editable ... done\n  Preparing editable metadata (pyproject.toml) ... done\nBuilding wheels for collected packages: fastcount\n  Building editable for fastcount (pyproject.toml) ... error\n  error: subprocess-exited-with-error\n  \n  fastcount/_count.c: No such file or directory\n  ... gcc: error: fastcount/_count.c: No such file or directory\nERROR: Failed building wheel for fastcount\n```\nThe source layout:\n```\nfastcount/\n├── pyproject.toml\n├── setup.py\n└── fastcount/\n    ├── __init__.py\n    └── _count.pyx       # Cython source — should compile to _count.c then .so\n```\n`pyproject.toml`:\n```toml\n[build-system]\nrequires = ["setuptools>=64", "wheel"]\nbuild-backend = "setuptools.build_meta"\n\n[project]\nname = "fastcount"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n```\nWhere would you look FIRST AND what is the fix?',
         options: [
           '`requires` is missing Cython. Add `"Cython>=3.0"`. The build backend cannot compile `.pyx` to `.c` without it, and the C compiler is failing on an absent intermediate file.',
           '`build-backend` should be `"cython.build_meta"`.',
@@ -1716,7 +1716,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-10-mcq-8',
         prompt:
-          'A PyO3 module crashes Python at import:\n```\nthread \'<unnamed>\' panicked at \'index out of bounds: the len is 0 but the index is 0\'\nfatal runtime error: failed to initiate panic, error 5\n```\nThe Rust code:\n```rust\n#[pyfunction]\nfn first(items: Vec<i64>) -> i64 {\n    items[0]\n}\n```\nWhich fix is correct?',
+          'A PyO3 extension that you ship to a data team takes down their Jupyter kernel whenever a notebook cell calls `fastcount.first([])`:\n```\nIn [3]: fastcount.first([])\nthread \'<unnamed>\' panicked at \'index out of bounds: the len is 0 but the index is 0\', src/lib.rs:7:5\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nfatal runtime error: failed to initiate panic, error 5\n[I 2026-05-24 16:02:11.014 ServerApp] KernelRestarter: restarting kernel (1/5), keep random ports\n```\nThe Rust source:\n```rust\n// fastcount/src/lib.rs\nuse pyo3::prelude::*;\n\n#[pyfunction]\nfn first(items: Vec<i64>) -> i64 {\n    items[0]               // line 7 — panics on empty input\n}\n\n#[pymodule]\nfn fastcount(_py: Python<\'_>, m: &PyModule) -> PyResult<()> {\n    m.add_function(wrap_pyfunction!(first, m)?)?;\n    Ok(())\n}\n```\nWhy does this kill the whole interpreter (not just raise an exception) AND what is the idiomatic PyO3 fix?',
         options: [
           'A Rust panic crosses the FFI boundary as an abort and kills the interpreter. Return a `PyResult<i64>` and raise a Python exception on empty input: `if items.is_empty() { return Err(PyValueError::new_err("empty")); }`.',
           'Wrap the call site with `try/except`.',
@@ -1731,7 +1731,7 @@ export const pythonPhases: Phase[] = [
         kind: 'mcq',
         id: 'python-10-mcq-9',
         prompt:
-          'A teammate publishes a wheel and users on macOS arm64 report:\n```\nERROR: fastcount-0.1.0-cp311-cp311-macosx_14_0_x86_64.whl is not a supported wheel on this platform.\n```\nWhat went wrong and how do you fix it for the next release?',
+          'GitHub Issues fills up within an hour of publishing v0.1.0 — Apple Silicon (M-series) Mac users all hit the same error:\n```\n$ pip install fastcount==0.1.0\nLooking in indexes: https://pypi.org/simple\nCollecting fastcount==0.1.0\n  Downloading fastcount-0.1.0.tar.gz (12 kB)\nERROR: fastcount-0.1.0-cp311-cp311-macosx_14_0_x86_64.whl is not a supported wheel on this platform.\n```\n`pip debug --verbose` on the user box:\n```\nCompatible tags: 312 (truncated)\n  cp312-cp312-macosx_14_0_arm64\n  cp312-cp312-macosx_14_0_universal2\n  cp311-cp311-macosx_14_0_arm64\n  ...\n```\nThe project\'s release workflow only runs `python -m build` on the maintainer\'s Intel iMac. What went wrong AND what is the durable fix for v0.1.1?',
         options: [
           'Only an x86_64 macOS wheel was published. Apple Silicon needs an arm64 (or universal2) wheel. Use `cibuildwheel` in CI to build the full matrix: cp3X manylinux2014_{x86_64,aarch64}, macosx_{x86_64,arm64,universal2}, win_amd64.',
           'macOS 14 specifically blocks Python wheels.',
