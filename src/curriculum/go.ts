@@ -1,6 +1,54 @@
 import type { Phase } from './types';
 
 export const goPhases: Phase[] = [
+  // ─── Level 0 ─────────────────────────────────────────────────────────────
+  {
+    id: 'go-0',
+    language: 'go',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: "Welcome to Go! In this level, you'll verify your local Go environment and run your first Go script. Absolute beginners start here.",
+    topics: [
+      {
+        label: 'Installing Go',
+        url: 'https://go.dev/doc/install',
+        note: 'Official installation guide for Windows, macOS, and Linux.'
+      },
+      {
+        label: 'Go Playground',
+        url: 'https://go.dev/play/',
+        note: 'Compile and run Go code online in your browser.'
+      }
+    ],
+    deliverable: 'Verify go version in your command line and run a print statement in the browser console.',
+    checks: [
+      {
+        kind: 'code',
+        id: 'go-0-code-1',
+        prompt: 'Verify the starter code: run this program to print `Hello, World!` to standard output.',
+        boilerplate: 'package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, World!")\n}\n',
+        expectedOutput: 'Hello, World!',
+        explanation: 'Every runnable Go program must start with `package main` and have a `main()` function. We use `fmt.Println` to output text to standard output.'
+      },
+      {
+        kind: 'mcq',
+        id: 'go-0-mcq-1',
+        prompt: 'Which standard library package is imported to format text and print to standard output?',
+        options: ['`fmt`', '`print`', '`std`', '`os`'],
+        correctIndex: 0,
+        explanation: 'The `fmt` package implements formatted I/O, including printing functions like `Printf` and `Println`.'
+      },
+      {
+        kind: 'mcq',
+        id: 'go-0-mcq-2',
+        prompt: 'What is the standard file extension used for Go source code files?',
+        options: ['.go', '.got', '.g', '.txt'],
+        correctIndex: 0,
+        explanation: 'Go files use the `.go` extension. You run them with the terminal command `go run filename.go`.'
+      }
+    ]
+  },
   {
     id: 'go-1',
     language: 'go',
@@ -10,6 +58,12 @@ export const goPhases: Phase[] = [
     intro: `By the end of this phase, you'll read short Go programs and predict their runtime output — focusing on the things that bite newcomers: unused imports/variables as hard compile errors, zero values, and the \`if err != nil\` return pattern that pervades every API. You'll learn the package system, the basic types, and how \`go run\`/\`go build\`/\`go fmt\`/\`go vet\` fit together.
 
 To build the muscle, you'll write locally: a \`greet\` CLI that parses a \`-name\` flag with \`flag.String\` and prints a greeting alongside \`time.Now()\`. Bootstrap with \`go mod init example.com/greet\`, then \`go run main.go -name=Ada\`. Use \`fmt.Printf("%T\\n", x)\` whenever you want to confirm a value's type — no IDE required.`,
+    video: {
+      title: 'Go Programming Language Tutorial',
+      youtubeId: 'YS4e4q9oBaU',
+      channelName: 'freeCodeCamp.org',
+      duration: '7 hours',
+    },
     topics: [
       { label: 'Installing Go', url: 'https://go.dev/doc/install', note: 'Official install guide for all platforms' },
       { label: 'A Tour of Go — Basics', url: 'https://go.dev/tour/basics/1', note: 'Interactive tour of packages, variables, functions' },
@@ -393,6 +447,14 @@ func main() {
         ],
         correctIndex: 1,
         explanation: '`total = countLines(...)` assigns (replaces) rather than accumulates. If the last chunk file is empty or missing, `total` ends up as 0. The fix is `total += countLines(...)`. This is a classic loop-accumulator bug where `=` and `+=` are confused. `go vet` cannot catch this; a code review or unit test that checks the sum across multiple chunks would. See [Tour of Go — For](https://go.dev/tour/flowcontrol/1).',
+      },
+      {
+        kind: 'code',
+        id: 'go-1-code-1',
+        prompt: 'Implement a function `Divide` that returns the result of dividing two floats, or an error if the divisor is zero.',
+        boilerplate: `package main\n\nimport (\n\t"errors"\n\t"fmt"\n)\n\n// TODO: Implement the Divide function\nfunc Divide(a, b float64) (float64, error) {\n\tif b == 0 {\n\t\t// TODO: return 0 and a division by zero error\n\t}\n\treturn a / b, nil\n}\n\nfunc main() {\n\tval, err := Divide(10, 0)\n\tif err != nil {\n\t\tfmt.Println("Error:", err)\n\t} else {\n\t\tfmt.Println("Result:", val)\n\t}\n}\n`,
+        expectedOutput: 'Error: division by zero',
+        explanation: 'Go does not use exceptions for control flow. Instead, functions that can fail return an error as their last return value. The caller must explicitly check `if err != nil`.'
       },
     ],
   },
@@ -808,6 +870,14 @@ func RunPipeline(ctx context.Context, events []string) {
         correctIndex: 1,
         explanation: '`getWindow` returns a slice header pointing into `buf`\'s backing array with `cap = 8` (remaining capacity). Because the capacity is sufficient, `append(window, 99)` writes `99` directly into `buf[5]` — but `buf` has capacity 10 and length 5, so `buf[5]` exists in the underlying array. `buf` itself still has `len=5` so `fmt.Println("buf:", buf)` shows `[1 2 3 4 5]`, but the backing array at index 5 now holds 99. If `buf` is later re-sliced or the length grows, the corruption becomes visible. Fix: copy the window with `append([]int(nil), buf[start:end]...)` before writing. See [Go Slices: usage and internals](https://go.dev/blog/slices-intro).',
       },
+      {
+        kind: 'code',
+        id: 'go-2-code-1',
+        prompt: 'Implement a `Scale` method on the `Rectangle` struct with a pointer receiver. It should scale both `Width` and `Height` by the given `factor`.',
+        boilerplate: 'package main\n\nimport "fmt"\n\ntype Rectangle struct {\n\tWidth, Height float64\n}\n\n// TODO: Implement the Scale method with a pointer receiver\nfunc (r *Rectangle) Scale(factor float64) {\n\tr.Width *= factor\n\tr.Height *= factor\n}\n\nfunc main() {\n\trect := Rectangle{Width: 3, Height: 4}\n\trect.Scale(2)\n\tfmt.Printf("Width: %.0f, Height: %.0f\\n", rect.Width, rect.Height)\n}\n',
+        expectedOutput: 'Width: 6, Height: 8',
+        explanation: 'Value receivers receive a copy of the struct, so mutations do not persist. To mutate the original struct instance, you must define the method with a pointer receiver (`*Rectangle`).'
+      }
     ],
   },
 
@@ -1249,6 +1319,14 @@ func main() {
         correctIndex: 1,
         explanation: '`for j := range jobs` exits only when the channel is closed. After sending all 10 items, the main goroutine waits on `<-done`, but the worker is still blocked inside `range jobs` waiting for more work — neither side can proceed. Fix: add `close(jobs)` after the send loop. This is the standard producer/consumer pattern: producer sends, then closes; consumer ranges; main waits on `done`. See [Tour of Go — Range and Close](https://go.dev/tour/concurrency/4).',
       },
+      {
+        kind: 'code',
+        id: 'go-3-code-1',
+        prompt: 'Calculate the sum of a slice in a goroutine and send the result on a channel.',
+        boilerplate: 'package main\n\nimport "fmt"\n\nfunc sum(s []int, c chan int) {\n\ttotal := 0\n\tfor _, v := range s {\n\t\ttotal += v\n\t}\n\t// TODO: Send total to channel c\n\tc <- total\n}\n\nfunc main() {\n\ts := []int{7, 2, 8, -9, 4, 0}\n\tc := make(chan int)\n\t// TODO: Start the sum function as a goroutine\n\tgo sum(s, c)\n\tx := <-c\n\tfmt.Println("Sum:", x)\n}\n',
+        expectedOutput: 'Sum: 12',
+        explanation: 'Goroutines run concurrently in the background using the `go` keyword. Channels are typed conduits through which you can send and receive values using the channel operator `<-`.'
+      }
     ],
   },
 
@@ -1555,6 +1633,14 @@ func TestProcess(t *testing.T) {
         correctIndex: 1,
         explanation: 'Adding `t.Parallel()` as the first line inside a `t.Run` closure signals the testing harness to pause that sub-test and run it concurrently with other parallel sub-tests. Without it, each sub-test runs to completion before the next starts. The `tc := tc` capture is correct (pre-Go 1.22 fix for loop variable closure) but irrelevant to parallelism. With `t.Parallel()`, all three sub-tests would run concurrently, cutting total time to roughly `max(process(1), process(100), process(10000))`. See [Table-driven tests](https://go.dev/wiki/TableDrivenTests).',
       },
+      {
+        kind: 'code',
+        id: 'go-4-code-1',
+        prompt: 'Parse a JSON string into a `User` struct using `encoding/json`.',
+        boilerplate: 'package main\n\nimport (\n\t"encoding/json"\n\t"fmt"\n)\n\ntype User struct {\n\tName string `json:"name"`\n\tAge  int    `json:"age"`\n}\n\nfunc main() {\n\tjsonData := `{"name": "Alice", "age": 30}`\n\tvar u User\n\t// TODO: Unmarshal the jsonData into the User struct u\n\terr := json.Unmarshal([]byte(jsonData), &u)\n\tif err != nil {\n\t\tfmt.Println("Error:", err)\n\t\treturn\n\t}\n\tfmt.Printf("User: %s, Age: %d\\n", u.Name, u.Age)\n}\n',
+        expectedOutput: 'User: Alice, Age: 30',
+        explanation: 'We use the `encoding/json` package\'s `Unmarshal` function to parse JSON data. It requires a byte slice of the JSON data and a pointer to the destination struct variable.'
+      }
     ],
   },
 
@@ -1879,6 +1965,14 @@ func TestWorkers(t *testing.T) {
         correctIndex: 1,
         explanation: 'Before Go 1.22, the loop variable `v` is a single variable reused across iterations. The goroutine closure captures the address of `v`; by the time the goroutine runs, the loop may have already advanced `v` to the next value. This is both a logical bug (wrong value) and a data race (concurrent read in goroutine, write in loop). Fix (pre-1.22): add `v := v` inside the loop before the `go` statement. Go 1.22+ creates a new `v` per iteration, eliminating the race. See [Introducing the Go Race Detector](https://go.dev/blog/race-detector).',
       },
+      {
+        kind: 'code',
+        id: 'go-5-code-1',
+        prompt: 'Use a `sync.Mutex` to implement a thread-safe increment operation on a counter.',
+        boilerplate: 'package main\n\nimport (\n\t"fmt"\n\t"sync"\n)\n\ntype SafeCounter struct {\n\tmu sync.Mutex\n\tv  int\n}\n\nfunc (c *SafeCounter) Inc() {\n\t// TODO: Lock the mutex, increment c.v, and unlock the mutex (use defer or manual calls)\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\tc.v++\n}\n\nfunc (c *SafeCounter) Value() int {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\treturn c.v\n}\n\nfunc main() {\n\tc := SafeCounter{}\n\tvar wg sync.WaitGroup\n\tfor i := 0; i < 100; i++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tc.Inc()\n\t\t}()\n\t}\n\twg.Wait()\n\tfmt.Println("Counter:", c.Value())\n}\n',
+        expectedOutput: 'Counter: 100',
+        explanation: 'A `sync.Mutex` provides mutual exclusion lock capabilities. By locking before writing to shared state and unlocking afterwards (typically deferred), we prevent data races.'
+      }
     ],
   },
 
@@ -2262,6 +2356,14 @@ func BuildPipeline(logger *slog.Logger) {
         correctIndex: 1,
         explanation: 'Go infers `T = UserID` from the slice argument. That makes the expected function type `func(UserID) U`, but `double` is `func(int) int`. `UserID` and `int` are different types — named types are not implicitly convertible to their underlying type in function signatures. Fix: pass an adapter `func(id UserID) int { return double(int(id)) }`, or change `double` to accept `UserID`. The `~int` constraint on `T` would allow `UserID` as a constraint, but does not change function signature compatibility. See [An Introduction to Generics](https://go.dev/blog/intro-generics).',
       },
+      {
+        kind: 'code',
+        id: 'go-6-code-1',
+        prompt: 'Implement a generic `Contains` function that returns true if a slice contains a given value. Constrain the type parameter with `comparable`.',
+        boilerplate: 'package main\n\nimport "fmt"\n\n// TODO: Implement the generic Contains function\nfunc Contains[T comparable](slice []T, val T) bool {\n\tfor _, v := range slice {\n\t\tif v == val {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\nfunc main() {\n\tintSlice := []int{1, 2, 3, 4, 5}\n\tfmt.Println("Contains 3:", Contains(intSlice, 3))\n\tfmt.Println("Contains 6:", Contains(intSlice, 6))\n}\n',
+        expectedOutput: 'Contains 3: true\nContains 6: false',
+        explanation: 'Generics allow writing functions that work with multiple types. The built-in `comparable` constraint is required when using comparison operators like `==` on a generic type.'
+      }
     ],
   },
 
@@ -2606,6 +2708,14 @@ func QueryUser(ctx context.Context, db *sql.DB, id int) (*UserRow, error) {
         correctIndex: 1,
         explanation: 'For `reflect.Value.Set` to work, the value must be addressable — which requires obtaining it via a pointer. `reflect.ValueOf(row)` where `row` is a `Row` value gives a non-addressable Value; calling `.Set()` on its fields panics with "reflect: reflect.Value.Set using value obtained using unexported field" or "reflect.Value.Set using unaddressable value". Fix: pass `&row` and call `reflect.ValueOf(dst).Elem()` to get the addressable struct value. This is why every ORM and `json.Unmarshal` requires a pointer argument. See [The Laws of Reflection](https://go.dev/blog/laws-of-reflection).',
       },
+      {
+        kind: 'code',
+        id: 'go-7-code-1',
+        prompt: 'Use reflection to inspect a struct, retrieve its custom tag, and print its fields and values.',
+        boilerplate: 'package main\n\nimport (\n\t"fmt"\n\t"reflect"\n)\n\ntype Profile struct {\n\tName string `label:"Username"`\n\tAge  int    `label:"UserAge"`\n}\n\nfunc PrintLabels(s any) {\n\tt := reflect.TypeOf(s)\n\tv := reflect.ValueOf(s)\n\tfor i := 0; i < t.NumField(); i++ {\n\t\tfield := t.Field(i)\n\t\t// TODO: Retrieve the tag value for "label" and print it alongside the field\'s value\n\t\ttag := field.Tag.Get("label")\n\t\tval := v.Field(i).Interface()\n\t\tfmt.Printf("%s: %v\\n", tag, val)\n\t}\n}\n\nfunc main() {\n\tp := Profile{Name: "Bob", Age: 25}\n\tPrintLabels(p)\n}\n',
+        expectedOutput: 'Username: Bob\nUserAge: 25',
+        explanation: 'We use the `reflect` package to dynamically inspect types and values. `reflect.TypeOf` returns type metadata (e.g. struct fields and tags), and `reflect.ValueOf` accesses actual runtime values.'
+      }
     ],
   },
 
@@ -2946,6 +3056,14 @@ func (r *Renderer) Shutdown() {
         correctIndex: 1,
         explanation: '`cstr` is added to `ptrs` and freed by `cleanup`, then the deferred `C.free` in `main` fires at function exit and frees it again. A double-free corrupts the C allocator and typically causes a crash or undefined behaviour. Fix: choose a single owner for each C allocation — either `defer C.free` or manual cleanup, not both. A common pattern: don\'t put pointers into cleanup slices if they already have a deferred free. See [Cgo documentation](https://pkg.go.dev/cmd/cgo).',
       },
+      {
+        kind: 'code',
+        id: 'go-8-code-1',
+        prompt: 'Call an inline C function `square` from Go code using Cgo.',
+        boilerplate: 'package main\n\n/*\nint square(int n) {\n    return n * n;\n}\n*/\nimport "C"\nimport "fmt"\n\nfunc main() {\n\tvar x int = 6\n\t// TODO: Call the C function \'square\' passing x cast to C.int\n\tresult := C.square(C.int(x))\n\tfmt.Println("Result:", result)\n}\n',
+        expectedOutput: 'Result: 36',
+        explanation: 'Cgo allows Go packages to call C code. Go types must be explicitly converted to C types (e.g. `C.int(x)`) when passing them to C functions.'
+      }
     ],
   },
 
@@ -3272,6 +3390,14 @@ func TestCheckoutHandler(t *testing.T) {
         correctIndex: 1,
         explanation: 'The `testing` package panics if `t.Error`, `t.Log`, or `t.Fatal` is called after the test function has returned. The sub-test closure returns immediately while the goroutine sleeps for 100ms and then calls `t.Error`. Fix: declare a `var wg sync.WaitGroup; wg.Add(1)` before the `go` statement, call `wg.Done()` at the end of the goroutine, and `wg.Wait()` before the sub-test returns. Alternatively, use `t.Cleanup(wg.Wait)`. See [pkg.go.dev/testing](https://pkg.go.dev/testing).',
       },
+      {
+        kind: 'code',
+        id: 'go-9-code-1',
+        prompt: 'Use the `testing` package to programmatically run a benchmark and verify it executes.',
+        boilerplate: 'package main\n\nimport (\n\t"fmt"\n\t"testing"\n)\n\nfunc Fibonacci(n int) int {\n\tif n <= 1 {\n\t\treturn n\n\t}\n\treturn Fibonacci(n-1) + Fibonacci(n-2)\n}\n\nfunc main() {\n\t// TODO: Run a benchmark programmatically using testing.Benchmark to measure Fibonacci(10)\n\tres := testing.Benchmark(func(b *testing.B) {\n\t\tfor i := 0; i < b.N; i++ {\n\t\t\tFibonacci(10)\n\t\t}\n\t})\n\tif res.N > 0 {\n\t\tfmt.Println("Benchmark ran successfully")\n\t}\n}\n',
+        expectedOutput: 'Benchmark ran successfully',
+        explanation: 'Go supports benchmarking built directly into the `testing` package. A benchmark function runs the target code in a loop `b.N` times, where `b.N` is dynamically adjusted by the testing framework.'
+      }
     ],
   },
 
@@ -3638,6 +3764,14 @@ func ProcessOrder(ctx context.Context, orderID string, amount int64) error {
         correctIndex: 1,
         explanation: 'Every span created with `tracer.Start` must be ended with `span.End()`, regardless of the code path. The idiomatic fix is `defer span.End()` immediately after `tracer.Start` — this guarantees the span is always ended when the function returns, whether on success or error. Unclosed spans accumulate in the SDK\'s in-memory buffer, are never exported, and eventually cause memory pressure. Set the error status before returning: `span.SetStatus(codes.Error, err.Error()); span.RecordError(err)`. See [OpenTelemetry Go — Getting Started](https://opentelemetry.io/docs/languages/go/getting-started/).',
       },
+      {
+        kind: 'code',
+        id: 'go-10-code-1',
+        prompt: 'Wrap a database sentinel error using `fmt.Errorf` with the `%w` verb, and check it using `errors.Is`.',
+        boilerplate: 'package main\n\nimport (\n\t"errors"\n\t"fmt"\n)\n\nvar ErrDatabase = errors.New("database connection lost")\n\nfunc queryUser() error {\n\t// TODO: Wrap ErrDatabase with the message "failed to fetch user" using %w\n\treturn fmt.Errorf("failed to fetch user: %w", ErrDatabase)\n}\n\nfunc main() {\n\terr := queryUser()\n\tif err != nil {\n\t\t// TODO: Check if err wraps ErrDatabase using errors.Is\n\t\tif errors.Is(err, ErrDatabase) {\n\t\t\tfmt.Println("Error is ErrDatabase")\n\t\t} else {\n\t\t\tfmt.Println("Error is not ErrDatabase")\n\t\t}\n\t}\n}\n',
+        expectedOutput: 'Error is ErrDatabase',
+        explanation: 'We use `fmt.Errorf` with the `%w` format verb to wrap an error. To check if an error chain contains a specific sentinel error, we use `errors.Is`.'
+      }
     ],
   },
 ];

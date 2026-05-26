@@ -14,6 +14,7 @@ import { StatusTag } from '@/components/ui/StatusTag';
 import { BlockProgress } from '@/components/ui/BlockProgress';
 import { CheckRenderer } from './CheckRenderer';
 import { NotesEditor } from './NotesEditor';
+import { VideoPlayer } from './VideoPlayer';
 
 interface PhaseViewProps {
   phase: Phase;
@@ -72,8 +73,12 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   const phasesForLang = getPhasesForLanguage(phase.language);
   const prevPhase = phasesForLang.find((p) => p.level === phase.level - 1);
   const prevProgress = prevPhase ? state.phases[prevPhase.id] : undefined;
+  const startLevel = state.intake?.startLevels[langMeta.id] ?? langMeta.defaultStartLevel;
   const isLocked =
-    hydrated && prevPhase != null && !phasePassed(prevPhase, prevProgress);
+    hydrated &&
+    prevPhase != null &&
+    prevPhase.level > startLevel &&
+    !phasePassed(prevPhase, prevProgress);
 
   const handleResult = useCallback(
     (checkId: string, status: 'pass' | 'fail') => {
@@ -328,6 +333,16 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
           })}
         </ul>
       </section>
+
+      {/* ─── Video Player ────────────────────────────────────────────────── */}
+      {phase.video && (
+        <section className="mb-12">
+          <SectionHeader
+            command={`mpv ${phase.video.isPlaylist ? '--playlist' : ''} youtube.com/watch?v=${phase.video.youtubeId}`}
+          />
+          <VideoPlayer video={phase.video} accentColor={accentColor} />
+        </section>
+      )}
 
       {/* ─── Deliverable — highlighted callout ────────────────────────────── */}
       <section className="mb-12">

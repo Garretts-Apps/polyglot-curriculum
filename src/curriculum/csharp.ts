@@ -2,12 +2,68 @@ import type { Phase } from './types';
 
 export const csharpPhases: Phase[] = [
   {
+    id: 'csharp-0',
+    language: 'csharp',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: `Welcome to C#! In this phase you'll verify your local .NET SDK installation and run your first console application. No prior experience is needed — absolute beginners start here.
+
+By the end you'll have the \`dotnet\` CLI working on your machine and will have executed a "Hello, World!" program both locally and in an online playground.`,
+    topics: [
+      {
+        label: 'Download .NET SDK',
+        url: 'https://dotnet.microsoft.com/download',
+        note: 'Official installer for Windows, macOS, and Linux',
+      },
+      {
+        label: '.NET Fiddle — online playground',
+        url: 'https://dotnetfiddle.net/',
+        note: 'Run C# snippets in the browser without installing anything',
+      },
+    ],
+    deliverable:
+      'Verify dotnet --version in your command line and run a print statement in the browser console.',
+    checks: [
+      {
+        id: 'csharp-0-code-1',
+        kind: 'code',
+        prompt: 'Write a C# top-level statement that prints "Hello, World!" to the console.',
+        boilerplate: '// Output: Hello, World!\nConsole.WriteLine("Hello, World!");\n',
+        expectedOutput: 'Hello, World!',
+        explanation: 'Top-level statements allow you to write executable code directly without enclosing it in a Program class or Main method, starting in C# 9.',
+      },
+      {
+        id: 'csharp-0-mcq-1',
+        kind: 'mcq',
+        prompt: 'Which command creates a new C# console project?',
+        options: ['dotnet new console', 'dotnet create app', 'csharp init', 'dotnet build'],
+        correctIndex: 0,
+        explanation: 'The command "dotnet new console" initializes a new C# console application project template.',
+      },
+      {
+        id: 'csharp-0-mcq-2',
+        kind: 'mcq',
+        prompt: 'What is the standard file extension for C# source files?',
+        options: ['.cs', '.csharp', '.c#', '.net'],
+        correctIndex: 0,
+        explanation: 'C# source code files use the extension ".cs".',
+      },
+    ],
+  },
+  {
     id: 'csharp-1',
     language: 'csharp',
     level: 1,
     title: 'C# Fundamentals',
     timeEstimate: '6-8 hours',
     intro: `By the end of this phase, you'll read C# programs using top-level statements, value/reference types, control flow, and string interpolation, and predict their behavior. C# is a strongly-typed, multi-paradigm language on .NET — every variable has a compile-time type, and that type determines what operations are legal. To build the muscle, you'll write a \`greet\` CLI locally with \`dotnet new console\` and \`dotnet run\`.`,
+    video: {
+      title: 'C# Tutorial for Beginners',
+      youtubeId: 'GhQdlIFylQ8',
+      channelName: 'freeCodeCamp.org',
+      duration: '4.5 hours',
+    },
     topics: [
       {
         label: 'Tour of C#',
@@ -122,6 +178,14 @@ export const csharpPhases: Phase[] = [
         ],
         correctIndex: 2,
         explanation: 'The `switch` expression must be exhaustive; the compiler verifies all inputs are covered. `> 0` and `< 0` do not cover `0`, so CS8509 is emitted. Fix by adding `_ => "zero"` as the final discard arm. This is a compile-time safety guarantee — not a runtime crash.',
+      },
+      {
+        id: 'csharp-1-code-1',
+        kind: 'code',
+        prompt: 'Complete the `CalculateAge` helper method to return the age given the birth year and current year.',
+        boilerplate: 'using System;\n\nint birthYear = 2000;\nint currentYear = 2026;\n\nint age = CalculateAge(birthYear, currentYear);\nConsole.WriteLine($"Age: {age}");\n\nint CalculateAge(int birth, int current)\n{\n    // TODO: Return current minus birth\n    \n}',
+        expectedOutput: 'Age: 26',
+        explanation: 'Top-level statements support local functions, which can take parameters and return values. This method calculates the difference between current and birth year.',
       },
     ],
   },
@@ -254,6 +318,14 @@ export const csharpPhases: Phase[] = [
         correctIndex: 1,
         explanation: '`JsonLogger` only implements `ILogger`, not `IFileLogger`. Casting to `IFileLogger` throws because the object does not implement that interface. Fix: either make `JsonLogger` implement `IFileLogger` (add `Flush()`), or use the safe pattern `if (logger is IFileLogger fl) { fl.Flush(); }` to conditionally call only when the capability exists.',
       },
+      {
+        id: 'csharp-2-code-1',
+        kind: 'code',
+        prompt: 'Implement a derived class `Dog` that overrides the virtual method `MakeSound` from the base class `Animal` to return `"Woof"`.',
+        boilerplate: 'using System;\n\nAnimal animal = new Dog();\nConsole.WriteLine(animal.MakeSound());\n\nclass Animal\n{\n    public virtual string MakeSound() => "...";\n}\n\nclass Dog : Animal\n{\n    // TODO: Override MakeSound to return "Woof"\n    \n}',
+        expectedOutput: 'Woof',
+        explanation: 'The `override` keyword is required in C# to extend or modify the abstract or virtual implementation of an inherited method.',
+      },
     ],
   },
   {
@@ -375,6 +447,14 @@ export const csharpPhases: Phase[] = [
         ],
         correctIndex: 1,
         explanation: 'Calling `.Result` on an async Task blocks the current thread. In older ASP.NET (not Core) with a single-threaded synchronization context, this deadlocked because the continuation needed the same thread. In ASP.NET Core this specific deadlock is less common but `.Result` still starves the thread pool under load. The correct fix is always to `async`/`await` all the way up — never block on async code with `.Result` or `.Wait()`.',
+      },
+      {
+        id: 'csharp-3-code-1',
+        kind: 'code',
+        prompt: 'Use LINQ to filter the even numbers from the array, multiply each by 3, and calculate the sum of the resulting values.',
+        boilerplate: 'using System;\nusing System.Linq;\n\nint[] numbers = { 1, 2, 3, 4, 5, 6 };\n\n// TODO: Complete the LINQ chain to multiply each even number by 3 and sum them up\nint result = numbers\n    .Where(n => n % 2 == 0)\n    .Select(n => n * 3)\n    .Sum();\n\nConsole.WriteLine($"Result: {result}");',
+        expectedOutput: 'Result: 36',
+        explanation: 'LINQ allows chaining operations like `Where`, `Select`, and `Sum` to process collection data declaratively.',
       },
     ],
   },
@@ -503,6 +583,14 @@ export const csharpPhases: Phase[] = [
         correctIndex: 3,
         explanation: 'CS8618 fires because non-nullable properties might not be set when the object is constructed. Positional record syntax `record CreateOrderRequest(string CustomerName, string[] Items)` generates a constructor that requires both arguments — the compiler can verify they are always initialized. `= null!` suppresses the warning but lies to the compiler. Marking nullable changes the API contract. `#pragma` suppression hides a real gap.',
       },
+      {
+        id: 'csharp-4-code-1',
+        kind: 'code',
+        prompt: 'Complete the pattern matching `switch` expression to return `"Adult"` if the person\'s `Age` is 18 or older.',
+        boilerplate: 'using System;\n\nvar person = new Person("Alice", 25);\n\n// TODO: Complete the switch expression to handle age >= 18 and return "Adult"\nstring category = person switch\n{\n    { Age: < 18 } => "Child",\n    { Age: >= 18 } => "Adult",\n    _ => "Senior"\n};\n\nConsole.WriteLine(category);\n\nrecord Person(string Name, int Age);',
+        expectedOutput: 'Adult',
+        explanation: 'Positional records generate init-only properties. Switch expressions with property patterns check values on those properties in a clean, declarative way.',
+      },
     ],
   },
   {
@@ -630,6 +718,14 @@ export const csharpPhases: Phase[] = [
         ],
         correctIndex: 1,
         explanation: 'The fundamental `ArrayPool` contract is: Rent → use → **Return**. Without `Return`, the rented array is not given back to the pool and the pool allocates new arrays for every call, growing memory without bound. Fix with try/finally: `try { ... } finally { ArrayPool<char>.Shared.Return(buf); }`. The buffer must be returned even if an exception is thrown.',
+      },
+      {
+        id: 'csharp-5-code-1',
+        kind: 'code',
+        prompt: 'Complete the `GetExtension` method to return a slice of the input `ReadOnlySpan<char>` containing the file extension (the text after the last dot `.` character).',
+        boilerplate: 'using System;\n\nReadOnlySpan<char> path = "src/curriculum/csharp.ts";\nReadOnlySpan<char> extension = GetExtension(path);\nConsole.WriteLine(extension.ToString());\n\nReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)\n{\n    int dotIndex = path.LastIndexOf(\'.\');\n    if (dotIndex == -1) return ReadOnlySpan<char>.Empty;\n    // TODO: Return the slice from dotIndex + 1\n    return path.Slice(dotIndex + 1);\n}',
+        expectedOutput: 'ts',
+        explanation: 'ReadOnlySpan<char>.Slice allows referencing a substring of characters without allocating new heap memory.',
       },
     ],
   },
@@ -764,6 +860,14 @@ export const csharpPhases: Phase[] = [
         correctIndex: 1,
         explanation: '`List<T>` is not thread-safe. Concurrent `Add` calls from parallel tasks lead to lost items, duplicate items, or in rare cases a thrown exception from internal array resizing. The fix is either: use `ConcurrentBag<int>` (lock-free for concurrent adds), use `Interlocked` on an array with known indices, or collect results per-task and merge after `WhenAll` to avoid shared mutable state entirely.',
       },
+      {
+        id: 'csharp-6-code-1',
+        kind: 'code',
+        prompt: 'Use `Interlocked.Increment` to thread-safely increment the `counter` variable within the parallel tasks.',
+        boilerplate: 'using System;\nusing System.Threading;\nusing System.Threading.Tasks;\n\nint counter = 0;\nTask[] tasks = new Task[100];\nfor (int i = 0; i < 100; i++)\n{\n    tasks[i] = Task.Run(() =>\n    {\n        // TODO: Increment counter thread-safely\n        Interlocked.Increment(ref counter);\n    });\n}\nTask.WaitAll(tasks);\nConsole.WriteLine($"Counter: {counter}");',
+        expectedOutput: 'Counter: 100',
+        explanation: 'The `Interlocked` class provides atomic operations for variables that are shared by multiple threads.',
+      },
     ],
   },
   {
@@ -895,6 +999,14 @@ export const csharpPhases: Phase[] = [
         ],
         correctIndex: 1,
         explanation: 'This is the captive dependency problem: a Singleton cannot directly consume a Scoped service because the Singleton outlives any scope. The DI container throws when scope validation is enabled. Fix options: (1) make `ReportGenerator` Scoped (simplest), (2) inject `IServiceScopeFactory` and call `CreateScope()` per operation (appropriate when the singleton genuinely needs a transient scope), or (3) redesign so `ReportGenerator` depends on a Singleton service.',
+      },
+      {
+        id: 'csharp-7-code-1',
+        kind: 'code',
+        prompt: 'Register `OrderService` as the implementation for `IOrderService` with a scoped lifetime in the `ServiceCollection`.',
+        boilerplate: 'using Microsoft.Extensions.DependencyInjection;\nusing System;\n\nvar services = new ServiceCollection();\n// TODO: Register IOrderService with OrderService as a scoped dependency\nservices.AddScoped<IOrderService, OrderService>();\n\nvar provider = services.BuildServiceProvider();\nusing (var scope = provider.CreateScope())\n{\n    var service = scope.ServiceProvider.GetService<IOrderService>();\n    Console.WriteLine($"Service is: {service?.GetType().Name}");\n}\n\ninterface IOrderService {}\nclass OrderService : IOrderService {}',
+        expectedOutput: 'Service is: OrderService',
+        explanation: 'AddScoped registers a service that is instantiated once per container scope (such as per HTTP request).',
       },
     ],
   },
@@ -1038,6 +1150,14 @@ export const csharpPhases: Phase[] = [
         correctIndex: 1,
         explanation: 'Authorization middleware is in the pipeline, but the endpoint itself is not marked as requiring authorization. In minimal APIs, either call `.RequireAuthorization()` on the endpoint: `app.MapGet("/admin/dashboard", ...).RequireAuthorization()`, or configure a fallback policy that requires authentication for all endpoints via `builder.Services.AddAuthorization(o => o.FallbackPolicy = o.DefaultPolicy)`.',
       },
+      {
+        id: 'csharp-8-code-1',
+        kind: 'code',
+        prompt: 'Complete the custom middleware `InvokeAsync` method to call the next middleware in the pipeline using `_next`.',
+        boilerplate: 'using Microsoft.AspNetCore.Http;\nusing System;\nusing System.Threading.Tasks;\n\nvar context = new DefaultHttpContext();\nRequestDelegate next = (ctx) => {\n    Console.WriteLine("Request processed");\n    return Task.CompletedTask;\n};\n\nvar middleware = new SimpleMiddleware(next);\nawait middleware.InvokeAsync(context);\n\npublic class SimpleMiddleware\n{\n    private readonly RequestDelegate _next;\n    public SimpleMiddleware(RequestDelegate next) => _next = next;\n\n    public async Task InvokeAsync(HttpContext context)\n    {\n        Console.WriteLine("Before request");\n        // TODO: Invoke the next delegate in the pipeline using _next\n        await _next(context);\n    }\n}',
+        expectedOutput: 'Request processed',
+        explanation: 'Middleware components are chained together. Awaiting `_next(context)` passes execution control to the next middleware in the ASP.NET Core pipeline.',
+      },
     ],
   },
   {
@@ -1180,6 +1300,14 @@ export const csharpPhases: Phase[] = [
         correctIndex: 1,
         explanation: 'IL2057 fires because `Type.GetType(typeName)` with a non-constant string is opaque to the trimmer — it cannot know which types to keep. Solutions: (1) if the type set is known at compile time, use a `switch`/dictionary keyed by string; (2) annotate the `typeName` parameter with `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]` to make the contract explicit; (3) use source generators to avoid reflection entirely.',
       },
+      {
+        id: 'csharp-9-code-1',
+        kind: 'code',
+        prompt: 'Add the `JsonSerializable` attribute to the `AppJsonContext` partial class to generate source-generated serialization metadata for the `Person` type.',
+        boilerplate: 'using System;\nusing System.Text.Json;\nusing System.Text.Json.Serialization;\n\nvar person = new Person { Name = "Bob" };\nstring json = JsonSerializer.Serialize(person, AppJsonContext.Default.Person);\nConsole.WriteLine(json);\n\npublic class Person\n{\n    public string Name { get; set; } = "";\n}\n\n// TODO: Add the JsonSerializable attribute for the Person class here\n[JsonSerializable(typeof(Person))]\ninternal partial class AppJsonContext : JsonSerializerContext\n{\n}',
+        expectedOutput: '{"Name":"Bob"}',
+        explanation: 'The `[JsonSerializable]` attribute tells the source generator to generate reflection-free serialization metadata for that type, enabling Native AOT compatibility.',
+      },
     ],
   },
   {
@@ -1311,6 +1439,14 @@ export const csharpPhases: Phase[] = [
         ],
         correctIndex: 1,
         explanation: 'Forcing a gen-2 collection suspends all managed threads (stop-the-world) for potentially milliseconds on a large heap. Doing this on every 100th write at scale produces the exact throughput collapse seen here. `GC.Collect` should essentially never appear in library or service code. The .NET GC is adaptive — it collects when memory pressure warrants it. Removing the forced call will immediately improve throughput. For cache size control, `MemoryCache` or `IMemoryCache` with `SizeLimit` is the right tool.',
+      },
+      {
+        id: 'csharp-10-code-1',
+        kind: 'code',
+        prompt: 'Allocate a block of memory for 3 integers on the stack using `stackalloc` and assign it to the `Span<int>`.',
+        boilerplate: 'using System;\n\n// TODO: Allocate a span of 3 integers on the stack using stackalloc\nSpan<int> numbers = stackalloc int[3];\nnumbers[0] = 10;\nnumbers[1] = 20;\nnumbers[2] = 30;\n\nforeach (var val in numbers)\n{\n    Console.Write(val + " ");\n}',
+        expectedOutput: '10 20 30',
+        explanation: 'Using stackalloc allocates memory on the stack frame of the executing method, which is automatically reclaimed when the method returns, bypasses heap allocation, and is safe when wrapped in a Span.',
       },
     ],
   },

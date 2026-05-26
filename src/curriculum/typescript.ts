@@ -1,6 +1,54 @@
 import type { Phase } from './types';
 
 export const typescriptPhases: Phase[] = [
+  // ─── Level 0 ─────────────────────────────────────────────────────────────
+  {
+    id: 'typescript-0',
+    language: 'typescript',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: "Welcome to TypeScript! In this level, you'll verify your local Node.js environment and compile a basic script. Absolute beginners start here.",
+    topics: [
+      {
+        label: 'Node.js Installation',
+        url: 'https://nodejs.org/en/download/package-manager',
+        note: 'Install the Node.js runtime and npm package manager.'
+      },
+      {
+        label: 'TypeScript Playground',
+        url: 'https://www.typescriptlang.org/play',
+        note: 'Write and compile TypeScript directly in the browser.'
+      }
+    ],
+    deliverable: 'Verify node --version in your command line and compile your first TS script.',
+    checks: [
+      {
+        kind: 'code',
+        id: 'typescript-0-code-1',
+        prompt: 'Use the `console.log()` function to output `Hello, World!` to the console.',
+        boilerplate: '// Output: Hello, World!\nconsole.log("");\n',
+        expectedOutput: 'Hello, World!',
+        explanation: 'In JavaScript/TypeScript, `console.log()` is used to print output to the console.'
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-0-mcq-1',
+        prompt: 'What is the command line utility used to compile TypeScript files to JavaScript?',
+        options: ['tsc', 'ts-node', 'node', 'compile-ts'],
+        correctIndex: 0,
+        explanation: '`tsc` (TypeScript Compiler) compiles `.ts` files to `.js` files.'
+      },
+      {
+        kind: 'mcq',
+        id: 'typescript-0-mcq-2',
+        prompt: 'What is the standard file extension used for TypeScript files?',
+        options: ['.ts', '.js', '.tscript', '.tsx'],
+        correctIndex: 0,
+        explanation: 'TypeScript files use the `.ts` extension (or `.tsx` for files containing JSX elements).'
+      }
+    ]
+  },
   // ─── L1: JS Fundamentals reframed in TypeScript ───────────────────────────
   {
     id: 'typescript-1',
@@ -9,6 +57,12 @@ export const typescriptPhases: Phase[] = [
     title: 'JS Fundamentals, TypeScript Style',
     timeEstimate: '4–6 hours',
     intro: `By the end of this phase, you'll read everyday TypeScript with confidence — primitive types, \`const\`/\`let\`, control flow, function annotations, and the Node CLI shape that wraps it all. You'll also recognise the difference between \`any\`, \`unknown\`, and an inferred type at a glance. To build the muscle, you'll write \`cli/greet.ts\` locally: a \`tsx\`-runnable Node CLI that reads \`process.argv\`, validates the input, and prints a greeting plus ISO timestamp, with zero \`any\` and a green \`tsc --noEmit --strict\`.`,
+    video: {
+      title: 'TypeScript Tutorial for Beginners',
+      youtubeId: 'd56mG7DezGs',
+      channelName: 'Programming with Mosh',
+      duration: '1 hour',
+    },
     topics: [
       {
         label: 'TypeScript in 5 minutes',
@@ -187,12 +241,17 @@ export const typescriptPhases: Phase[] = [
     level: 2,
     title: 'The TypeScript Type System',
     timeEstimate: '5–8 hours',
-    intro: `By the end of this phase, you'll read structural types fluently — interfaces, type aliases, unions and intersections, literal types, and the narrowing patterns (\`typeof\`, \`in\`, discriminated unions) that turn runtime checks into compile-time guarantees. You'll also pick up the \`map\`/\`filter\`/\`reduce\` element-type inference that powers most real codebases. To build the muscle, you'll write \`cart.ts\` locally: a small e-commerce cart with \`Product\`/\`CartItem\`/\`Cart\` types, an exhaustively-checked \`PaymentMethod\` discriminated union, and a \`total()\` function — all under \`tsc --noEmit --strict\`.`,
+    intro: `By the end of this phase, you'll read structural types fluently — TypeScript's type system is structural, not nominal, meaning types are compatible when their shapes match, regardless of declarations. You'll learn interfaces, type aliases, unions and intersections, literal types, and the narrowing patterns (\`typeof\`, \`in\`, discriminated unions) that turn runtime checks into compile-time guarantees. You'll also pick up the \`map\`/\`filter\`/\`reduce\` element-type inference that powers most real codebases. To build the muscle, you'll write \`cart.ts\` locally: a small e-commerce cart with \`Product\`/\`CartItem\`/\`Cart\` types, an exhaustively-checked \`PaymentMethod\` discriminated union, and a \`total()\` function — all under \`tsc --noEmit --strict\`.`,
     topics: [
       {
         label: 'Interfaces',
         url: 'https://www.typescriptlang.org/docs/handbook/2/objects.html',
         note: 'Object shapes, optional/readonly properties, index signatures',
+      },
+      {
+        label: 'Structural Typing',
+        url: 'https://www.typescriptlang.org/docs/handbook/type-compatibility.html',
+        note: 'Understanding shape-based type compatibility (structural vs nominal systems)',
       },
       {
         label: 'Type Aliases',
@@ -338,6 +397,29 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'The exhaustiveness trick is an `assertNever` helper: `function assertNever(x: never): never { throw new Error("Unhandled case: " + (x as any).kind); }`. Place `return assertNever(shape)` in the final else/default. After narrowing all known variants, `shape` must be `never`; if a new variant is added without a handler, `shape` still has that type, and assigning a non-`never` value to a `never` parameter is a compile error.',
       },
+      {
+        kind: 'mcq',
+        id: 'ts2-mcq7',
+        prompt:
+          'Under TypeScript\'s structural typing rules, which of the following assignments is valid without an explicit cast?',
+        options: [
+          'Assigning an object of shape `{ name: string; age: number }` to a variable typed as `{ name: string }`',
+          'Assigning an object of shape `{ name: string }` to a variable typed as `{ name: string; age: number }`',
+          'Assigning an object of shape `{ age: number }` to a variable typed as `{ name: string }`',
+          'Only objects created from the same class or interface can be assigned to each other',
+        ],
+        correctIndex: 0,
+        explanation:
+          'TypeScript\'s structural type system compares the shapes of types. Since `{ name: string; age: number }` contains all the required properties of `{ name: string }` (and they are compatible types), it is assignable. The reverse is not true because the `age` property would be missing.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-2-code-1',
+        prompt: 'Implement type narrowing for the `Shape` discriminated union to calculate the area of a square.',
+        boilerplate: `type Shape =\n  | { kind: 'circle'; radius: number }\n  | { kind: 'square'; side: number };\n\nfunction getArea(shape: Shape): number {\n  if (shape.kind === 'circle') {\n    return Math.PI * shape.radius * shape.radius;\n  }\n  // TODO: Return the area of the square\n  return 0;\n}\n\nconsole.log(getArea({ kind: 'square', side: 5 }));\n`,
+        expectedOutput: '25',
+        explanation: 'TypeScript uses the `kind` property to narrow the union type down to `Square`, letting you safely access the `side` property.'
+      },
     ],
   },
 
@@ -354,6 +436,11 @@ export const typescriptPhases: Phase[] = [
         label: 'ES Modules in TypeScript',
         url: 'https://www.typescriptlang.org/docs/handbook/2/modules.html',
         note: 'import/export, type-only imports, module resolution strategies',
+      },
+      {
+        label: 'TypeScript Target Environments & lib.d.ts',
+        url: 'https://www.typescriptlang.org/tsconfig#lib',
+        note: 'Configuring compilation targets and environment globals (lib.dom.d.ts vs @types/node)',
       },
       {
         label: 'Async/Await handbook',
@@ -512,6 +599,29 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`as string` is a compile-time-only assertion; it does not convert the value at runtime. `JSON.parse` coerces its argument with `String()`, turning `undefined` into `"undefined"`, which is not valid JSON — hence the `SyntaxError`. The correct fix is to guard the type before calling `JSON.parse`: `if (typeof raw !== "string") throw new TypeError(...)`. Using `String(raw)` would produce the same bad input.',
+      },
+      {
+        kind: 'mcq',
+        id: 'ts3-mcq7',
+        prompt:
+          'How does TypeScript resolve global variables like `window` in the browser or `process` in Node.js?',
+        options: [
+          'Through the `lib` configuration in `tsconfig.json` (for browser globals like `window`) and type declarations like `@types/node` (for Node.js globals like `process`)',
+          'TypeScript automatically includes both browser and Node.js globals by default in every environment',
+          'Global variables are always treated as `any` and cannot be strictly checked',
+          'By importing them explicitly from the `"typescript"` core package',
+        ],
+        correctIndex: 0,
+        explanation:
+          'TypeScript relies on environment-specific type declarations. Browser globals are provided by the built-in `lib.dom.d.ts` (configured via `lib` in `tsconfig.json`), whereas Node.js globals require installing the `@types/node` package.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-3-code-1',
+        prompt: 'Use `async/await` to resolve and log the message returned by the asynchronous `fetchData` function.',
+        boilerplate: `async function fetchData(): Promise<string> {\n  return new Promise((resolve) => {\n    setTimeout(() => resolve("Data loaded!"), 10);\n  });\n}\n\nasync function run() {\n  // TODO: Await the call to fetchData() and store the result in the 'result' variable\n  const result = "";\n  console.log(result);\n}\nrun();\n`,
+        expectedOutput: 'Data loaded!',
+        explanation: 'The `await` keyword pauses execution of the async function until the promise resolves, allowing you to work with the asynchronous value like a synchronous one.'
       },
     ],
   },
@@ -689,6 +799,29 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'The assertion error shows the actual object lacks `role`. This means the `User` interface does not include a `role` property, so TypeScript accepts `input` typed as `Omit<User, "id">` without `role`. Fix: add `role: string` (or a union) to the `User` interface. `Omit` only removes the listed keys — it does not add new ones. The test is valid; the type definition is incomplete.',
       },
+      {
+        kind: 'mcq',
+        id: 'ts4-mcq7',
+        prompt:
+          'What is the purpose of the `extends` keyword in a generic type definition like `<T extends { id: string }>`?',
+        options: [
+          'It constrains the generic type parameter `T` to be a type that is assignable to `{ id: string }`',
+          'It makes `T` inherit all methods from the JavaScript `Object` class',
+          'It is used to subclass another generic class at runtime',
+          'It forces the compiler to treat `T` as a string type only',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Generic constraints restrict the types that can be passed to a generic parameter. In this case, any type passed as `T` must be structurally compatible with `{ id: string }`, ensuring the function can safely access `.id` on values of type `T`.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-4-code-1',
+        prompt: 'Complete the generic function `wrapData` to return a `ResponseEnvelope` containing the passed data.',
+        boilerplate: `interface ResponseEnvelope<T> {\n  status: 'success';\n  data: T;\n}\n\nfunction wrapData<T>(data: T): ResponseEnvelope<T> {\n  // TODO: Return a ResponseEnvelope<T> with status 'success' and the passed data\n  return {\n    status: 'success',\n    data: data\n  };\n}\n\nconsole.log(JSON.stringify(wrapData("hello")));\n`,
+        expectedOutput: '{"status":"success","data":"hello"}',
+        explanation: 'Generics allow a type to be parameterized. In this case, `ResponseEnvelope<T>` wraps whatever type of `data` is passed to the function, maintaining strict type safety.'
+      },
     ],
   },
 
@@ -865,6 +998,14 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'This error does not actually occur in TypeScript. Template literal types distribute over string literal unions automatically — `\`get${Axis}\`` resolves to `"getx" | "gety" | "getz"`. If you see this error in practice, the type being interpolated is not a `string | number | bigint | boolean | null | undefined` — for example, it might be an object type or `unknown`. Check what `Axis` is actually resolving to at that point.',
       },
+      {
+        kind: 'code',
+        id: 'typescript-5-code-1',
+        prompt: 'Implement a custom mapped type `MyReadonly<T>` that makes all properties of `T` readonly.',
+        boilerplate: `type MyReadonly<T> = {\n  // TODO: Make all properties of T readonly\n  [P in keyof T]: T[P];\n};\n\ninterface User {\n  name: string;\n}\n\nconst user: MyReadonly<User> = { name: "Alice" };\n// @ts-expect-error - This reassignment must fail to compile\nuser.name = "Bob";\n\nconsole.log(user.name);\n`,
+        expectedOutput: 'Alice',
+        explanation: 'Mapped types allow you to create new types based on existing ones. By adding the `readonly` modifier in `{ readonly [P in keyof T]: T[P] }`, you make every property immutable.'
+      },
     ],
   },
 
@@ -1040,6 +1181,14 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'Tools like esbuild and swc process one file at a time without cross-file type resolution. When they see `export { User }`, they cannot tell if `User` is a value or a type. `export type { User }` is an explicit signal that the export is purely type-level and should be erased. Enabling `isolatedModules: true` in the library\'s own tsconfig catches these at compile time. See TS 3.8 release notes → type-only imports and exports.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-6-code-1',
+        prompt: 'Use interface declaration merging to add a `role: string` property to the existing `User` interface.',
+        boilerplate: `interface User {\n  name: string;\n}\n\n// TODO: Merge the User interface to add a 'role' property of type 'string'\n\nfunction getUserRole(user: User): string {\n  return user.role;\n}\n\nconst user: User = { name: "Alice", role: "admin" };\nconsole.log(getUserRole(user));\n`,
+        expectedOutput: 'admin',
+        explanation: 'In TypeScript, interfaces with the same name in the same scope are merged automatically. This declaration merging is commonly used to extend external library types (like adding custom properties to Express\'s Request interface).'
       },
     ],
   },
@@ -1227,6 +1376,14 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'Next.js 15 changed `params` and `searchParams` to be Promises to support streaming and partial prerendering. The correct type is `Promise<{ slug: string }>` and the component must be `async` to `await` it. Using `useParams()` is a client-side hook and is not valid in a server component. The old synchronous pattern (`params: { slug: string }`) no longer works in Next.js 15+.',
       },
+      {
+        kind: 'code',
+        id: 'typescript-7-code-1',
+        prompt: 'Define the type for the Next.js 16 `PageProps` where `params` is a `Promise` containing the dynamic `slug` parameter as a string. Await `params` in the async `BlogPost` function and return the formatted output.',
+        boilerplate: `interface PageProps {\n  // TODO: Define params as a Promise resolving to { slug: string }\n  params: Promise<{ slug: string }>;\n}\n\nasync function BlogPost({ params }: PageProps): Promise<string> {\n  // TODO: Await params and return "Post: " followed by the slug\n  const { slug } = await params;\n  return \`Post: \${slug}\`;\n}\n\nBlogPost({ params: Promise.resolve({ slug: "typescript-rules" }) }).then(console.log);\n`,
+        expectedOutput: 'Post: typescript-rules',
+        explanation: 'In Next.js 15+, page parameters are passed as a `Promise` to support concurrent rendering. You must declare `params` as a `Promise` and `await` it inside your Server Component.'
+      },
     ],
   },
 
@@ -1403,6 +1560,14 @@ export const typescriptPhases: Phase[] = [
         explanation:
           'In XState v5, actor event processing can be asynchronous when services or promises are involved, but for pure state machines without invoke, `send()` is synchronous and the snapshot should reflect the transition immediately. If the test sees `"loading"` after sending `SUCCESS`, it is likely that `FETCH` was not processed before `SUCCESS` was sent — perhaps due to actor lifecycle timing. Ensure the actor is fully started (`actor.start()`) before sending events, and verify both sends happen in the correct order. In pure machines, both transitions should be synchronous.',
       },
+      {
+        kind: 'code',
+        id: 'typescript-8-code-1',
+        prompt: 'Complete the transition function for the traffic light state machine so that the `green` state transitions to `yellow`.',
+        boilerplate: `type State = 'red' | 'green' | 'yellow';\ntype Event = 'NEXT';\n\nfunction transition(state: State, event: Event): State {\n  // TODO: Implement state transition logic (red -> green, green -> yellow, yellow -> red)\n  switch (state) {\n    case 'red': return 'green';\n    case 'green':\n      // TODO: Transition to yellow\n      return 'yellow';\n    case 'yellow': return 'red';\n  }\n}\n\nconsole.log(transition('green', 'NEXT'));\n`,
+        expectedOutput: 'yellow',
+        explanation: 'State transition functions calculate the next state based on the current state and incoming event. This is the underlying mechanic of XState and other finite state machines.'
+      },
     ],
   },
 
@@ -1578,6 +1743,14 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           '`compilerOptions.paths` tells the TypeScript *type checker* how to resolve module specifiers — it has no effect on the emitted JavaScript. `tsc` emits the import as-is (`@utils/format`), and Node has no knowledge of the alias. Solutions: (1) use a bundler that resolves aliases; (2) use `tsconfig-paths/register` at runtime (`node -r tsconfig-paths/register dist/index.js`); (3) use `tsc-alias` as a post-build step to rewrite aliases to relative paths. Adding `baseUrl` alone does not fix the runtime resolution.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-9-code-1',
+        prompt: 'Implement the `hasEs2022Target` function to return `true` if the parsed tsconfig compiler option `target` is set to "es2022" (case-insensitive).',
+        boilerplate: `interface TsConfig {\n  compilerOptions?: {\n    target?: string;\n  };\n}\n\nfunction hasEs2022Target(configJson: string): boolean {\n  try {\n    const config: TsConfig = JSON.parse(configJson);\n    // TODO: Return true if compilerOptions.target is "es2022" (case-insensitive)\n    return config.compilerOptions?.target?.toLowerCase() === "es2022";\n  } catch {\n    return false;\n  }\n}\n\nconst configStr = '{"compilerOptions": {"target": "ES2022"}}';\nconsole.log(hasEs2022Target(configStr));\n`,
+        expectedOutput: 'true',
+        explanation: 'Build tooling and transpilers read the `tsconfig.json` file (specifically `compilerOptions.target`) to determine what version of JavaScript syntax the TypeScript files should be compiled down to.'
       },
     ],
   },
@@ -1759,6 +1932,14 @@ export const typescriptPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'This is a fundamental limitation of the TS plugin architecture. `tsconfig.json#plugins` wires plugins into the Language Service used by editors (`tsserver`), but the `tsc` CLI does not load them. Plugin diagnostics are editor-only. If you need CI enforcement, you have two options: (1) write an ESLint rule that enforces the same constraint (ESLint runs in both editor and CI); (2) use a custom `tsc` transformer (via `ts-patch` or a build script) that runs as part of the compilation step.',
+      },
+      {
+        kind: 'code',
+        id: 'typescript-10-code-1',
+        prompt: 'Use the `NoInfer` utility type on the `fallback` parameter of `getOrDefault` so that `T` is only inferred from the first argument.',
+        boilerplate: `function getOrDefault<T>(value: T | undefined, fallback: T): T {\n  return value !== undefined ? value : fallback;\n}\n\n// @ts-expect-error - T should be inferred only as string; number fallback should be rejected\nconst res = getOrDefault("hello", 42);\n\nconsole.log(res);\n`,
+        expectedOutput: 'hello',
+        explanation: 'The `NoInfer<T>` utility type (introduced in TypeScript 5.4) prevents TypeScript from inferring a generic type parameter from the annotated argument position.'
       },
     ],
   },

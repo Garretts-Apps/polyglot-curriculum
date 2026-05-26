@@ -1,6 +1,58 @@
 import type { Phase } from './types';
 
 export const rustPhases: Phase[] = [
+  // ─── L0: Setup & Hello World ────────────────────────────────────────────────
+  {
+    id: 'rust-0',
+    language: 'rust',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: `Welcome to Rust! In this phase you'll verify your local Rust installation and run your very first program. If you've never written a line of Rust before, this is the place to start.\n\nBy the end you'll have \`rustc\` working on your machine, know how to compile and run a single-file program, and have printed your first message to the terminal. Absolute beginners start here — no prior Rust experience required.`,
+    topics: [
+      {
+        label: 'Install Rust',
+        url: 'https://www.rust-lang.org/tools/install',
+        note: 'Official rustup installer for all platforms',
+      },
+      {
+        label: 'Rust Playground',
+        url: 'https://play.rust-lang.org/',
+        note: 'Run Rust code in the browser — no install needed',
+      },
+    ],
+    deliverable:
+      'Verify rustc --version in your command line and run a print statement in the browser console.',
+    checks: [
+      {
+        id: 'rust-0-code-1',
+        kind: 'code',
+        prompt: 'Run the program below so it prints exactly `Hello, World!` to standard output.',
+        boilerplate: 'fn main() {\n    println!("Hello, World!");\n}\n',
+        expectedOutput: 'Hello, World!',
+        explanation:
+          'The `println!` macro prints text followed by a newline. This is the simplest Rust program you can write.',
+      },
+      {
+        id: 'rust-0-mcq-1',
+        kind: 'mcq',
+        prompt: 'What macro is used to print text to standard output in Rust?',
+        options: ['println!', 'print()', 'echo()', 'console.log()'],
+        correctIndex: 0,
+        explanation:
+          '`println!` is a Rust macro (note the trailing `!`) that prints a line to standard output.',
+      },
+      {
+        id: 'rust-0-mcq-2',
+        kind: 'mcq',
+        prompt: 'What is the standard file extension for Rust source files?',
+        options: ['.rs', '.rust', '.rt', '.r'],
+        correctIndex: 0,
+        explanation:
+          'Rust source files use the `.rs` extension by convention.',
+      },
+    ],
+  },
   // ─── L1: Hello Cargo ────────────────────────────────────────────────────────
   {
     id: 'rust-1',
@@ -9,6 +61,12 @@ export const rustPhases: Phase[] = [
     title: 'Hello Cargo',
     timeEstimate: '4-6 hours',
     intro: `By the end of this phase, you'll read short Rust programs and predict what the compiler will say — missing semicolons that turn an expression into a unit return, \`let\` vs \`let mut\`, shadowing vs mutation, and the difference between expression-bodied functions and statement-bodied ones. The tooling is your terminal: \`rustup\` for toolchains, \`cargo new\` / \`cargo build\` / \`cargo run\` / \`cargo check\` / \`cargo clippy -- -W clippy::pedantic\` for the build-test-lint loop. When you want to see what a value's type is, drop in \`let _: () = x;\` and read the compiler's "expected (), found …" error — that trick costs nothing and tells you everything.\n\nTo build the muscle, you'll write a \`cargo new greet\` CLI locally that takes a \`--name\` flag (clap derive) and prints a greeting plus the current UTC timestamp — writing it yourself is how the reading sticks.`,
+    video: {
+      title: 'Rust Programming Course for Beginners',
+      youtubeId: 'br3G9tBmyGs',
+      channelName: 'freeCodeCamp.org',
+      duration: '6 hours',
+    },
     topics: [
       {
         label: 'Installing Rust with rustup',
@@ -153,6 +211,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 3,
         explanation:
           'Two idiomatic fixes exist. (A) `let mut attempts = ...; attempts = attempts + 1;` mutates the same binding — this is what the compiler\'s `help` suggests. (B) Replacing the second line with `let attempts = attempts + 1;` *shadows* the binding with a new immutable one whose value is 1. Both print `attempts=1`. (C) is wrong on two counts: `const` items require an explicit type *and* a constant-expression initializer (`args.start`, a runtime value, is not allowed), and even if they were allowed, `const` does not make a binding rebindable.',
+      },
+      {
+        kind: 'code',
+        id: 'rust-1-code-1',
+        prompt:
+          'Complete the `char_count` function so it takes a `&str` and returns the number of characters in it. The `main` function will call it with `"Hello, Cargo!"` and print the result.',
+        boilerplate:
+          'fn char_count(s: &str) -> usize {\n    // TODO: return the number of characters in `s`\n    // Hint: use the .chars().count() method chain\n}\n\nfn main() {\n    let result = char_count("Hello, Cargo!");\n    println!("{}", result);\n}\n',
+        expectedOutput: '13',
+        explanation:
+          'The `.chars().count()` method chain iterates over the Unicode scalar values in the string and counts them. For ASCII strings like "Hello, Cargo!", this equals the byte length, but for multi-byte UTF-8 strings they can differ.',
       },
     ],
   },
@@ -304,6 +373,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'Lifetime elision has no rule that picks between two input references for an output reference, so the compiler asks for an explicit annotation. Since the body can return either `a` or `b`, both must have the same lifetime `\'a`, and the return must also be `\'a`. (A) would fail at the `else` branch because `b: &str` has a *different* (unnamed) lifetime that does not satisfy the `\'a` return contract. (C) forces every caller to hand in `\'static` strings — fine in tests, hostile in real code. (D) changes the API to take ownership unnecessarily, allocating and copying on every call.',
+      },
+      {
+        kind: 'code',
+        id: 'rust-2-code-1',
+        prompt:
+          'Complete the `sum` function so it borrows a `Vec<i32>` (without taking ownership) and returns the sum of all elements.',
+        boilerplate:
+          'fn sum(numbers: &Vec<i32>) -> i32 {\n    // TODO: iterate over `numbers` and return the sum\n    // Hint: you can use .iter().sum() or a manual fold\n}\n\nfn main() {\n    let nums = vec![10, 20, 30, 40];\n    let total = sum(&nums);\n    println!("{}", total);\n    // `nums` is still usable here because `sum` only borrowed it\n    println!("len={}", nums.len());\n}\n',
+        expectedOutput: '100',
+        explanation:
+          'By taking `&Vec<i32>`, the function borrows the vector without moving it. Calling `.iter().sum()` iterates over the references and computes the sum. The caller retains ownership of the vector after the call.',
       },
     ],
   },
@@ -465,6 +545,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 3,
         explanation:
           '`?` desugars to `match expr { Ok(v) => v, Err(e) => return Err(From::from(e)) }`, so it needs an `impl From<ParseIntError> for ConfigError`. The idiomatic fix is to add a `Parse(ParseIntError)` variant and either write the `From` impl by hand or derive it with `thiserror::Error` + `#[from]`. (C) compiles but throws away the original error chain *and* lies about what happened (an `Io` variant for a parse failure). (B) erases the typed error from a library API — acceptable in binaries with `anyhow::Result`, hostile in a `crates/` library.',
+      },
+      {
+        kind: 'code',
+        id: 'rust-3-code-1',
+        prompt:
+          'Define a `Shape` enum with variants `Circle(f64)` (radius) and `Rectangle(f64, f64)` (width, height). Implement an `area` method that returns the area. Use `match` to compute the correct area for each variant.',
+        boilerplate:
+          'use std::f64::consts::PI;\n\nenum Shape {\n    Circle(f64),\n    Rectangle(f64, f64),\n}\n\nimpl Shape {\n    fn area(&self) -> f64 {\n        // TODO: match on `self` and compute the area\n        // Circle area = PI * radius * radius\n        // Rectangle area = width * height\n    }\n}\n\nfn main() {\n    let c = Shape::Circle(5.0);\n    let r = Shape::Rectangle(3.0, 4.0);\n    println!("{:.2}", c.area());\n    println!("{:.2}", r.area());\n}\n',
+        expectedOutput: '78.54',
+        explanation:
+          'Pattern matching with `match` on an enum lets you destructure each variant and compute different logic per case. `Circle(5.0)` has area π × 25 ≈ 78.54, and `Rectangle(3.0, 4.0)` has area 12.00.',
       },
     ],
   },
@@ -632,6 +723,17 @@ export const rustPhases: Phase[] = [
         explanation:
           'The standard library provides a blanket reflexive `impl<T> From<T> for T` — the identity conversion — so any user-written `impl From<X> for X` collides with it. The fix is to delete the redundant impl; `UserId::from(existing_user_id)` already works via the blanket impl. (B) is false: `From` is not sealed; user crates implement it constantly. (C) is unnecessary work — the blanket impl already covers identity. (D) does not resolve the conflict (it still collides with the blanket impl when `U = UserId`) *and* violates the orphan rule unless `UserId` is local. Reading "conflicting implementations" errors is a real skill — they always cite *both* impls so you can pick which to remove.',
       },
+      {
+        kind: 'code',
+        id: 'rust-4-code-1',
+        prompt:
+          'Write a generic function `largest` that takes a slice of items implementing `PartialOrd + Copy` and returns the largest element. Complete the function body using the trait bounds.',
+        boilerplate:
+          'fn largest<T: PartialOrd + Copy>(list: &[T]) -> T {\n    // TODO: find and return the largest element in `list`\n    // Hint: start with list[0] and iterate, comparing with >\n}\n\nfn main() {\n    let numbers = vec![34, 50, 25, 100, 65];\n    println!("{}", largest(&numbers));\n\n    let chars = vec![\'y\', \'m\', \'z\', \'a\'];\n    println!("{}", chars[0]);\n}\n',
+        expectedOutput: '100',
+        explanation:
+          'The `PartialOrd` bound enables the `>` operator and `Copy` allows reading elements out of the slice by value. This is the canonical Rust Book example of generics with trait bounds (Ch 10.1).',
+      },
     ],
   },
 
@@ -797,6 +899,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 2,
         explanation:
           '`std::thread::spawn` requires its closure to be `Send + \'static`. `Send` is the marker trait for "can be transferred between threads". `JobHandle` becomes `!Send` because it contains `Rc<JobState>` — `Rc` uses non-atomic refcount increments and is deliberately `!Send` to prevent data races on the refcount itself. The canonical, minimal fix is to swap `Rc` for `Arc`, which uses atomic refcount and *is* `Send + Sync`. `Sync` is the related marker for "can be shared by reference between threads" — different question. Cloning or copying does not change a `!Send` type into a `Send` one.',
+      },
+      {
+        kind: 'code',
+        id: 'rust-5-code-1',
+        prompt:
+          'Use `std::sync::mpsc::channel` to send a message from a spawned thread back to the main thread. The spawned thread should send the string `"hello from thread"` and the main thread should receive and print it.',
+        boilerplate:
+          'use std::sync::mpsc;\nuse std::thread;\n\nfn main() {\n    let (tx, rx) = mpsc::channel();\n\n    thread::spawn(move || {\n        // TODO: send the string "hello from thread" through `tx`\n        // Hint: tx.send("hello from thread").unwrap();\n    });\n\n    let received = rx.recv().unwrap();\n    println!("{}", received);\n}\n',
+        expectedOutput: 'hello from thread',
+        explanation:
+          '`mpsc::channel()` creates a (Sender, Receiver) pair. The `move` closure transfers ownership of `tx` to the spawned thread. `tx.send()` sends the value, and `rx.recv()` blocks until a message arrives. This is the core message-passing concurrency pattern in Rust (Book Ch 16.2).',
       },
     ],
   },
@@ -964,6 +1077,17 @@ export const rustPhases: Phase[] = [
         explanation:
           '`Rc<T>` back-pointers create reference cycles: parent holds `Rc` to child, child holds `Rc` to parent. Neither strong count can ever reach 0, so the whole subtree leaks — exactly what heaptrack shows. `Weak<T>` does not contribute to the strong count, so it breaks the cycle. The canonical pattern is `parent: RefCell<Weak<Node>>`, populated via `Rc::downgrade(parent)`, and consumed via `.upgrade()` which returns `Option<Rc<Node>>` (`None` once the parent is dropped). The compiler does *not* reject `Rc` cycles (it has no way to know your code constructs one), so option D is wrong.',
       },
+      {
+        kind: 'code',
+        id: 'rust-6-code-1',
+        prompt:
+          'Use `Rc<RefCell<Vec<String>>>` to create a shared, mutable list. Add items from two different "owners" (variables holding `Rc` clones) and print the final list length.',
+        boilerplate:
+          'use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn main() {\n    let shared_list: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));\n\n    // Clone the Rc for a second owner\n    let owner2 = Rc::clone(&shared_list);\n\n    // TODO: push "alpha" into shared_list via borrow_mut()\n    // TODO: push "beta" into owner2 via borrow_mut()\n    // Hint: shared_list.borrow_mut().push("alpha".to_string());\n\n    println!("len={}", shared_list.borrow().len());\n    println!("owners={}", Rc::strong_count(&shared_list));\n}\n',
+        expectedOutput: 'len=2',
+        explanation:
+          '`Rc` provides shared ownership (reference counting) and `RefCell` provides interior mutability with runtime borrow checking. Together, `Rc<RefCell<T>>` lets multiple owners mutate the same data — the single-threaded counterpart of `Arc<Mutex<T>>`. See Rust Book Ch 15.5.',
+      },
     ],
   },
 
@@ -1130,6 +1254,17 @@ export const rustPhases: Phase[] = [
         explanation:
           'A naked `loop { listener.accept().await?; }` has no cancellation point — Ctrl-C never reaches the accept future on its own. The idiomatic tokio pattern is `tokio::select!` racing `listener.accept()` against `tokio::signal::ctrl_c()`. When the signal future completes first, the select arm drops the in-flight accept future (cancelling it cleanly because tokio futures are cancel-safe at await points) and breaks the loop. This is the foundation of graceful shutdown in tokio servers and is what hyper/axum/tonic all use under the hood. (B) is the "tear it all down" anti-pattern — no graceful close of in-flight connections. (C) wastes CPU and still has a 1-second worst-case shutdown delay. (D) is wishful thinking — the runtime does not auto-translate signals into loop exits.',
       },
+      {
+        kind: 'code',
+        id: 'rust-7-code-1',
+        prompt:
+          'Write a basic async function `fetch_value` that returns a `u32`. Call it from an async `main` using `#[tokio::main]` and print the result. (For this exercise, just return a literal value — no I/O needed.)',
+        boilerplate:
+          '// Note: in a real project you would add `tokio = { version = "1", features = ["full"] }` to Cargo.toml\n\nasync fn fetch_value() -> u32 {\n    // TODO: return the value 42\n    // Hint: just write the value as the last expression (no semicolon)\n}\n\n#[tokio::main]\nasync fn main() {\n    let val = fetch_value().await;\n    println!("value={}", val);\n}\n',
+        expectedOutput: 'value=42',
+        explanation:
+          'An `async fn` returns a `Future` that must be `.await`-ed to get the result. `#[tokio::main]` sets up a tokio runtime and converts `async fn main()` into a synchronous entry point. This is the foundation of all async Rust programs.',
+      },
     ],
   },
 
@@ -1285,6 +1420,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 1,
         explanation:
           'Proc-macro derives produce `impl` blocks that are emitted into the *module where the derive is applied* — so they have full access to that struct\'s private fields. The compiler errors are reported at the *consumer* site, not at the impl: line 14 directly writes `u.email` from outside the defining module; line 18 fails because the setter shown is not the one generated by the derive — the snippet in the question text models what the consumer wrote, which assigns `self.email` from outside the defining module. The fix is to let the derive own the public setter (a public `fn email(self, v: String) -> Self { self.email = v; self }` next to `User`) so consumers go through it, and to stop the consumer from touching `u.email` directly. Reading "field is private" errors requires distinguishing the *site of the error* (consumer code) from the *site of the field declaration* (defining module).',
+      },
+      {
+        kind: 'code',
+        id: 'rust-8-code-1',
+        prompt:
+          'Write a declarative macro `repeat_print!` that takes an expression and a count, and prints the expression that many times. Use `macro_rules!` with a repetition pattern.',
+        boilerplate:
+          'macro_rules! repeat_print {\n    ($val:expr, $count:expr) => {\n        // TODO: use a for loop to print $val exactly $count times\n        // Hint: for _ in 0..$count { println!("{}", $val); }\n    };\n}\n\nfn main() {\n    repeat_print!("hello", 3);\n}\n',
+        expectedOutput: 'hello\nhello\nhello',
+        explanation:
+          '`macro_rules!` macros use pattern matching on token trees. The `$val:expr` and `$count:expr` fragment specifiers capture Rust expressions. The macro body expands at compile time, and the generated code runs the loop. This is a simple but practical example of declarative macros.',
       },
     ],
   },
@@ -1452,6 +1598,17 @@ export const rustPhases: Phase[] = [
         explanation:
           '`#![no_std]` removes the `std` crate. `std::collections::HashMap` depends on OS-provided RNG seeding for its `RandomState`, which is not available without `std`. On `no_std` the idiomatic choices are: (1) `hashbrown::HashMap` (the actual implementation backing `std::collections::HashMap`, standalone with `no_std` support — you supply a hasher), or (2) `alloc::collections::BTreeMap` (needs only `alloc`, O(log n)). (A) breaks the embedded target. (C) defeats the entire purpose. (D) does not work — `extern crate std;` on a target without an `std` crate still fails. See the Embedded Rust Book.',
       },
+      {
+        kind: 'code',
+        id: 'rust-9-code-1',
+        prompt:
+          'Use `unsafe` to dereference a raw pointer. Create an `i32` variable, obtain a `*const i32` raw pointer to it, then dereference the pointer inside an `unsafe` block to read the value.',
+        boilerplate:
+          'fn main() {\n    let x: i32 = 42;\n    let raw_ptr: *const i32 = &x as *const i32;\n\n    // TODO: dereference `raw_ptr` inside an unsafe block and print the value\n    // Hint: unsafe { println!("{}", *raw_ptr); }\n}\n',
+        expectedOutput: '42',
+        explanation:
+          'Creating a raw pointer from a valid reference is safe, but dereferencing it requires `unsafe` because the compiler cannot guarantee the pointer is valid at that point. This is one of the four "unsafe superpowers" in Rust (Book Ch 20.1).',
+      },
     ],
   },
 
@@ -1617,6 +1774,17 @@ export const rustPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           'Wide `memcpy` frames in a Rust flamegraph almost always mean *value-typed data is being copied implicitly*. With a 256-byte `Record`, every `r.clone()`, every `Vec::push` that triggers a regrowth, and every comparison-swap during `sort_by_key` copies the full 256 bytes. Standard remediations, in order: pre-allocate with `Vec::with_capacity(items.len())` to remove regrowths (each regrowth `memcpy`s the entire buffer); store `Box<Record>` so reorderings move 8-byte pointers; sort indices `Vec<usize>` instead of values; partition the struct into a "struct of arrays" layout when the hot pass only reads a couple of fields. (B) is wrong: `__memcpy_avx_unaligned_erms` may live in glibc but it is being called from *your* code path. (C) and (D) misdiagnose the root cause — the regression is volume of bytes copied, not the memcpy implementation or optimisation level.',
+      },
+      {
+        kind: 'code',
+        id: 'rust-10-code-1',
+        prompt:
+          'Write a custom iterator adapter. Implement a `Doubler` struct that wraps any `Iterator<Item = i32>` and yields each element multiplied by 2. Then use it to double the values `[1, 2, 3, 4, 5]` and print their sum.',
+        boilerplate:
+          'struct Doubler<I: Iterator<Item = i32>> {\n    inner: I,\n}\n\nimpl<I: Iterator<Item = i32>> Iterator for Doubler<I> {\n    type Item = i32;\n\n    fn next(&mut self) -> Option<Self::Item> {\n        // TODO: call self.inner.next() and map the value to double it\n        // Hint: self.inner.next().map(|x| x * 2)\n    }\n}\n\nfn main() {\n    let nums = vec![1, 2, 3, 4, 5];\n    let doubled = Doubler { inner: nums.into_iter() };\n    let sum: i32 = doubled.sum();\n    println!("{}", sum);\n}\n',
+        expectedOutput: '30',
+        explanation:
+          'Custom iterator adapters implement the `Iterator` trait by wrapping an inner iterator and transforming its output. `Doubler` delegates to `self.inner.next()` and maps the result. The sum of [2,4,6,8,10] = 30. This pattern is how the standard library builds adapters like `Map`, `Filter`, etc.',
       },
     ],
   },

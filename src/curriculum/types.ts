@@ -26,6 +26,14 @@ export interface CodeTaskCheck {
 
 export type KnowledgeCheck = MultipleChoiceCheck | CodeTaskCheck;
 
+export interface VideoResource {
+  title: string;
+  youtubeId: string;    // e.g. "rfscVS0vtbw"
+  channelName: string;  // e.g. "freeCodeCamp.org"
+  duration?: string;    // e.g. "4 hours"
+  isPlaylist?: boolean; // if true, loads a YouTube playlist instead of a video
+}
+
 export interface Phase {
   id: string;                  // e.g. 'python-1' through 'python-10'
   language: Language;
@@ -34,6 +42,7 @@ export interface Phase {
   timeEstimate: string;        // e.g. "4-6 hours"
   intro: string;               // 1-2 paragraphs, markdown
   topics: Topic[];             // 3-8 items, each with URL
+  video?: VideoResource;       // optional video resource
   deliverable: string;         // concrete project artifact
   checks: KnowledgeCheck[];    // >= 3, at least one CodeTaskCheck
 }

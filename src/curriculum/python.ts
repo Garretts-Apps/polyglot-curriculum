@@ -1,6 +1,54 @@
 import type { Phase } from './types';
 
 export const pythonPhases: Phase[] = [
+  // ─── Level 0 ─────────────────────────────────────────────────────────────
+  {
+    id: 'python-0',
+    language: 'python',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: "Welcome to Python! In this level, you'll verify your local Python setup and run your first print command in the browser. Absolute beginners start here.",
+    topics: [
+      {
+        label: 'Python Installation Guide',
+        url: 'https://realpython.com/installing-python/',
+        note: 'Official and community installation guides for all operating systems.'
+      },
+      {
+        label: 'Online Python Sandbox',
+        url: 'https://www.python.org/shell/',
+        note: 'Run Python code directly in your browser without any setup.'
+      }
+    ],
+    deliverable: 'Verify python --version in your command line and run a print statement in the browser console.',
+    checks: [
+      {
+        kind: 'code',
+        id: 'python-0-code-1',
+        prompt: 'Use the `print()` function to output `Hello, World!` to the console.',
+        boilerplate: '# Output: Hello, World!\nprint("")\n',
+        expectedOutput: 'Hello, World!',
+        explanation: 'The `print()` function outputs text to the standard output console. Single or double quotes are both valid string delimiters in Python.'
+      },
+      {
+        kind: 'mcq',
+        id: 'python-0-mcq-1',
+        prompt: 'What is the standard file extension used for Python scripts?',
+        options: ['.py', '.pyt', '.python', '.txt'],
+        correctIndex: 0,
+        explanation: 'Python scripts use the `.py` file extension. You run them with the terminal command `python filename.py`.'
+      },
+      {
+        kind: 'mcq',
+        id: 'python-0-mcq-2',
+        prompt: 'Which command is typically typed in the terminal to verify your Python installation version?',
+        options: ['python --version', 'python run', 'print python', 'py version'],
+        correctIndex: 0,
+        explanation: 'Running `python --version` (or `python3 --version`) outputs the active Python version to verify the setup.'
+      }
+    ]
+  },
   // ─── Level 1 ─────────────────────────────────────────────────────────────
   {
     id: 'python-1',
@@ -10,6 +58,12 @@ export const pythonPhases: Phase[] = [
     timeEstimate: '6-10 hours',
     intro:
       "By the end of this phase, you'll read short Python programs — if/elif chains, for/while loops, simple functions — and predict their output before running them. You'll know how indentation drives block structure, what counts as truthy, and how default arguments behave. To build the muscle, you'll write a `greet.py` CLI locally that takes a name and prints a personalised greeting with the current time — writing is how reading sticks.",
+    video: {
+      title: 'Python for Beginners - Full Course',
+      youtubeId: '_uQrJ0TkZlc',
+      channelName: 'Programming with Mosh',
+      duration: '6 hours',
+    },
     topics: [
       {
         label: 'The Python Tutorial (Chapters 1-5)',
@@ -185,6 +239,11 @@ export const pythonPhases: Phase[] = [
         note: 'Lists, dicts, sets, tuples — official tutorial with examples',
       },
       {
+        label: 'Dictionary Merging and Updating (PEP 584)',
+        url: 'https://peps.python.org/pep-0584/',
+        note: 'Using the | and |= operators to merge dictionaries in Python 3.9+',
+      },
+      {
         label: 'List Comprehensions',
         url: 'https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions',
         note: 'Compact syntax for building lists from iterables',
@@ -338,6 +397,29 @@ export const pythonPhases: Phase[] = [
         explanation:
           'In Python, `a = base; b = base` makes both names point to the SAME list object. Mutating through one name is visible through the other. To get independent lists make explicit copies with `.copy()`, `list(base)`, or `base[:]`. This aliasing bug is one of the most common sources of "spooky action at a distance" in Python code.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-2-mcq-10',
+        prompt:
+          'How do you sort a list of dictionaries `data = [{"name": "A", "age": 30}, {"name": "B", "age": 25}]` by the "age" key in ascending order?',
+        options: [
+          '`sorted(data, key=lambda x: x["age"])`',
+          '`data.sort(key="age")`',
+          '`sorted(data, by="age")`',
+          '`data.sort_by("age")`',
+        ],
+        correctIndex: 0,
+        explanation:
+          'The `sorted()` function (and `list.sort()` method) accepts a `key` parameter which must be a callable that extracts the comparison key from each element. `lambda x: x["age"]` is the idiomatic way to sort by a dictionary key.',
+      },
+      {
+        kind: 'code',
+        id: 'python-2-code-1',
+        prompt: 'Modify the list comprehension to square only the odd numbers from `1` to `5` (inclusive), then print the resulting list.',
+        boilerplate: '# Modify the list comprehension to square only odd numbers from 1 to 5 (inclusive)\nresult = [x for x in range(1, 6) if x % 2 == 0]\nprint(result)\n',
+        expectedOutput: '[1, 9, 25]',
+        explanation: 'A list comprehension follows the format `[expression for item in iterable if condition]`. To get the squares of odd numbers, we square `x` (`x**2`) and check if `x % 2 != 0`.'
+      }
     ],
   },
 
@@ -355,6 +437,11 @@ export const pythonPhases: Phase[] = [
         label: 'Modules (Python Tutorial Chapter 6)',
         url: 'https://docs.python.org/3/tutorial/modules.html',
         note: 'import system, packages, __init__.py, __all__',
+      },
+      {
+        label: 'Command-Line Arguments and Environment Variables',
+        url: 'https://docs.python.org/3/library/sys.html#sys.argv',
+        note: 'Reading basic command-line arguments via sys.argv and configuration via os.environ',
       },
       {
         label: 'Virtual Environments and Packages (Tutorial Chapter 12)',
@@ -510,6 +597,29 @@ export const pythonPhases: Phase[] = [
         explanation:
           'Python instance methods take an explicit first parameter (conventionally `self`). When you call `Item("widget", 10)`, Python prepends the instance, so the method actually receives THREE arguments — but the signature only declares two. The error message counts the call-site arguments, not the missing `self`. Add `self` as the first parameter.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-3-mcq-10',
+        prompt:
+          'How do you retrieve the value of an environment variable named `DATABASE_URL` in Python, providing a default if it is not set?',
+        options: [
+          '`import os; os.environ.get("DATABASE_URL", "default_val")`',
+          '`import os; os.environ["DATABASE_URL"] ?? "default_val"`',
+          '`import sys; sys.env["DATABASE_URL"]`',
+          '`os.getenv("DATABASE_URL") or raise`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`os.environ` is a dict-like object representing environment variables. Using `.get()` allows retrieving a value with an optional default. `os.getenv("DATABASE_URL", "default_val")` is also equivalent.',
+      },
+      {
+        kind: 'code',
+        id: 'python-3-code-1',
+        prompt: 'Define a custom exception named `NegativeValueError` that inherits from `ValueError`. Then, modify the `verify_positive` function to raise `NegativeValueError` if the input `n` is negative.',
+        boilerplate: '# Define NegativeValueError inheriting from ValueError\nclass NegativeValueError(Exception):\n    pass\n\ndef verify_positive(n: int) -> int:\n    # Raise NegativeValueError if n is negative\n    if n < 0:\n        pass\n    return n\n\ntry:\n    verify_positive(-10)\nexcept NegativeValueError:\n    print("Caught NegativeValueError successfully")\n',
+        expectedOutput: 'Caught NegativeValueError successfully',
+        explanation: 'Custom exceptions are defined by creating a class that inherits from `Exception` or any of its subclasses (like `ValueError`). They are raised using the `raise` keyword.'
+      }
     ],
   },
 
@@ -527,6 +637,21 @@ export const pythonPhases: Phase[] = [
         label: 'pathlib — Object-oriented filesystem paths',
         url: 'https://docs.python.org/3/library/pathlib.html',
         note: 'Path(), read_text(), write_text(), glob(), iterdir()',
+      },
+      {
+        label: 'argparse — Command-line option and argument parsing',
+        url: 'https://docs.python.org/3/library/argparse.html',
+        note: 'Writing robust, self-documenting CLI scripts with arguments and flags',
+      },
+      {
+        label: 'subprocess — Subprocess management',
+        url: 'https://docs.python.org/3/library/subprocess.html',
+        note: 'Running external system commands, capturing output, and handling return codes',
+      },
+      {
+        label: 'requests / httpx — Consuming Web APIs',
+        url: 'https://www.python-httpx.org/',
+        note: 'Making HTTP requests (GET, POST), handling headers, query params, and JSON responses',
       },
       {
         label: 'collections — Specialised container datatypes',
@@ -682,6 +807,29 @@ export const pythonPhases: Phase[] = [
         explanation:
           'mypy is correct: `email` could be `None`, and calling `.upper()` on `None` raises `AttributeError`. The fix is to narrow with a runtime check; after `if email is None: raise`, mypy knows `email: str` in the next statement. `cast` lies to the type checker without actually changing runtime behaviour — never use it to silence a legitimate complaint.',
       },
+      {
+        kind: 'mcq',
+        id: 'python-4-mcq-10',
+        prompt:
+          'What is the recommended, secure way to run a system command like `git status` and capture its text output in Python?',
+        options: [
+          '`subprocess.run(["git", "status"], capture_output=True, text=True)`',
+          '`os.system("git status")`',
+          '`subprocess.popen("git status")`',
+          '`subprocess.check_output("git status")`',
+        ],
+        correctIndex: 0,
+        explanation:
+          '`subprocess.run` with a list of arguments is the modern, secure way to execute processes (avoiding shell injection vulnerabilities). `capture_output=True` captures stdout/stderr, and `text=True` decodes the bytes to strings automatically.',
+      },
+      {
+        kind: 'code',
+        id: 'python-4-code-1',
+        prompt: 'Define a frozen dataclass named `Book` with two fields: `title` (a string) and `author` (a string). Ensure the dataclass is frozen (immutable).',
+        boilerplate: 'from dataclasses import dataclass\n\n# Define a frozen dataclass Book with title (str) and author (str)\nclass Book:\n    title: str\n    author: str\n\ntry:\n    book = Book("1984", "George Orwell")\n    print(book)\n    book.title = "Animal Farm"\nexcept Exception as e:\n    print("Dataclass is frozen")\n',
+        expectedOutput: 'Book(title=\'1984\', author=\'George Orwell\')\nDataclass is frozen',
+        explanation: 'Decorating a class with `@dataclass(frozen=True)` generates an immutable dataclass. Modifying any field on a frozen instance raises a `FrozenInstanceError`.'
+      }
     ],
   },
 
@@ -859,6 +1007,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           "TypedDict is a STATIC check; mypy refuses to upcast `dict[str, object]` because the runtime values' types are unknown. The honest fix at I/O boundaries is to validate explicitly with `isinstance` checks, or use Pydantic which generates the validation code for you. `cast` would silence mypy but leave the runtime exposed to bad data.",
       },
+      {
+        kind: 'code',
+        id: 'python-5-code-1',
+        prompt: 'Write a function `process_command(cmd: tuple[str, int]) -> str` that uses structural pattern matching (`match`/`case`) to handle commands: `"up"` and `"down"` with their associated values. Any other command should return `"Unknown command"`.',
+        boilerplate: 'def process_command(cmd: tuple[str, int]) -> str:\n    # Use match/case to handle ("up", value) and ("down", value)\n    match cmd:\n        case _:\n            return "Unknown command"\n\nprint(process_command(("up", 10)))\nprint(process_command(("down", 5)))\nprint(process_command(("left", 2)))\n',
+        expectedOutput: 'Moving up by 10\nMoving down by 5\nUnknown command',
+        explanation: 'Structural pattern matching (introduced in Python 3.10) using `match` and `case` allows matching the structure of sequences and binding matched values directly to local variables.'
+      }
     ],
   },
 
@@ -1030,6 +1186,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           "`@asynccontextmanager` generators must run the cleanup block — but if the caller's `async with` body raises, control returns to the generator AT the `yield` point as an exception. Without a `try/finally`, the line after `yield` is skipped and `close()` never runs. Always wrap the `yield` of a context-manager generator in `try/finally`.",
       },
+      {
+        kind: 'code',
+        id: 'python-6-code-1',
+        prompt: 'Write an asynchronous function `fetch_data(delay: float, value: int) -> int` that awaits `asyncio.sleep(delay)` and then returns `value`. Then, run two calls concurrently using `asyncio.gather` and print the sum of their returned values.',
+        boilerplate: 'import asyncio\n\n# Complete the async function to sleep and return the value\nasync def fetch_data(delay: float, value: int) -> int:\n    return value\n\nasync def main() -> None:\n    # Run fetch_data(0.01, 10) and fetch_data(0.02, 20) concurrently\n    results = await asyncio.gather(\n        fetch_data(0.01, 10),\n        fetch_data(0.02, 20)\n    )\n    print(sum(results))\n\nif __name__ == "__main__":\n    asyncio.run(main())\n',
+        expectedOutput: '30',
+        explanation: 'An `async def` function returns a coroutine. Awaiting `asyncio.sleep` yields control back to the event loop. `asyncio.gather` allows multiple coroutines to run concurrently.'
+      }
     ],
   },
 
@@ -1210,6 +1374,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           'CPython lists are dynamic arrays with geometric over-allocation (~1.125x growth). Most appends just write to a pre-allocated slot in O(1); occasional reallocations copy O(n) elements, but the amortised cost per append is still O(1). This is why `list` is preferred over `collections.deque` unless you also need O(1) `popleft`.',
       },
+      {
+        kind: 'code',
+        id: 'python-7-code-1',
+        prompt: 'Optimise string construction: modify the `build_string` function to construct a string containing the string representation of all numbers from `0` to `n-1` joined by commas, using the efficient `\',\'.join()` method with a generator expression.',
+        boilerplate: 'def build_string(n: int) -> str:\n    # Use \',\'.join() to join stringified numbers\n    return "".join(str(i) for i in range(n))\n\nif __name__ == "__main__":\n    print(build_string(5))\n',
+        expectedOutput: '0,1,2,3,4',
+        explanation: 'Using `\',\'.join(...)` is much more efficient than using `+=` inside a loop because it calculates the total size of the final string and makes a single allocation, whereas `+=` triggers multiple copies and allocations.'
+      }
     ],
   },
 
@@ -1390,6 +1562,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           "The `MissingGreenlet` exception is SQLAlchemy's signal that you used an `AsyncSession` from a sync context (or vice versa). FastAPI runs sync routes in a thread pool, but `AsyncSession`'s coroutines can only be awaited from a running event loop. Pick one mode and stick with it consistently across the request path.",
       },
+      {
+        kind: 'code',
+        id: 'python-8-code-1',
+        prompt: 'Define a Pydantic model named `Item` with `id` (int), `name` (str), and `price` (float, default 0.0) fields. Modify the `parse_item` function to correctly instantiate the `Item` model using dict unpacking.',
+        boilerplate: 'from pydantic import BaseModel\n\n# Define a Pydantic model named Item with id (int), name (str), and price (float, default 0.0)\nclass Item(BaseModel):\n    id: int\n    name: str\n    price: float = 0.0\n\ndef parse_item(data: dict) -> Item:\n    # Use dict unpacking to instantiate the Item model\n    return Item(data)\n\nif __name__ == "__main__":\n    item = parse_item({"id": 101, "name": "Laptop"})\n    print(f"{item.name}: {item.price}")\n',
+        expectedOutput: 'Laptop: 0.0',
+        explanation: 'Pydantic models inherit from `BaseModel`. You can instantiate them using keyword arguments, or by unpacking a dictionary with the `**` operator.'
+      }
     ],
   },
 
@@ -1568,6 +1748,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           'A `Formatter` only takes effect when attached to a Handler via `handler.setFormatter(...)`. Forgetting that step is one of the most common Python logging mistakes — the formatter class is correct, but the handler still uses the default plain-text formatter. Set the formatter on the handler BEFORE adding the handler to the logger.',
       },
+      {
+        kind: 'code',
+        id: 'python-9-code-1',
+        prompt: 'Create a generator context manager using `@contextmanager` named `resource` that prints `"setup"`, yields the string `"data"`, and ensures `"teardown"` is printed on exit using a `try`/`finally` block.',
+        boilerplate: 'from contextlib import contextmanager\n\n@contextmanager\ndef resource():\n    print("setup")\n    # Yield "data" and ensure "teardown" is printed even on error\n    try:\n        pass\n    finally:\n        print("teardown")\n\nif __name__ == "__main__":\n    with resource() as r:\n        print(r)\n',
+        expectedOutput: 'setup\ndata\nteardown',
+        explanation: 'Using the `@contextmanager` decorator, a generator can be used as a context manager. The code before the `yield` runs on entry, and the code after `yield` runs on exit. A `try/finally` block ensures that cleanup code runs even if exceptions are raised.'
+      }
     ],
   },
 
@@ -1750,6 +1938,14 @@ export const pythonPhases: Phase[] = [
         explanation:
           'Wheel filenames encode the (Python tag, ABI tag, platform tag). `macosx_14_0_x86_64` is Intel-only — Apple Silicon Macs need `macosx_*_arm64` or a `universal2` wheel that contains both architectures. The canonical solution is `cibuildwheel` (matrix CI build) so every supported platform is covered automatically on each release.',
       },
+      {
+        kind: 'code',
+        id: 'python-10-code-1',
+        prompt: 'Use the standard library `tomllib` module to parse a TOML-formatted configuration string and retrieve the project version from the `[project]` table.',
+        boilerplate: 'import tomllib\n\ndef parse_version(toml_str: str) -> str:\n    # Parse the TOML string and return the project version\n    data = tomllib.loads(toml_str)\n    return ""\n\nif __name__ == "__main__":\n    toml_config = \'[project]\\nname = "fastcount"\\nversion = "0.1.1"\'\n    print(parse_version(toml_config))\n',
+        expectedOutput: '0.1.1',
+        explanation: 'The `tomllib` module (available in Python 3.11+) provides the `loads` function to parse TOML-formatted strings into standard Python dictionaries.'
+      }
     ],
   },
 ];

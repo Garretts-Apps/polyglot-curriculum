@@ -1,9 +1,20 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { ProgressState, PhaseProgress } from './storage';
 import { loadLocal, saveLocal, DEFAULT_STATE, STORAGE_VERSION } from './storage';
 
-export function useProgress() {
+interface ProgressContextProps {
+  state: ProgressState;
+  hydrated: boolean;
+  setIntake: (intake: ProgressState['intake']) => void;
+  updatePhase: (phaseId: string, updater: (prev: PhaseProgress | undefined) => PhaseProgress) => void;
+  resetState: (next: ProgressState) => void;
+}
+
+const ProgressContext = createContext<ProgressContextProps | undefined>(undefined);
+
+export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<ProgressState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -11,15 +22,12 @@ export function useProgress() {
   // Hydrate from localStorage on mount, then merge with server if server is newer
   useEffect(() => {
     const local = loadLocal();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration only, reads localStorage once on mount
     setState(local);
     setHydrated(true);
     fetch('/api/progress')
       .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
       .then((server: ProgressState | null) => {
         if (server && server.version === STORAGE_VERSION) {
-          // Use functional setter to avoid clobbering local edits made while
-          // the server fetch was in flight.
           setState((curr) => {
             const serverDate = new Date(server.lastActiveAt).getTime();
             const currDate = new Date(curr.lastActiveAt).getTime();
@@ -68,7 +76,21 @@ export function useProgress() {
     [],
   );
 
-  const resetState = useCallback((next: ProgressState) => setState(next), []);
+  const resetState = useCallback((next: ProgressState) => {
+    setState(next);
+  }, []);
 
-  return { state, hydrated, setIntake, updatePhase, resetState };
+  return (
+    <ProgressContext.Provider value={{ state, hydrated, setIntake, updatePhase, resetState }}>
+      {children}
+    </ProgressContext.Provider>
+  );
+}
+
+export function useProgress() {
+  const context = useContext(ProgressContext);
+  if (context === undefined) {
+    throw new Error('useProgress must be used within a ProgressProvider');
+  }
+  return context;
 }

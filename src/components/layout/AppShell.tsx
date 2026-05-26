@@ -7,6 +7,9 @@ import { LANGUAGES } from '@/curriculum/types';
 import { TerminalCursor } from '@/components/ui/TerminalCursor';
 import { PathBreadcrumb } from '@/components/ui/PathBreadcrumb';
 
+import { useProgress } from '@/lib/use-progress';
+import { calculateGamification } from '@/lib/gamification';
+
 interface AppShellProps {
   children: ReactNode;
   /** When true, renders the LanguageNav slot below the top bar */
@@ -53,6 +56,9 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
   const onSettings = pathname.startsWith('/settings');
   const onIntake = pathname.startsWith('/intake');
 
+  const { state, hydrated } = useProgress();
+  const stats = calculateGamification(state);
+
   return (
     <div className="min-h-dvh flex flex-col">
       {/* Top bar — terminal header. Safe-area inset on top so the chrome
@@ -91,6 +97,27 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
               <PathBreadcrumb segments={segments} />
             </div>
           </div>
+
+          {/* Gamification stats */}
+          {hydrated && stats.xp > 0 && (
+            <div className="flex items-center gap-2.5 sm:gap-4 text-[10px] sm:text-xs font-mono text-[var(--fg-muted)] min-w-0">
+              <span className="flex items-center gap-0.5 sm:gap-1 shrink-0" title={`${stats.streak} day streak`}>
+                <span>🔥</span>
+                <span className="text-[var(--fg)] font-semibold">{stats.streak}d</span>
+              </span>
+              <span className="flex items-center gap-0.5 sm:gap-1 shrink-0" title={`${stats.xp} experience points`}>
+                <span style={{ color: 'var(--accent-prompt)' }}>XP:</span>
+                <span className="text-[var(--fg)] font-semibold">{stats.xp}</span>
+              </span>
+              <span className="hidden md:flex items-center gap-1.5 min-w-0">
+                <span className="text-[var(--fg-dim)] shrink-0">rank:</span>
+                <span style={{ color: 'var(--accent-info)' }} className="font-semibold truncate">{stats.rank}</span>
+                <span className="text-[var(--fg-dim)] font-normal shrink-0 select-none">
+                  [{'#'.repeat(Math.floor(stats.percentToNext / 10)) + '.'.repeat(10 - Math.floor(stats.percentToNext / 10))}]
+                </span>
+              </span>
+            </div>
+          )}
 
           {/* Right actions */}
           <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">

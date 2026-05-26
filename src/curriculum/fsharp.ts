@@ -2,12 +2,68 @@ import type { Phase } from './types';
 
 export const fsharpPhases: Phase[] = [
   {
+    id: 'fsharp-0',
+    language: 'fsharp',
+    level: 0,
+    title: 'Setup & Hello World',
+    timeEstimate: '0.5-1 hours',
+    intro: `Welcome to F#! In this phase you'll verify your local .NET SDK installation and run your first F# script. If you've never written a line of F# before, this is the place to start.
+
+By the end you'll have a working development environment and the confidence that your toolchain is ready for the phases ahead.`,
+    topics: [
+      {
+        label: 'Download .NET SDK (dotnet.microsoft.com)',
+        url: 'https://dotnet.microsoft.com/download',
+      },
+      {
+        label: 'Try F# in the Browser (try.fsharp.org)',
+        url: 'https://try.fsharp.org/',
+      },
+    ],
+    deliverable:
+      'Verify dotnet --version in your command line and run a print statement in the browser console.',
+    checks: [
+      {
+        id: 'fsharp-0-code-1',
+        kind: 'code',
+        prompt: 'Write a complete F# expression that prints "Hello, World!" to the console.',
+        boilerplate: '// Output: Hello, World!\nprintfn "Hello, World!"\n',
+        expectedOutput: 'Hello, World!',
+        explanation: 'F# uses the printfn function for printing with a new line, which is type-safe and idiomatic.',
+      },
+      {
+        id: 'fsharp-0-mcq-1',
+        kind: 'mcq',
+        prompt:
+          'Which function is used to print a line of text to standard output in F#?',
+        options: ['printfn', 'Console.Print', 'echo', 'println'],
+        correctIndex: 0,
+        explanation: 'The printfn function prints formatted text to stdout followed by a newline.',
+      },
+      {
+        id: 'fsharp-0-mcq-2',
+        kind: 'mcq',
+        prompt:
+          'What is the standard file extension for F# source files?',
+        options: ['.fs', '.fsharp', '.f#', '.fn'],
+        correctIndex: 0,
+        explanation: 'F# source code files use the extension ".fs".',
+      },
+    ],
+  },
+  {
     id: 'fsharp-1',
     language: 'fsharp',
     level: 1,
     title: 'F# Fundamentals — let, Inference, Pipelines',
     timeEstimate: '4-6 hours',
     intro: `By the end of this phase, you'll read everyday F# fluently — \`let\` bindings, type inference, curried function signatures like \`int -> int -> int\`, and pipelines built from \`|>\` and \`List.map\`/\`filter\`/\`sum\`. You'll predict pipeline output without running it, and tell at a glance whether \`add 5\` is a partial application or a full call. To build the muscle, you'll write \`greet.fsx\` locally with \`dotnet fsi\` — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and run \`dotnet fsi greet.fsx -- Ada\` to see your first F# program in action.`,
+    video: {
+      title: 'F# Functional Programming Tutorial',
+      youtubeId: '25D40A46-Yg',
+      channelName: 'freeCodeCamp.org',
+      duration: '45 mins',
+    },
     topics: [
       {
         label: 'F# Language Overview (learn.microsoft.com)',
@@ -171,6 +227,14 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 2,
         explanation:
           'The signature `greet : string -> unit` requires a `string` argument. Passing `42` (an `int`) triggers FS0001. Either change the call site to `greet "42"` / `greet "World"`, or convert: `greet (string 42)`. Removing the annotation would just push the type error to the call site differently.',
+      },
+      {
+        id: 'fsharp-1-code-1',
+        kind: 'code',
+        prompt: 'Use the pipe operator (`|>`) to pass the integer `5` through the functions `square` and `addTen`, and print the final result.',
+        boilerplate: 'let square x = x * x\nlet addTen x = x + 10\n\n// TODO: Pipe 5 through square and addTen, then print the result using printfn "%d"\n',
+        expectedOutput: '35',
+        explanation: 'Piping passes the value on the left as the final argument to the function on the right. `5 |> square |> addTen |> printfn "%d"` evaluates to 35.',
       },
     ],
   },
@@ -346,6 +410,14 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'When the same field set matches more than one record type in scope, F# may pick the wrong one (or fail to disambiguate). Copy-and-update `{ ada with Age = ada.Age + 1 }` carries the nominal type from `ada`, so the result is unambiguously `Person`, and it documents intent better than retyping every field.',
       },
+      {
+        id: 'fsharp-2-code-1',
+        kind: 'code',
+        prompt: 'Implement pattern matching for a `Payment` discriminated union to return description strings.',
+        boilerplate: 'type Payment = \n    | CreditCard of number: string\n    | PayPal of email: string\n    | Cash\n\nlet getPaymentMethodInfo payment = \n    match payment with\n    | CreditCard num -> sprintf "Paid with Credit Card: %s" num\n    // TODO: Match PayPal and Cash cases\n\nprintfn "%s" (getPaymentMethodInfo (CreditCard "1234-5678"))\nprintfn "%s" (getPaymentMethodInfo (PayPal "ada@example.com"))\nprintfn "%s" (getPaymentMethodInfo Cash)\n',
+        expectedOutput: 'Paid with Credit Card: 1234-5678\nPaid with PayPal: ada@example.com\nPaid with Cash',
+        explanation: 'F# discriminated unions allow holding associated data in each case, which is retrieved via pattern matching.',
+      },
     ],
   },
 
@@ -519,6 +591,14 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           '`:? System.FormatException` is a typed pattern that only catches `FormatException` and its subtypes — `FileNotFoundException` is a sibling, not a subtype, so the exception propagates out of `try/with` and crashes the caller. Add the specific case (`| :? System.IO.FileNotFoundException as ex -> Error ex.Message`) or a final wildcard (`| ex -> Error ex.Message`) to cover unanticipated errors.',
+      },
+      {
+        id: 'fsharp-3-code-1',
+        kind: 'code',
+        prompt: 'Write a function `safeDivide` that takes two integers (`x` and `y`). It should try to compute `x / y` and return `Ok (x / y)`. If a `System.DivideByZeroException` is thrown, catch it and return `Error "Cannot divide by zero".`',
+        boilerplate: 'let safeDivide x y =\n    try\n        Ok (x / y)\n    with\n    // TODO: Catch System.DivideByZeroException and return Error "Cannot divide by zero"\n\nmatch safeDivide 10 2 with\n| Ok val -> printfn "Success: %d" val\n| Error msg -> printfn "Failed: %s" msg\n\nmatch safeDivide 10 0 with\n| Ok val -> printfn "Success: %d" val\n| Error msg -> printfn "Failed: %s" msg\n',
+        expectedOutput: 'Success: 5\nFailed: Cannot divide by zero',
+        explanation: 'F# exception handling uses the try/with syntax. Specific .NET exception types are matched using the `:? ExceptionType` pattern.',
       },
     ],
   },
@@ -694,6 +774,14 @@ export const fsharpPhases: Phase[] = [
         explanation:
           '`let` inside a CE is a plain non-monadic binding — it just stores the value (here `Result<int,string>`) and the CE moves on. Only `let!` calls `Bind`, which is where short-circuiting on `Error` happens. The fix is `let! x = validateAge a`. If you do not need `x`, use `do! validateAge a |> Result.map ignore` or similar.',
       },
+      {
+        id: 'fsharp-4-code-1',
+        kind: 'code',
+        prompt: 'Create an async workflow named `doubleAsync` that takes an integer `x`, waits (sleeps) for 10 milliseconds using `Async.Sleep`, and then returns the doubled value of `x`.',
+        boilerplate: 'let doubleAsync x = async {\n    // TODO: Sleep 10ms and return double the value of x\n\n}\n\nlet result = doubleAsync 21 |> Async.RunSynchronously\nprintfn "%d" result\n',
+        expectedOutput: '42',
+        explanation: 'F# async workflows use the `async { ... }` computation expression block. Asynchronous sleep is done with `do! Async.Sleep 10`, and return values are returned with `return`.',
+      },
     ],
   },
 
@@ -868,6 +956,14 @@ export const fsharpPhases: Phase[] = [
         explanation:
           'Type providers run inside the compiler/IDE on the sample you point at. A 250 MB sample means every type-check pass re-parses it, which kills IntelliSense responsiveness. Best practice: keep `sample.json` small but structurally representative; load the production file at runtime via `Tx.Load("…")`. This is the design-time tooling cost the docs warn about.',
       },
+      {
+        id: 'fsharp-5-code-1',
+        kind: 'code',
+        prompt: 'Define a type `StudentProvider` using `JsonProvider` from `FSharp.Data` with the inline JSON sample `[{"name": "Ada", "age": 20}]`. Then, fetch the first sample row and print its Name and Age.',
+        boilerplate: '#r "nuget: FSharp.Data, 6.4.0"\nopen FSharp.Data\n\n// TODO: Define a type StudentProvider using JsonProvider with the inline sample json\n\nlet sample = StudentProvider.GetSamples() |> Seq.head\nprintfn "%s is %d" sample.Name sample.Age\n',
+        expectedOutput: 'Ada is 20',
+        explanation: 'Using `JsonProvider<"...">` dynamically generates a type based on the structure of the JSON sample. At compile time, the properties `Name` and `Age` are inferred and made available.',
+      },
     ],
   },
 
@@ -1037,6 +1133,14 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           '`let` is a plain binding — the `Result` value sits there untouched and the CE proceeds to `printfn` regardless. Only `let!` invokes `builder.Bind`, which is where `Error` causes short-circuit. The fix is `let! n = if ... then Ok name else Error "name empty"`. Then on `Error`, `Bind` returns `Error` immediately and never reaches `printfn`.',
+      },
+      {
+        id: 'fsharp-6-code-1',
+        kind: 'code',
+        prompt: 'Implement the `Return` method of `OptionBuilder` to wrap a value in `Some`.',
+        boilerplate: 'type OptionBuilder() =\n    member _.Bind(m, f) = match m with Some v -> f v | None -> None\n    // TODO: Implement Return(v) to wrap a value in Some\n    member _.Return(v) = \n\nlet maybe = OptionBuilder()\n\nlet addOptions x y =\n    maybe {\n        let! a = x\n        let! b = y\n        return a + b\n    }\n\nprintfn "%A" (addOptions (Some 5) (Some 10))\nprintfn "%A" (addOptions (Some 5) None)\n',
+        expectedOutput: 'Some 15\nNone',
+        explanation: 'A custom computation expression builder requires `Bind` (to handle `let!`) and `Return` (to handle `return`). For options, `Bind` pattern matches on `Some` and `None`, and `Return` wraps the value in `Some`.',
       },
     ],
   },
@@ -1212,6 +1316,14 @@ export const fsharpPhases: Phase[] = [
         explanation:
           '`a >=> b >=> c` runs `a` first, then `b`, then `c`. Each step can short-circuit by returning `None`. The auth handler has to run **before** the route emits a response, otherwise the response is already written by the time auth gets to reject. Put cross-cutting handlers (auth, content-type) at the front of the chain.',
       },
+      {
+        id: 'fsharp-7-code-1',
+        kind: 'code',
+        prompt: 'Implement the Kleisli composition operator `>=>` (fish operator) that composes two option-returning functions. If the first function returns `Some v`, the second function should run with `v`; otherwise, return `None`.',
+        boilerplate: '// TODO: Implement the >=> operator to chain two option-returning functions\nlet (>=>) f g = \n\nlet addOne x = Some (x + 1)\nlet double x = Some (x * 2)\n\nlet pipeline = addOne >=> double\nprintfn "%A" (pipeline 5)\n',
+        expectedOutput: 'Some 12',
+        explanation: 'The fish operator `>=>` composes two functions of type `\'a -> \'b option` and `\'b -> \'c option` into a single function `\'a -> \'c option`, propagating `None` if any step fails.',
+      },
     ],
   },
 
@@ -1382,6 +1494,14 @@ export const fsharpPhases: Phase[] = [
         explanation:
           '`run` does **not** require the parser to consume the entire input; it returns whatever `pint32` matched (`42`) and leaves `"abc"` in the buffer. Sequence with `eof`: `pint32 .>> eof` (or `.>> spaces .>> eof` to allow trailing whitespace). Now `"42abc"` will fail at `eof` with a useful error.',
       },
+      {
+        id: 'fsharp-8-code-1',
+        kind: 'code',
+        prompt: 'Use `FParsec` to create a parser `p` that parses a float using `pfloat`, followed by a character `\'m\'` (using `pchar`), and returns just the float. Print the parsed float on success.',
+        boilerplate: '#r "nuget: FParsec, 1.1.1"\nopen FParsec\n\n// TODO: Define a parser `p` that parses a float and then the character \'m\', returning only the float\nlet p = \n\nmatch run p "123.45m" with\n| Success(value, _, _) -> printfn "Value: %g" value\n| Failure(err, _, _) -> printfn "Error: %s" err\n',
+        expectedOutput: 'Value: 123.45',
+        explanation: 'FParsec provides `pfloat` and `pchar`. The `.>>` combinator sequences two parsers and keeps only the result of the left one (the float), discarding the right result (the character \'m\').',
+      },
     ],
   },
 
@@ -1551,6 +1671,14 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           'Inside an agent\'s `async { }` loop you must use async equivalents. `PostAndReply` blocks the current thread, which is the thread the agent uses to process the next message — it can never return because the agent that owes you a reply may itself depend on the blocked agent. `PostAndAsyncReply` yields back to the scheduler so other work can progress.',
+      },
+      {
+        id: 'fsharp-9-code-1',
+        kind: 'code',
+        prompt: 'Implement a `MailboxProcessor` agent that receives integer messages and keeps a running total of the sum. When it receives a request for the current count, it replies via an `AsyncReplyChannel<int>`.',
+        boilerplate: 'type Msg =\n    | Add of int\n    | GetSum of AsyncReplyChannel<int>\n\nlet counter = MailboxProcessor.Start(fun inbox ->\n    let rec loop sum = async {\n        let! msg = inbox.Receive()\n        match msg with\n        | Add n -> \n            return! loop (sum + n)\n        | GetSum channel ->\n            // TODO: Reply with the current sum and recurse with loop sum\n\n    }\n    loop 0)\n\ncounter.Post(Add 10)\ncounter.Post(Add 20)\nlet result = counter.PostAndReply(GetSum)\nprintfn "Sum: %d" result\n',
+        expectedOutput: 'Sum: 30',
+        explanation: 'A stateful agent uses a recursive loop function to pass state updates. When handling `Add n`, it recurses with `sum + n`. When handling `GetSum channel`, it calls `channel.Reply(sum)` and recurses with `sum`.',
       },
     ],
   },
@@ -1725,6 +1853,14 @@ export const fsharpPhases: Phase[] = [
         correctIndex: 0,
         explanation:
           'In Elmish, every `update` produces a new model and the entire `view` re-runs. The `view` function itself is cheap (it just produces a virtual-DOM description), but expensive sub-components need memoisation (Feliz `React.memo` / `React.useMemo`) so they only re-render when their inputs actually change. Do **not** introduce mutation — that breaks time-travel debugging and predictable state. Keep `update` pure; optimise rendering separately.',
+      },
+      {
+        id: 'fsharp-10-code-1',
+        kind: 'code',
+        prompt: 'Implement a smart constructor `create` inside the `ZipCode` module that validates that a ZIP code is exactly 5 characters long. It should return `Ok (ZipCode s)` if valid, and `Error "Invalid length"` otherwise.',
+        boilerplate: 'type ZipCode = private ZipCode of string\n\nmodule ZipCode =\n    // TODO: Implement the create function that returns Result<ZipCode, string>\n    let create (s: string) : Result<ZipCode, string> =\n\n    let value (ZipCode s) = s\n\nmatch ZipCode.create "12345" with\n| Ok zip -> printfn "Valid: %s" (ZipCode.value zip)\n| Error err -> printfn "Error: %s" err\n\nmatch ZipCode.create "123" with\n| Ok zip -> printfn "Valid: %s" (ZipCode.value zip)\n| Error err -> printfn "Error: %s" err\n',
+        expectedOutput: 'Valid: 12345\nError: Invalid length',
+        explanation: 'Smart constructors enforce domain invariants at the type boundary. Making the constructor case private prevents invalid initialization, and only the validating factory function can produce values of this type.',
       },
     ],
   },

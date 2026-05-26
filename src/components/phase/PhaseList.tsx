@@ -160,11 +160,14 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
             const isBelowStart = phase.level <= startLevel;
             const isCompleted = progress?.completed ?? false;
 
-            // A phase is locked if it's not the first visible phase and the
-            // previous phase hasn't met the 80% pass threshold.
+            // A phase is locked if it's not the first visible phase, the previous
+            // phase is above our starting level, and the previous phase hasn't
+            // met the 80% pass threshold.
             const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
             const isLocked =
-              prevPhase !== undefined && !phasePassed(prevPhase, state.phases[prevPhase.id]);
+              prevPhase !== undefined &&
+              prevPhase.level > startLevel &&
+              !phasePassed(prevPhase, state.phases[prevPhase.id]);
 
             const rowState = getRowState({
               isBelowStart,

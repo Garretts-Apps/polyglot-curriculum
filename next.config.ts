@@ -30,6 +30,7 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+  "frame-src 'self' https://www.youtube-nocookie.com",
   "upgrade-insecure-requests",
 ].join("; ");
 
