@@ -19,11 +19,12 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export async function proxy(request: NextRequest): Promise<NextResponse> {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // Fail closed if env is misconfigured
+  // While initializing, return a service unavailable message
   if (!supabaseUrl || !supabaseAnonKey) {
     return new NextResponse(
       'Service misconfigured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set',

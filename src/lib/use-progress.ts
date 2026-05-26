@@ -15,7 +15,7 @@ export function useProgress() {
     setState(local);
     setHydrated(true);
     fetch('/api/progress')
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
       .then((server: ProgressState | null) => {
         if (server && server.version === STORAGE_VERSION) {
           // Use functional setter to avoid clobbering local edits made while

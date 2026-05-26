@@ -183,6 +183,7 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
               >
                 <Link
                   href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                  onClick={(e) => { if (isLocked) e.preventDefault(); }}
                   aria-disabled={isLocked}
                   className="group relative grid items-center transition-colors duration-100"
                   style={{
@@ -311,6 +312,7 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
             <li key={phase.id}>
               <Link
                 href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                onClick={(e) => { if (isLocked) e.preventDefault(); }}
                 aria-disabled={isLocked}
                 className="group block relative border px-3 py-3 transition-colors duration-100"
                 style={{
