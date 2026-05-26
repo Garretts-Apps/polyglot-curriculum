@@ -16,6 +16,7 @@ export type PhaseProgress = {
   level: number;
   completed: boolean;
   completedAt?: string;
+  credentialId?: string;
   notes: string; // markdown notes from user
   checkResults: Record<string, CheckResult>;
 };

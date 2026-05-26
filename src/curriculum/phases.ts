@@ -18,3 +18,7 @@ const PHASES_BY_LANGUAGE: Record<Language, Phase[]> = {
 export function getPhasesForLanguage(language: Language): Phase[] {
   return PHASES_BY_LANGUAGE[language] ?? [];
 }
+
+export function getAllPhases(): Phase[] {
+  return Object.values(PHASES_BY_LANGUAGE).flat();
+}

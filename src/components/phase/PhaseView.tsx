@@ -118,13 +118,29 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
     [phase.id, phase.language, phase.level, updatePhase],
   );
 
-  const handleMarkComplete = useCallback(() => {
+  const handleMarkComplete = useCallback(async () => {
+    let credentialId: string | undefined;
+    try {
+      const res = await fetch('/api/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: phase.language, phaseLevel: phase.level }),
+      });
+      if (res.ok) {
+        const json = await res.json() as { id?: string };
+        credentialId = json.id;
+      }
+    } catch {
+      // credential issuance is best-effort — don't block completion
+    }
+
     updatePhase(phase.id, (prev) => ({
       phaseId: phase.id,
       language: phase.language,
       level: phase.level,
       completed: true,
       completedAt: new Date().toISOString(),
+      credentialId,
       notes: prev?.notes ?? '',
       checkResults: prev?.checkResults ?? {},
     }));
@@ -483,6 +499,19 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
                 </span>
               )}
             </p>
+            {phaseProgress.credentialId && (
+              <a
+                href={`/cert/${phaseProgress.credentialId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono inline-flex items-center gap-1 hover:underline"
+                style={{ color: accentColor }}
+              >
+                <span aria-hidden="true">[⬡</span>
+                <span>view credential</span>
+                <span aria-hidden="true">]</span>
+              </a>
+            )}
           </div>
         ) : thresholdMet ? (
           <button
