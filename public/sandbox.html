@@ -6,6 +6,33 @@
 </head>
 <body style="background: transparent; margin: 0; padding: 0;">
   <script>
+    // Shim Web Storage so Pyodide can initialise inside a sandboxed iframe.
+    // Without allow-same-origin, reading window.sessionStorage / localStorage
+    // throws SecurityError. We expose in-memory replacements so Pyodide's
+    // internal cache lookups become no-ops instead of crashing.
+    (function shimStorage() {
+      const createMemoryStorage = () => {
+        const data = new Map();
+        return {
+          getItem: (k) => (data.has(String(k)) ? data.get(String(k)) : null),
+          setItem: (k, v) => { data.set(String(k), String(v)); },
+          removeItem: (k) => { data.delete(String(k)); },
+          clear: () => { data.clear(); },
+          key: (i) => Array.from(data.keys())[i] ?? null,
+          get length() { return data.size; },
+        };
+      };
+      for (const name of ['sessionStorage', 'localStorage']) {
+        try {
+          Object.defineProperty(window, name, {
+            value: createMemoryStorage(),
+            configurable: true,
+            writable: false,
+          });
+        } catch { /* non-configurable in this browser; nothing we can do */ }
+      }
+    })();
+
     let pyodide = null;
     let pyodideLoadingPromise = null;
 
