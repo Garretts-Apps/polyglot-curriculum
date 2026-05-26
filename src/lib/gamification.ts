@@ -1,5 +1,6 @@
 import type { ProgressState } from './storage';
 import type { Language } from '@/curriculum/types';
+import { getPhasesForLanguage } from '@/curriculum/phases';
 
 export interface GamificationStats {
   xp: number;
@@ -25,17 +26,38 @@ const RANKS = [
   { name: 'root@polyglot', xp: 25000 },
 ];
 
+const XP_MCQ = 25;
+const XP_CODE = 75;
+const XP_PHASE = 250;
+
 /**
  * Calculates user gamification metrics dynamically from their progress state.
+ * Only checks that currently exist in the curriculum are counted — stale stored
+ * results (from removed or renamed checks) are silently ignored.
  */
 export function calculateGamification(state: ProgressState): GamificationStats {
   let xp = 0;
   const activeDates = new Set<string>();
 
+  // Build a lookup of every check currently in the curriculum, keyed by check ID.
+  // This is the authoritative set — stored results outside this set don't earn XP.
+  const checkKindById = new Map<string, 'mcq' | 'code'>();
+  const seenLanguages = new Set<Language>();
+  for (const progress of Object.values(state.phases)) {
+    if (!seenLanguages.has(progress.language)) {
+      seenLanguages.add(progress.language);
+      for (const phase of getPhasesForLanguage(progress.language)) {
+        for (const check of phase.checks) {
+          checkKindById.set(check.id, check.kind);
+        }
+      }
+    }
+  }
+
   // 1. Calculate XP & gather activity timestamps
   for (const [, progress] of Object.entries(state.phases)) {
     if (progress.completed) {
-      xp += 500;
+      xp += XP_PHASE;
       if (progress.completedAt) {
         const dateStr = progress.completedAt.split('T')[0];
         if (dateStr) activeDates.add(dateStr);
@@ -43,16 +65,15 @@ export function calculateGamification(state: ProgressState): GamificationStats {
     }
 
     for (const [, check] of Object.entries(progress.checkResults)) {
-      if (check.status === 'pass') {
-        // Find check details to differentiate MCQ vs Code tasks
-        // We look at the check ID naming convention (contains "-code-" or "-mcq-")
-        const isCode = check.checkId.includes('-code-');
-        xp += isCode ? 150 : 50;
+      if (check.status !== 'pass') continue;
+      const kind = checkKindById.get(check.checkId);
+      if (!kind) continue; // orphaned result — check no longer in curriculum
 
-        if (check.lastAttemptAt) {
-          const dateStr = check.lastAttemptAt.split('T')[0];
-          if (dateStr) activeDates.add(dateStr);
-        }
+      xp += kind === 'code' ? XP_CODE : XP_MCQ;
+
+      if (check.lastAttemptAt) {
+        const dateStr = check.lastAttemptAt.split('T')[0];
+        if (dateStr) activeDates.add(dateStr);
       }
     }
   }

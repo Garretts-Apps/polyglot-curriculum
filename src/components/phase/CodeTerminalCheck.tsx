@@ -6,6 +6,7 @@ import { transpileCode } from '@/lib/runner';
 import { Markdown } from '@/components/ui/Markdown';
 import { Button } from '@/components/ui/Button';
 import { Confetti } from '@/components/ui/Confetti';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
 
 interface CodeTerminalCheckProps {
   check: CodeTaskCheck;
@@ -432,10 +433,13 @@ export function CodeTerminalCheck({
         >
           {error ? (
             <div className="text-[var(--accent-error)] select-text whitespace-pre-wrap">
-              {error}
+              {error}{isRunning && <TerminalCursor />}
             </div>
           ) : (
-            <div className="select-text whitespace-pre-wrap">{output || '(Terminal is idle)'}</div>
+            <div className="select-text whitespace-pre-wrap">
+              {output || (isRunning ? '' : '(Terminal is idle)')}
+              {isRunning && <TerminalCursor />}
+            </div>
           )}
         </div>
       </div>
