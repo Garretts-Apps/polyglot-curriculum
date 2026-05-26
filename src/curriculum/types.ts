@@ -15,7 +15,16 @@ export interface MultipleChoiceCheck {
   explanation: string;         // shown after answer
 }
 
-export type KnowledgeCheck = MultipleChoiceCheck;
+export interface CodeTaskCheck {
+  kind: 'code';
+  id: string;                  // unique within phase
+  prompt: string;              // markdown description of the task
+  boilerplate: string;         // prefilled boilerplate code
+  expectedOutput: string;      // expected output substring in stdout to pass
+  explanation: string;         // shown after code passes validation
+}
+
+export type KnowledgeCheck = MultipleChoiceCheck | CodeTaskCheck;
 
 export interface Phase {
   id: string;                  // e.g. 'python-1' through 'python-10'

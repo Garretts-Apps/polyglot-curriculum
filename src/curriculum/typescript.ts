@@ -45,6 +45,14 @@ export const typescriptPhases: Phase[] = [
       'Build locally: a `cli/greet.ts` Node CLI (`tsx` or `bun run`) that takes argv name and prints greeting with ISO timestamp. Zero `any` annotations. Passes `tsc --strict`.',
     checks: [
       {
+        kind: 'code',
+        id: 'typescript-1-code-1',
+        prompt: 'Write a function `sumArray` that takes an array of numbers and returns their sum. Print the result of calling `sumArray([10, 20, 30])` to the console.',
+        boilerplate: `function sumArray(numbers: number[]): number {\n  // Sum the numbers in the array\n  return 0;\n}\n\nconsole.log(sumArray([10, 20, 30]));\n`,
+        expectedOutput: '60',
+        explanation: 'Using `.reduce((acc, curr) => acc + curr, 0)` or a `for...of` loop is the standard way to sum values in an array in TypeScript/JavaScript.'
+      },
+      {
         kind: 'mcq',
         id: 'ts1-mcq1',
         prompt:

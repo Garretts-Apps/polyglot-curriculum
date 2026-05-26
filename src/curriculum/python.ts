@@ -41,6 +41,14 @@ export const pythonPhases: Phase[] = [
       'Build locally: a `greet.py` CLI that takes a name argument (via `sys.argv` or `input()`) and prints a personalised greeting along with the current time using `datetime.now()`. Should handle missing arguments gracefully.',
     checks: [
       {
+        kind: 'code',
+        id: 'python-1-code-1',
+        prompt: 'Write a program that uses a `for` loop to print numbers from `1` to `3` (each on a new line).',
+        boilerplate: `# Write a for loop to print numbers 1, 2, and 3\nfor i in range(0, 0):\n    print(i)\n`,
+        expectedOutput: '1\n2\n3',
+        explanation: 'Using `for i in range(1, 4):` iterates over `1`, `2`, and `3`. The `range` function stops before the upper bound (4).'
+      },
+      {
         kind: 'mcq',
         id: 'python-1-mcq-1',
         prompt: 'Which of the following is a valid Python f-string?',

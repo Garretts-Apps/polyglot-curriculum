@@ -390,7 +390,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
               : result?.status === 'fail'
                 ? 'fail'
                 : 'pending';
-            const kindLabel = 'multiple-choice';
+            const kindLabel = check.kind === 'code' ? 'code-task' : 'multiple-choice';
 
             return (
               <article key={check.id}>
@@ -424,6 +424,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
                 </div>
                 <CheckRenderer
                   check={check}
+                  language={phase.language}
                   checkResult={result}
                   onResult={handleResult}
                 />
