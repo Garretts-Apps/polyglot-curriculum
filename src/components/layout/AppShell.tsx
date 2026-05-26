@@ -55,6 +55,7 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
   const segments = buildSegments(pathname);
   const onSettings = pathname.startsWith('/settings');
   const onIntake = pathname.startsWith('/intake');
+  const onCreds = pathname.startsWith('/credentials');
 
   const { state, hydrated } = useProgress();
   const stats = calculateGamification(state);
@@ -121,6 +122,24 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
 
           {/* Right actions */}
           <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">
+            <Link
+              href="/credentials"
+              className={[
+                'inline-flex items-center justify-center font-mono text-xs leading-none',
+                'h-11 sm:h-8 px-2 border transition-colors duration-100',
+                'focus-visible:outline-1 focus-visible:outline-offset-2',
+                'active:bg-[color-mix(in_srgb,var(--accent-info)_14%,transparent)]',
+                onCreds
+                  ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                  : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-info)] hover:text-[var(--accent-info)]',
+              ].join(' ')}
+              aria-label="Credentials"
+              aria-current={onCreds ? 'page' : undefined}
+            >
+              <span aria-hidden="true" className="opacity-60">[</span>
+              <span className="px-1">creds</span>
+              <span aria-hidden="true" className="opacity-60">]</span>
+            </Link>
             <Link
               href="/settings"
               className={[
