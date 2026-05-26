@@ -1,16 +1,25 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { CodeTaskCheck, Language } from '@/curriculum/types';
+import type { CodeTaskCheck, Language, TestCase } from '@/curriculum/types';
 import { transpileCode } from '@/lib/runner';
 import { Markdown } from '@/components/ui/Markdown';
 import { Button } from '@/components/ui/Button';
+import { Confetti } from '@/components/ui/Confetti';
 
 interface CodeTerminalCheckProps {
   check: CodeTaskCheck;
   language: Language;
   checkResult?: { status: 'pass' | 'fail' | 'pending' };
   onResult: (checkId: string, status: 'pass' | 'fail') => void;
+}
+
+interface TestCaseResult {
+  description: string;
+  passed: boolean;
+  actualOutput: string;
+  expectedOutput: string;
+  error?: string;
 }
 
 export function CodeTerminalCheck({
@@ -28,6 +37,9 @@ export function CodeTerminalCheck({
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [validated, setValidated] = useState(alreadyPassed);
   const [wasCorrect, setWasCorrect] = useState<boolean | null>(alreadyPassed ? true : null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
+  const [selectedTestIdx, setSelectedTestIdx] = useState<number | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -150,42 +162,81 @@ export function CodeTerminalCheck({
     setIsVerifying(true);
     setError('');
     setOutput('Verifying...');
+    setTestResults([]);
+    setSelectedTestIdx(null);
 
-    // 1. Transpile in main window
-    const transpileRes = await transpileCode(language, code);
-    if (transpileRes.error) {
-      setIsVerifying(false);
-      setError(transpileRes.error);
-      setOutput('');
-      setValidated(true);
-      setWasCorrect(false);
-      onResult(check.id, 'fail');
-      return;
+    const hasTestCases = check.testCases && check.testCases.length > 0;
+    const casesToRun = hasTestCases
+      ? check.testCases!
+      : [{ expectedOutput: check.expectedOutput, description: 'Default Verification' } as TestCase];
+
+    const results: TestCaseResult[] = [];
+    let allPassed = true;
+
+    for (let idx = 0; idx < casesToRun.length; idx++) {
+      const tc = casesToRun[idx]!;
+      const testDescription = tc.description || `Test case ${idx + 1}`;
+      
+      // 1. Prepare code to run (append input suffix if provided)
+      const combinedCode = tc.input ? `${code}\n${tc.input}` : code;
+
+      // 2. Transpile
+      const transpileRes = await transpileCode(language, combinedCode);
+      if (transpileRes.error) {
+        allPassed = false;
+        results.push({
+          description: testDescription,
+          passed: false,
+          actualOutput: '',
+          expectedOutput: tc.expectedOutput,
+          error: `Transpilation/Compilation Error: ${transpileRes.error}`,
+        });
+        continue;
+      }
+
+      // 3. Run in Sandbox
+      const res = await executeInSandbox(transpileRes.transpiledCode, language);
+      
+      if (res.error) {
+        allPassed = false;
+        results.push({
+          description: testDescription,
+          passed: false,
+          actualOutput: '',
+          expectedOutput: tc.expectedOutput,
+          error: res.error,
+        });
+      } else {
+        const actualOutput = res.output || '';
+        const expected = tc.expectedOutput.trim().toLowerCase();
+        const actual = actualOutput.trim().toLowerCase();
+        const passed = actual.includes(expected);
+
+        if (!passed) allPassed = false;
+
+        results.push({
+          description: testDescription,
+          passed,
+          actualOutput,
+          expectedOutput: tc.expectedOutput,
+        });
+      }
     }
-
-    // 2. Run in sandboxed iframe
-    const res = await executeInSandbox(transpileRes.transpiledCode, language);
 
     setIsVerifying(false);
-    let success = false;
-    let actualOutput = '';
-
-    if (res.error) {
-      setError(res.error);
-      setOutput('');
-      success = false;
-    } else {
-      actualOutput = res.output || '';
-      setOutput(actualOutput || '(No output produced)');
-      
-      const expected = check.expectedOutput.trim().toLowerCase();
-      const actual = actualOutput.trim().toLowerCase();
-      success = actual.includes(expected);
-    }
-
+    setTestResults(results);
     setValidated(true);
-    setWasCorrect(success);
-    onResult(check.id, success ? 'pass' : 'fail');
+    setWasCorrect(allPassed);
+    
+    if (allPassed) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+      onResult(check.id, 'pass');
+      setOutput('ALL TESTS PASSED! 🎉');
+    } else {
+      onResult(check.id, 'fail');
+      setOutput('SOME TESTS FAILED. See details below.');
+    }
   };
 
   const handleReset = () => {
@@ -206,6 +257,8 @@ export function CodeTerminalCheck({
       className="border border-t-0 font-mono flex flex-col"
       style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
     >
+      <Confetti active={showConfetti} />
+
       {/* Sandbox Iframe (strict sandboxing: no allow-same-origin) */}
       <iframe
         ref={iframeRef}
@@ -299,6 +352,64 @@ export function CodeTerminalCheck({
           />
         </div>
       </div>
+
+      {/* Test Results Suite */}
+      {testResults.length > 0 && (
+        <div className="flex flex-col border-b" style={{ borderColor: 'var(--border)' }}>
+          <div
+            className="flex items-center justify-between px-3 py-1.5 border-b text-[10px] uppercase tracking-wider"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--bg-overlay)',
+              color: 'var(--fg-muted)',
+            }}
+          >
+            <span>Test Suite Summary</span>
+            <span>{testResults.filter(r => r.passed).length} / {testResults.length} Passed</span>
+          </div>
+          <div className="p-2 grid grid-cols-2 sm:grid-cols-3 gap-2 bg-[var(--bg)]">
+            {testResults.map((res, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setSelectedTestIdx(selectedTestIdx === i ? null : i)}
+                className={`px-2 py-1 text-[11px] font-mono border text-left flex items-center justify-between transition-colors duration-150 cursor-pointer ${
+                  res.passed
+                    ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)] hover:bg-[rgba(126,231,135,0.08)]'
+                    : 'border-[var(--accent-error)] text-[var(--accent-error)] hover:bg-[rgba(255,123,114,0.08)]'
+                } ${selectedTestIdx === i ? 'bg-[var(--bg-overlay)]' : ''}`}
+              >
+                <span className="truncate">{res.description}</span>
+                <span className="ml-1 flex-shrink-0">{res.passed ? '✓' : '✗'}</span>
+              </button>
+            ))}
+          </div>
+          {selectedTestIdx !== null && testResults[selectedTestIdx] && (
+            <div className="p-3 bg-[var(--bg-elevated)] border-t text-[11px] font-mono leading-relaxed" style={{ borderColor: 'var(--border)' }}>
+              <p className="font-semibold" style={{ color: testResults[selectedTestIdx].passed ? 'var(--accent-prompt)' : 'var(--accent-error)' }}>
+                {testResults[selectedTestIdx].description}: {testResults[selectedTestIdx].passed ? 'Passed ✓' : 'Failed ✗'}
+              </p>
+              {testResults[selectedTestIdx].error && (
+                <p className="text-[var(--accent-error)] mt-1">Error: {testResults[selectedTestIdx].error}</p>
+              )}
+              <div className="grid grid-cols-2 gap-4 mt-2 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+                <div>
+                  <span className="text-[10px] text-[var(--fg-dim)]">{"// Expected stdout substring:"}</span>
+                  <pre className="mt-1 p-1 bg-[var(--bg)] border rounded max-w-full overflow-x-auto text-[var(--fg)]" style={{ borderColor: 'var(--border)' }}>
+                    {testResults[selectedTestIdx].expectedOutput}
+                  </pre>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[var(--fg-dim)]">{"// Actual stdout:"}</span>
+                  <pre className="mt-1 p-1 bg-[var(--bg)] border rounded max-w-full overflow-x-auto text-[var(--fg)]" style={{ borderColor: 'var(--border)' }}>
+                    {testResults[selectedTestIdx].actualOutput || '(No output)'}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 3. Terminal Console Output */}
       <div className="flex flex-col border-b" style={{ borderColor: 'var(--border)' }}>

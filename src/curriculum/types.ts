@@ -15,13 +15,20 @@ export interface MultipleChoiceCheck {
   explanation: string;         // shown after answer
 }
 
+export interface TestCase {
+  input?: string;              // optional stdin or parameter
+  expectedOutput: string;      // expected output substring in stdout
+  description?: string;        // e.g. "Test even numbers"
+}
+
 export interface CodeTaskCheck {
   kind: 'code';
   id: string;                  // unique within phase
   prompt: string;              // markdown description of the task
   boilerplate: string;         // prefilled boilerplate code
-  expectedOutput: string;      // expected output substring in stdout to pass
+  expectedOutput: string;      // fallback expected output substring in stdout to pass
   explanation: string;         // shown after code passes validation
+  testCases?: TestCase[];      // optional list of test cases
 }
 
 export type KnowledgeCheck = MultipleChoiceCheck | CodeTaskCheck;

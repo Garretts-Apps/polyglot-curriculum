@@ -27,9 +27,11 @@ export function PWARegister() {
 
           // Register periodic sync for daily reminders if supported
           if ('periodicSync' in reg) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const pReg = reg as any;
             pReg.periodicSync.register('daily-reminder', {
               minInterval: 24 * 60 * 60 * 1000, // 24 hours
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }).catch((err: any) => {
               // eslint-disable-next-line no-console
               console.warn('[pwa] periodic sync registration failed:', err);

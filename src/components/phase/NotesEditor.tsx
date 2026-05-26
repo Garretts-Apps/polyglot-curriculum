@@ -70,6 +70,27 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
           </span>
         </div>
 
+        {/* Export Note */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!draft.trim()) return;
+            const blob = new Blob([draft], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'polyglot-curriculum-notes.md');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+          disabled={!draft.trim()}
+          className="ml-auto mr-2 px-2 py-0.5 border text-[10px] select-none cursor-pointer border-[var(--border)] text-[var(--fg-muted)] hover:text-[var(--accent-info)] hover:border-[var(--accent-info)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          title="Export notes to Markdown file"
+        >
+          [ EXPORT ]
+        </button>
+
         {/* Mode toggle */}
         <div
           className="inline-flex border"

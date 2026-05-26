@@ -254,6 +254,84 @@ export function SettingsForm() {
         )}
       </section>
 
+      {/* GitHub Progress Badges */}
+      <section>
+        <h2 className="text-sm font-semibold mb-3">
+          <ShellPrompt minimal command=" polyglot --badges --github" />
+        </h2>
+        <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
+          {'// copy markdown codes to show your skillset levels on your GitHub profile'}
+        </p>
+        <div
+          className="border divide-y"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
+        >
+          {LANGUAGES.map((lang) => {
+            const completedPhases = Object.values(state.phases).filter(
+              (p) => p.language === lang.id && p.completed
+            );
+            const highestLevel = completedPhases.reduce(
+              (max, p) => Math.max(max, p.level),
+              0
+            );
+            
+            const badgeColorHex = lang.id === 'python' ? 'f0c674'
+              : lang.id === 'csharp' ? 'b294bb'
+              : lang.id === 'typescript' ? '81a2be'
+              : lang.id === 'rust' ? 'de935f'
+              : lang.id === 'fsharp' ? '8abeb7'
+              : '5fb3b3';
+
+            const logoName = lang.id === 'csharp' ? 'c-sharp'
+              : lang.id === 'fsharp' ? 'fsharp'
+              : lang.id;
+
+            const badgeUrl = `https://img.shields.io/badge/${lang.name}-Level%20${highestLevel}-%23${badgeColorHex}?style=flat-square&logo=${logoName}&logoColor=white`;
+            
+            // Link to the user's progress path page or homepage
+            const targetUrl = typeof window !== 'undefined' 
+              ? `${window.location.origin}/${lang.id}`
+              : `https://polyglot-curriculum.vercel.app/${lang.id}`;
+
+            const markdownString = `[![${lang.name} Skill Level](${badgeUrl})](${targetUrl})`;
+
+            return (
+              <div
+                key={lang.id}
+                className="flex items-center justify-between gap-3 px-3 py-3 flex-wrap sm:flex-nowrap"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs uppercase w-[12ch]" style={{ color: `var(--accent-${lang.id})` }}>
+                    {lang.name}
+                  </span>
+                  {/* Badge Preview */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={badgeUrl}
+                    alt={`${lang.name} Skill Level Badge`}
+                    className="h-5 select-none"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(markdownString);
+                      alert(`Copied ${lang.name} badge markdown!`);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    [ copy markdown ]
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Session — logout */}
       <section>
         <h2 className="text-sm font-semibold mb-3">

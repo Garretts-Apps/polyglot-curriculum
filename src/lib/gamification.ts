@@ -1,5 +1,4 @@
 import type { ProgressState } from './storage';
-import { getPhasesForLanguage } from '@/curriculum/phases';
 import type { Language } from '@/curriculum/types';
 
 export interface GamificationStats {
@@ -34,7 +33,7 @@ export function calculateGamification(state: ProgressState): GamificationStats {
   const activeDates = new Set<string>();
 
   // 1. Calculate XP & gather activity timestamps
-  for (const [phaseId, progress] of Object.entries(state.phases)) {
+  for (const [, progress] of Object.entries(state.phases)) {
     if (progress.completed) {
       xp += 500;
       if (progress.completedAt) {
@@ -43,7 +42,7 @@ export function calculateGamification(state: ProgressState): GamificationStats {
       }
     }
 
-    for (const [_, check] of Object.entries(progress.checkResults)) {
+    for (const [, check] of Object.entries(progress.checkResults)) {
       if (check.status === 'pass') {
         // Find check details to differentiate MCQ vs Code tasks
         // We look at the check ID naming convention (contains "-code-" or "-mcq-")
@@ -74,7 +73,7 @@ export function calculateGamification(state: ProgressState): GamificationStats {
     
     if (latestDateStr === todayStr || latestDateStr === yesterdayStr) {
       streak = 1;
-      let curr = new Date(latestDateStr + 'T00:00:00');
+      const curr = new Date(latestDateStr + 'T00:00:00');
       
       // Look back day by day
       while (true) {
@@ -105,7 +104,7 @@ export function calculateGamification(state: ProgressState): GamificationStats {
 
   let percentToNext = 100;
   let nextRankXp = currentRank.xp;
-  let prevRankXp = currentRank.xp;
+  const prevRankXp = currentRank.xp;
 
   if (nextRank) {
     nextRankXp = nextRank.xp;
@@ -136,7 +135,7 @@ export function getContextualReminder(state: ProgressState): { title: string; bo
   let targetLevel = 1;
   let highestCompletedLevel = 0;
 
-  for (const [phaseId, progress] of Object.entries(state.phases)) {
+  for (const [, progress] of Object.entries(state.phases)) {
     if (progress.completed) {
       highestCompletedLevel = Math.max(highestCompletedLevel, progress.level);
     } else {

@@ -22,6 +22,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   // Hydrate from localStorage on mount, then merge with server if server is newer
   useEffect(() => {
     const local = loadLocal();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(local);
     setHydrated(true);
     fetch('/api/progress')

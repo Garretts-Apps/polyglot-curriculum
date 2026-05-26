@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import type { Phase, LanguageMeta } from '@/curriculum/types';
 import { useProgress } from '@/lib/use-progress';
@@ -7,6 +8,7 @@ import { BlockProgress } from '@/components/ui/BlockProgress';
 import { StatusTag } from '@/components/ui/StatusTag';
 import type { StatusKind } from '@/components/ui/StatusTag';
 import { phasePassed } from '@/lib/phase-status';
+import { PhaseTree } from './PhaseTree';
 
 interface PhaseListProps {
   phases: Phase[];
@@ -90,6 +92,7 @@ function rowStatusLabel(state: RowState): string {
 export function PhaseList({ phases, langMeta }: PhaseListProps) {
   const { state } = useProgress();
   const intake = state.intake;
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const startLevel = intake?.startLevels[langMeta.id] ?? langMeta.defaultStartLevel;
   const targetLevel = intake?.targetLevels[langMeta.id] ?? 4;
@@ -106,7 +109,7 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
     <section aria-label="phases" className="font-mono">
       {/* ── Table title ──────────────────────────────────────────────────── */}
       <h2
-        className="mb-2 text-xs uppercase tracking-[0.18em] flex items-center gap-2"
+        className="mb-3 text-xs uppercase tracking-[0.18em] flex items-center gap-2"
         style={{ color: 'var(--fg-dim)' }}
       >
         <span aria-hidden="true">┌─</span>
@@ -117,276 +120,303 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
         <span style={{ color: 'var(--fg-dim)' }} className="tabular-nums">
           {visiblePhases.length}/{phases.length}
         </span>
-        <span aria-hidden="true" className="flex-1 text-right truncate">
-          ────────────────────────────────────
-        </span>
+        <div className="flex-1 flex items-center justify-end gap-2 pr-1 font-mono normal-case">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`px-2 py-0.5 border text-[10px] tracking-normal cursor-pointer select-none transition-colors ${
+              viewMode === 'list'
+                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)] bg-[rgba(126,231,135,0.06)]'
+                : 'border-[var(--border)] text-[var(--fg-dim)] hover:border-[var(--border-active)] hover:text-[var(--fg-muted)]'
+            }`}
+          >
+            [ LIST ]
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('map')}
+            className={`px-2 py-0.5 border text-[10px] tracking-normal cursor-pointer select-none transition-colors ${
+              viewMode === 'map'
+                ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)] bg-[rgba(126,231,135,0.06)]'
+                : 'border-[var(--border)] text-[var(--fg-dim)] hover:border-[var(--border-active)] hover:text-[var(--fg-muted)]'
+            }`}
+          >
+            [ MAP ]
+          </button>
+        </div>
       </h2>
 
-      {/* ── Desktop: TUI table ───────────────────────────────────────────── */}
-      <div
-        className="hidden sm:block border"
-        style={{
-          borderColor: 'var(--border-active)',
-          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
-        }}
-      >
-        {/* Column header row */}
-        <div
-          className="grid items-center text-[11px] uppercase tracking-[0.16em] border-b"
-          style={{
-            gridTemplateColumns: gridCols,
-            color: 'var(--fg-dim)',
-            borderColor: 'var(--border-active)',
-            backgroundColor: 'var(--bg)',
-          }}
-        >
-          <ColHeader>##</ColHeader>
-          <ColHeader>title</ColHeader>
-          <ColHeader>time</ColHeader>
-          <ColHeader>progress</ColHeader>
-          <ColHeader className="text-center">status</ColHeader>
-        </div>
+      {viewMode === 'map' ? (
+        <PhaseTree phases={phases} langMeta={langMeta} />
+      ) : (
+        <>
+          {/* ── Desktop: TUI table ───────────────────────────────────────────── */}
+          <div
+            className="hidden sm:block border"
+            style={{
+              borderColor: 'var(--border-active)',
+              backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 70%, transparent)',
+            }}
+          >
+            {/* Column header row */}
+            <div
+              className="grid items-center text-[11px] uppercase tracking-[0.16em] border-b"
+              style={{
+                gridTemplateColumns: gridCols,
+                color: 'var(--fg-dim)',
+                borderColor: 'var(--border-active)',
+                backgroundColor: 'var(--bg)',
+              }}
+            >
+              <ColHeader>##</ColHeader>
+              <ColHeader>title</ColHeader>
+              <ColHeader>time</ColHeader>
+              <ColHeader>progress</ColHeader>
+              <ColHeader className="text-center">status</ColHeader>
+            </div>
 
-        {/* Rows */}
-        <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
-          {visiblePhases.map((phase, idx) => {
-            const progress = state.phases[phase.id];
-            const checkResults = progress?.checkResults ?? {};
-            const totalChecks = phase.checks.length;
-            const passedChecks = Object.values(checkResults).filter(
-              (r) => r.status === 'pass',
-            ).length;
-            const pct = totalChecks > 0 ? passedChecks / totalChecks : 0;
-            const isBelowStart = phase.level <= startLevel;
-            const isCompleted = progress?.completed ?? false;
+            {/* Rows */}
+            <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {visiblePhases.map((phase, idx) => {
+                const progress = state.phases[phase.id];
+                const checkResults = progress?.checkResults ?? {};
+                const totalChecks = phase.checks.length;
+                const passedChecks = Object.values(checkResults).filter(
+                  (r) => r.status === 'pass',
+                ).length;
+                const pct = totalChecks > 0 ? passedChecks / totalChecks : 0;
+                const isBelowStart = phase.level <= startLevel;
+                const isCompleted = progress?.completed ?? false;
 
-            // A phase is locked if it's not the first visible phase, the previous
-            // phase is above our starting level, and the previous phase hasn't
-            // met the 80% pass threshold.
-            const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
-            const isLocked =
-              prevPhase !== undefined &&
-              prevPhase.level > startLevel &&
-              !phasePassed(prevPhase, state.phases[prevPhase.id]);
+                // A phase is locked if it's not the first visible phase, the previous
+                // phase is above our starting level, and the previous phase hasn't
+                // met the 80% pass threshold.
+                const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
+                const isLocked =
+                  prevPhase !== undefined &&
+                  prevPhase.level > startLevel &&
+                  !phasePassed(prevPhase, state.phases[prevPhase.id]);
 
-            const rowState = getRowState({
-              isBelowStart,
-              isCompleted,
-              passed: passedChecks,
-              total: totalChecks,
-              isLocked,
-            });
-            const dimmed = rowState === 'skip' || rowState === 'locked';
+                const rowState = getRowState({
+                  isBelowStart,
+                  isCompleted,
+                  passed: passedChecks,
+                  total: totalChecks,
+                  isLocked,
+                });
+                const dimmed = rowState === 'skip' || rowState === 'locked';
 
-            return (
-              <li
-                key={phase.id}
-                style={{ borderColor: 'var(--border)' }}
-                className="border-b last:border-b-0"
-              >
-                <Link
-                  href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
-                  onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                  aria-disabled={isLocked}
-                  className="group relative grid items-center transition-colors duration-100"
-                  style={{
-                    gridTemplateColumns: gridCols,
-                    opacity: dimmed ? 0.5 : 1,
-                    pointerEvents: isLocked ? 'none' : undefined,
-                    cursor: isLocked ? 'not-allowed' : undefined,
-                  }}
-                  aria-label={`phase ${paddedLevel(phase.level)}: ${phase.title}`}
-                >
-                  {/* Accent left bar on hover/focus */}
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-0 w-[2px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-100"
-                    style={{
-                      backgroundColor: accent,
-                      boxShadow: `0 0 8px color-mix(in srgb, ${accent} 60%, transparent)`,
-                    }}
-                  />
-                  {/* Background hover tint */}
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-100"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${accent} 6%, transparent)`,
-                    }}
-                  />
-
-                  {/* ## */}
-                  <Cell>
-                    <span
-                      className="tabular-nums text-xs"
+                return (
+                  <li
+                    key={phase.id}
+                    style={{ borderColor: 'var(--border)' }}
+                    className="border-b last:border-b-0"
+                  >
+                    <Link
+                      href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                      onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                      aria-disabled={isLocked}
+                      className="group relative grid items-center transition-colors duration-100"
                       style={{
-                        color: isCompleted ? 'var(--accent-prompt)' : accent,
+                        gridTemplateColumns: gridCols,
+                        opacity: dimmed ? 0.5 : 1,
+                        pointerEvents: isLocked ? 'none' : undefined,
+                        cursor: isLocked ? 'not-allowed' : undefined,
                       }}
+                      aria-label={`phase ${paddedLevel(phase.level)}: ${phase.title}`}
                     >
-                      {paddedLevel(phase.level)}
-                    </span>
-                  </Cell>
-
-                  {/* title */}
-                  <Cell>
-                    <span
-                      className="text-sm truncate inline-flex items-center gap-1.5 min-w-0"
-                      style={{ color: 'var(--fg)' }}
-                    >
+                      {/* Accent left bar on hover/focus */}
                       <span
-                        className="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity flex-shrink-0"
-                        style={{ color: accent }}
                         aria-hidden="true"
-                      >
-                        ▸
-                      </span>
-                      <span className="truncate">{phase.title}</span>
-                    </span>
-                  </Cell>
+                        className="absolute top-0 bottom-0 left-0 w-[2px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-100"
+                        style={{
+                          backgroundColor: accent,
+                          boxShadow: `0 0 8px color-mix(in srgb, ${accent} 60%, transparent)`,
+                        }}
+                      />
+                      {/* Background hover tint */}
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-100"
+                        style={{
+                          backgroundColor: `color-mix(in srgb, ${accent} 6%, transparent)`,
+                        }}
+                      />
 
-                  {/* time */}
-                  <Cell>
+                      {/* ## */}
+                      <Cell>
+                        <span
+                          className="tabular-nums text-xs"
+                          style={{
+                            color: isCompleted ? 'var(--accent-prompt)' : accent,
+                          }}
+                        >
+                          {paddedLevel(phase.level)}
+                        </span>
+                      </Cell>
+
+                      {/* title */}
+                      <Cell>
+                        <span
+                          className="text-sm truncate inline-flex items-center gap-1.5 min-w-0"
+                          style={{ color: 'var(--fg)' }}
+                        >
+                          <span
+                            className="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity flex-shrink-0"
+                            style={{ color: accent }}
+                            aria-hidden="true"
+                          >
+                            ▸
+                          </span>
+                          <span className="truncate">{phase.title}</span>
+                        </span>
+                      </Cell>
+
+                      {/* time */}
+                      <Cell>
+                        <span
+                          className="text-xs tabular-nums"
+                          style={{ color: 'var(--fg-muted)' }}
+                        >
+                          {formatTime(phase.timeEstimate)}
+                        </span>
+                      </Cell>
+
+                      {/* progress */}
+                      <Cell>
+                        <BlockProgress
+                          value={pct}
+                          color={accent}
+                          width={20}
+                          showPercent
+                        />
+                      </Cell>
+
+                      {/* status */}
+                      <Cell className="justify-center">
+                        <StatusTag
+                          status={rowStatusKind(rowState)}
+                          label={rowStatusLabel(rowState)}
+                        />
+                      </Cell>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Bottom border accent */}
+            <div
+              aria-hidden="true"
+              className="h-[1px]"
+              style={{ backgroundColor: 'var(--border-active)' }}
+            />
+          </div>
+
+          {/* ── Mobile: stacked cards (still terminal-styled) ────────────────── */}
+          <ul className="sm:hidden space-y-1">
+            {visiblePhases.map((phase, idx) => {
+              const progress = state.phases[phase.id];
+              const checkResults = progress?.checkResults ?? {};
+              const totalChecks = phase.checks.length;
+              const passedChecks = Object.values(checkResults).filter(
+                (r) => r.status === 'pass',
+              ).length;
+              const pct = totalChecks > 0 ? passedChecks / totalChecks : 0;
+              const isBelowStart = phase.level <= startLevel;
+              const isCompleted = progress?.completed ?? false;
+
+              const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
+              const isLocked =
+                prevPhase !== undefined && !phasePassed(prevPhase, state.phases[prevPhase.id]);
+
+              const rowState = getRowState({
+                isBelowStart,
+                isCompleted,
+                passed: passedChecks,
+                total: totalChecks,
+                isLocked,
+              });
+              const dimmed = rowState === 'skip' || rowState === 'locked';
+
+              return (
+                <li key={phase.id}>
+                  <Link
+                    href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
+                    onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                    aria-disabled={isLocked}
+                    className="group block relative border px-3 py-3 transition-colors duration-100"
+                    style={{
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--bg-elevated)',
+                      opacity: dimmed ? 0.55 : 1,
+                      pointerEvents: isLocked ? 'none' : undefined,
+                      cursor: isLocked ? 'not-allowed' : undefined,
+                    }}
+                  >
+                    {/* Accent bar */}
                     <span
-                      className="text-xs tabular-nums"
+                      aria-hidden="true"
+                      className="absolute top-0 bottom-0 left-0 w-[2px]"
+                      style={{
+                        backgroundColor: isCompleted ? 'var(--accent-prompt)' : accent,
+                        opacity: 0.6,
+                      }}
+                    />
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="text-xs tabular-nums flex-shrink-0"
+                          style={{
+                            color: isCompleted ? 'var(--accent-prompt)' : accent,
+                          }}
+                        >
+                          {paddedLevel(phase.level)}
+                        </span>
+                        <span
+                          className="text-sm font-medium truncate"
+                          style={{ color: 'var(--fg)' }}
+                        >
+                          {phase.title}
+                        </span>
+                      </span>
+                      <StatusTag
+                        status={rowStatusKind(rowState)}
+                        label={rowStatusLabel(rowState)}
+                      />
+                    </div>
+                    <div
+                      className="flex items-center justify-between gap-2 text-[11px]"
                       style={{ color: 'var(--fg-muted)' }}
                     >
-                      {formatTime(phase.timeEstimate)}
-                    </span>
-                  </Cell>
+                      <span className="tabular-nums">{formatTime(phase.timeEstimate)}</span>
+                      <BlockProgress value={pct} color={accent} width={12} showPercent />
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-                  {/* progress */}
-                  <Cell>
-                    <BlockProgress
-                      value={pct}
-                      color={accent}
-                      width={20}
-                      showPercent
-                    />
-                  </Cell>
-
-                  {/* status */}
-                  <Cell className="justify-center">
-                    <StatusTag
-                      status={rowStatusKind(rowState)}
-                      label={rowStatusLabel(rowState)}
-                    />
-                  </Cell>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Bottom border accent */}
-        <div
-          aria-hidden="true"
-          className="h-[1px]"
-          style={{ backgroundColor: 'var(--border-active)' }}
-        />
-      </div>
-
-      {/* ── Mobile: stacked cards (still terminal-styled) ────────────────── */}
-      <ul className="sm:hidden space-y-1">
-        {visiblePhases.map((phase, idx) => {
-          const progress = state.phases[phase.id];
-          const checkResults = progress?.checkResults ?? {};
-          const totalChecks = phase.checks.length;
-          const passedChecks = Object.values(checkResults).filter(
-            (r) => r.status === 'pass',
-          ).length;
-          const pct = totalChecks > 0 ? passedChecks / totalChecks : 0;
-          const isBelowStart = phase.level <= startLevel;
-          const isCompleted = progress?.completed ?? false;
-
-          const prevPhase = idx > 0 ? visiblePhases[idx - 1] : undefined;
-          const isLocked =
-            prevPhase !== undefined && !phasePassed(prevPhase, state.phases[prevPhase.id]);
-
-          const rowState = getRowState({
-            isBelowStart,
-            isCompleted,
-            passed: passedChecks,
-            total: totalChecks,
-            isLocked,
-          });
-          const dimmed = rowState === 'skip' || rowState === 'locked';
-
-          return (
-            <li key={phase.id}>
-              <Link
-                href={isLocked ? '#' : `/${langMeta.id}/${phase.level}`}
-                onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                aria-disabled={isLocked}
-                className="group block relative border px-3 py-3 transition-colors duration-100"
-                style={{
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--bg-elevated)',
-                  opacity: dimmed ? 0.55 : 1,
-                  pointerEvents: isLocked ? 'none' : undefined,
-                  cursor: isLocked ? 'not-allowed' : undefined,
-                }}
-              >
-                {/* Accent bar */}
-                <span
-                  aria-hidden="true"
-                  className="absolute top-0 bottom-0 left-0 w-[2px]"
-                  style={{
-                    backgroundColor: isCompleted ? 'var(--accent-prompt)' : accent,
-                    opacity: 0.6,
-                  }}
-                />
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="text-xs tabular-nums flex-shrink-0"
-                      style={{
-                        color: isCompleted ? 'var(--accent-prompt)' : accent,
-                      }}
-                    >
-                      {paddedLevel(phase.level)}
-                    </span>
-                    <span
-                      className="text-sm font-medium truncate"
-                      style={{ color: 'var(--fg)' }}
-                    >
-                      {phase.title}
-                    </span>
-                  </span>
-                  <StatusTag
-                    status={rowStatusKind(rowState)}
-                    label={rowStatusLabel(rowState)}
-                  />
-                </div>
-                <div
-                  className="flex items-center justify-between gap-2 text-[11px]"
-                  style={{ color: 'var(--fg-muted)' }}
-                >
-                  <span className="tabular-nums">{formatTime(phase.timeEstimate)}</span>
-                  <BlockProgress value={pct} color={accent} width={12} showPercent />
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      {/* Empty state */}
-      {visiblePhases.length === 0 && (
-        <div
-          className="text-xs text-center py-10 border border-dashed"
-          style={{
-            color: 'var(--fg-muted)',
-            borderColor: 'var(--border-active)',
-            backgroundColor: 'var(--bg-elevated)',
-          }}
-        >
-          <span style={{ color: 'var(--accent-warn)' }}>warn:</span>{' '}
-          no phases at or below your target level
-          <br />
-          <span style={{ color: 'var(--fg-dim)' }} className="text-[11px]">
-            adjust target_level in $ /intake
-          </span>
-        </div>
+          {/* Empty state */}
+          {visiblePhases.length === 0 && (
+            <div
+              className="text-xs text-center py-10 border border-dashed"
+              style={{
+                color: 'var(--fg-muted)',
+                borderColor: 'var(--border-active)',
+                backgroundColor: 'var(--bg-elevated)',
+              }}
+            >
+              <span style={{ color: 'var(--accent-warn)' }}>warn:</span>{' '}
+              no phases at or below your target level
+              <br />
+              <span style={{ color: 'var(--fg-dim)' }} className="text-[11px]">
+                adjust target_level in $ /intake
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       {/* Closing footer line — TUI corner */}
