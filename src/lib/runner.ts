@@ -201,6 +201,12 @@ function transpileCSharpToJS(code: string): string {
   // Remove standard System directives
   js = js.replace(/using\s+System[^;]*;/g, '');
 
+  // Convert C# interpolated strings $"...{expr}..." to JS template literals
+  js = js.replace(/\$"([^"]*)"/g, (_m, content: string) => {
+    const tpl = content.replace(/\{([^}]+)\}/g, '${$1}');
+    return '`' + tpl + '`';
+  });
+
   // Console statements
   js = js.replace(/Console\.WriteLine\("([^"]*)"(?:,\s*([^)]*))?\)/g, (match, fmtStr, argsStr) => {
     if (!argsStr) return `console.log("${fmtStr}")`;
@@ -209,12 +215,29 @@ function transpileCSharpToJS(code: string): string {
   js = js.replace(/Console\.WriteLine\(([^)]*)\)/g, 'console.log($1)');
   js = js.replace(/Console\.Write\(([^)]*)\)/g, 'console.log($1)');
 
-  // Convert typical declarations
-  js = js.replace(/\b(?:int|string|double|float|bool|var|auto|char|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, 'let $1 =');
-
-  // Convert methods
+  // Convert Main entry points
   js = js.replace(/(?:public\s+|private\s+)?static\s+void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
   js = js.replace(/(?:public\s+|private\s+)?void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
+
+  // Convert other typed function declarations (including top-level local functions):
+  // <return-type> Name(<type> p, <type> q) {  ->  function Name(p, q) {
+  js = js.replace(
+    /(?:public\s+|private\s+|protected\s+|internal\s+)?(?:static\s+)?\b(?:int|string|double|float|bool|void|char|long|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*\{/g,
+    (_m, name: string, params: string) => {
+      const clean = params
+        .split(',')
+        .map((p) => {
+          const tokens = p.trim().split(/\s+/);
+          return tokens.length >= 2 ? tokens[1] : tokens[0];
+        })
+        .filter(Boolean)
+        .join(', ');
+      return `function ${name}(${clean}) {`;
+    }
+  );
+
+  // Convert typical declarations
+  js = js.replace(/\b(?:int|string|double|float|bool|var|auto|char|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, 'let $1 =');
   
   // Namespace/class header strip
   js = js.replace(/namespace\s+[a-zA-Z0-9_.]+\s*\{/g, '');
