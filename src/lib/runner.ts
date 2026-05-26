@@ -1,34 +1,30 @@
 import type { Language } from '@/curriculum/types';
 
+const loadingScripts = new Map<string, Promise<void>>();
+
 function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') {
-      resolve();
-      return;
-    }
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
+  if (typeof window === 'undefined') {
+    return Promise.resolve();
+  }
+  let promise = loadingScripts.get(src);
+  if (promise) return promise;
+
+  if (document.querySelector(`script[src="${src}"]`)) {
+    return Promise.resolve();
+  }
+
+  promise = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script ${src}`));
+    script.onerror = () => {
+      loadingScripts.delete(src);
+      reject(new Error(`Failed to load script ${src}`));
+    };
     document.head.appendChild(script);
   });
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pyodidePromise: Promise<any> | null = null;
-async function getPyodide() {
-  if (pyodidePromise) return pyodidePromise;
-  pyodidePromise = (async () => {
-    await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const py = await (window as any).loadPyodide();
-    return py;
-  })();
-  return pyodidePromise;
+  loadingScripts.set(src, promise);
+  return promise;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,9 +39,47 @@ async function getTS() {
   return tsPromise;
 }
 
+/**
+ * Splits print arguments by comma, ignoring commas nested inside quotes, parentheses, brackets, or braces.
+ */
+function splitArgs(argsStr: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let depth = 0;
+  let inQuote: string | null = null;
+
+  for (let i = 0; i < argsStr.length; i++) {
+    const char = argsStr[i];
+    if (inQuote) {
+      if (char === inQuote && argsStr[i - 1] !== '\\') {
+        inQuote = null;
+      }
+      current += char;
+    } else if (char === '"' || char === "'" || char === '`') {
+      inQuote = char;
+      current += char;
+    } else if (char === '(' || char === '[' || char === '{') {
+      depth++;
+      current += char;
+    } else if (char === ')' || char === ']' || char === '}') {
+      depth--;
+      current += char;
+    } else if (char === ',' && depth === 0) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) {
+    result.push(current.trim());
+  }
+  return result;
+}
+
 function formatStringToJS(fmtStr: string, argsStr?: string): string {
   if (!argsStr) return `\`${fmtStr}\``;
-  const args = argsStr.split(',').map((a) => a.trim());
+  const args = splitArgs(argsStr);
   let jsFmt = fmtStr;
   let argIdx = 0;
   // Replace both Rust {} and Go/C# placeholders %v, %d, %s, {0}, {1} etc.
@@ -58,74 +92,6 @@ function formatStringToJS(fmtStr: string, argsStr?: string): string {
     return '{}';
   });
   return `\`${jsFmt}\``;
-}
-
-function runJS(jsCode: string): { output: string; error?: string } {
-  const logs: string[] = [];
-  const originalLog = console.log;
-  const originalError = console.error;
-  const originalWarn = console.warn;
-
-  console.log = (...args) => {
-    logs.push(args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
-  };
-  console.error = (...args) => {
-    logs.push('[ERROR] ' + args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
-  };
-  console.warn = (...args) => {
-    logs.push('[WARN] ' + args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
-  };
-
-  try {
-    const fn = new Function(jsCode);
-    fn();
-    return { output: logs.join('\n') };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { output: logs.join('\n'), error: msg };
-  } finally {
-    console.log = originalLog;
-    console.error = originalError;
-    console.warn = originalWarn;
-  }
-}
-
-async function runPython(code: string): Promise<{ output: string; error?: string }> {
-  try {
-    const py = await getPyodide();
-    const outputBuffer: string[] = [];
-    py.setStdout({
-      batched: (str: string) => {
-        outputBuffer.push(str);
-      },
-    });
-    py.setStderr({
-      batched: (str: string) => {
-        outputBuffer.push(str);
-      },
-    });
-    await py.runPythonAsync(code);
-    return { output: outputBuffer.join('\n') };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { output: '', error: msg };
-  }
-}
-
-async function runTypeScript(code: string): Promise<{ output: string; error?: string }> {
-  try {
-    const ts = await getTS();
-    const compiled = ts.transpileModule(code, {
-      compilerOptions: {
-        target: ts.ScriptTarget.ES2020,
-        module: ts.ModuleKind.CommonJS,
-      },
-    }).outputText;
-    return runJS(compiled);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { output: '', error: msg };
-  }
 }
 
 function transpileGoToJS(code: string): string {
@@ -141,7 +107,7 @@ function transpileGoToJS(code: string): string {
   js = js.replace(/([a-zA-Z_][a-zA-Z0-9_]*)\s*:=\s*/g, 'let $1 = ');
   
   // var x type = value -> let x = value
-  js = js.replace(/var\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+[a-zA-Z0-9_*\[\]]+\s*=\s*/g, 'let $1 = ');
+  js = js.replace(/var\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+[a-zA-Z0-9_*\[\]\s]+\s*=\s*/g, 'let $1 = ');
   js = js.replace(/var\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+(int|string|float64|bool|byte)/g, 'let $1 = null');
 
   // Translate functions
@@ -183,13 +149,33 @@ function transpileRustToJS(code: string): string {
   // let mut x = val -> let x = val
   js = js.replace(/\blet\s+mut\s+/g, 'let ');
 
-  // Translate fn name(args) -> type { -> function name(args) {
-  js = js.replace(/fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)(?:\s*->\s*[^{]+)?\s*\{/g, (match, funcName, args) => {
+  // Strip Rust type annotations: let x: i32 = 5; -> let x = 5;
+  js = js.replace(/\blet\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:[^=]+=/g, 'let $1 =');
+
+  // Strip references and dereferences
+  js = js.replace(/\b&([a-zA-Z_][a-zA-Z0-9_]*)\b/g, '$1');
+  js = js.replace(/\*([a-zA-Z_][a-zA-Z0-9_]*)\b/g, '$1');
+
+  // Translate fn name(args) -> type { ... }
+  // Handles implicit return on last line without a semicolon
+  js = js.replace(/fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)(?:\s*->\s*[^{]+)?\s*\{([^}]*)\}/g, (match, funcName, args, body) => {
     const cleanArgs = args.split(',').map((arg: string) => {
       const parts = arg.trim().split(':');
       return (parts[0] || '').trim();
     }).join(', ');
-    return `function ${funcName}(${cleanArgs}) {`;
+    
+    // Process implicit returns in body
+    let cleanBody = body.trim();
+    const lines = cleanBody.split('\n');
+    if (lines.length > 0) {
+      const lastLineIdx = lines.length - 1;
+      const lastLine = lines[lastLineIdx].trim();
+      if (lastLine && !lastLine.endsWith(';') && !lastLine.endsWith('}') && !lastLine.startsWith('return ') && !lastLine.startsWith('if') && !lastLine.startsWith('for') && !lastLine.startsWith('while')) {
+        lines[lastLineIdx] = 'return ' + lastLine;
+      }
+    }
+    cleanBody = lines.join('\n');
+    return `function ${funcName}(${cleanArgs}) {\n${cleanBody}\n}`;
   });
 
   // Print statements
@@ -227,12 +213,29 @@ function transpileCSharpToJS(code: string): string {
   js = js.replace(/\b(?:int|string|double|float|bool|var|auto|char|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, 'let $1 =');
 
   // Convert methods
-  js = js.replace(/static\s+void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
-  js = js.replace(/void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
+  js = js.replace(/(?:public\s+|private\s+)?static\s+void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
+  js = js.replace(/(?:public\s+|private\s+)?void\s+Main\s*\([^)]*\)\s*\{/g, 'function main() {');
   
-  // Namespace/class strip
+  // Namespace/class header strip
   js = js.replace(/namespace\s+[a-zA-Z0-9_.]+\s*\{/g, '');
   js = js.replace(/class\s+[a-zA-Z0-9_]+\s*\{/g, '');
+
+  // Brace balancer: remove unmatched closing braces at the end of the file
+  let openBraces = 0;
+  let cleanJs = '';
+  for (let i = 0; i < js.length; i++) {
+    const char = js[i];
+    if (char === '{') openBraces++;
+    if (char === '}') {
+      if (openBraces > 0) {
+        openBraces--;
+        cleanJs += char;
+      }
+    } else {
+      cleanJs += char;
+    }
+  }
+  js = cleanJs;
 
   if (js.includes('function main()')) {
     js += '\nmain();';
@@ -250,34 +253,39 @@ function transpileFSharpToJS(code: string): string {
     return `console.log(${formatStringToJS(fmtStr, argsStr)})`;
   });
 
-  // F# simple let conversion
-  // let x = 5 -> let x = 5
-  // We keep it as is, but we can do a simple match execution for main if needed
-
   return js;
 }
 
-export async function runCode(
+export async function transpileCode(
   language: Language,
   code: string
-): Promise<{ output: string; error?: string }> {
-  if (typeof window === 'undefined') {
-    return { output: '', error: 'Cannot run code in server-side context.' };
-  }
+): Promise<{ transpiledCode: string; error?: string }> {
   switch (language) {
     case 'python':
-      return runPython(code);
+      return { transpiledCode: code };
     case 'typescript':
-      return runTypeScript(code);
+      try {
+        const ts = await getTS();
+        const compiled = ts.transpileModule(code, {
+          compilerOptions: {
+            target: ts.ScriptTarget.ES2020,
+            module: ts.ModuleKind.CommonJS,
+          },
+        }).outputText;
+        return { transpiledCode: compiled };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { transpiledCode: '', error: msg };
+      }
     case 'go':
-      return runJS(transpileGoToJS(code));
+      return { transpiledCode: transpileGoToJS(code) };
     case 'rust':
-      return runJS(transpileRustToJS(code));
+      return { transpiledCode: transpileRustToJS(code) };
     case 'csharp':
-      return runJS(transpileCSharpToJS(code));
+      return { transpiledCode: transpileCSharpToJS(code) };
     case 'fsharp':
-      return runJS(transpileFSharpToJS(code));
+      return { transpiledCode: transpileFSharpToJS(code) };
     default:
-      return { output: '', error: `Unsupported language: ${language}` };
+      return { transpiledCode: '', error: `Unsupported language: ${language}` };
   }
 }
