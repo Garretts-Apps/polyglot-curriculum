@@ -27,7 +27,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-0-code-1',
         prompt: 'Use the `print()` function to output `Hello, World!` to the console.',
-        boilerplate: '# Output: Hello, World!\nprint("")\n',
+        boilerplate: '# Output: Hello, World!\n',
         expectedOutput: 'Hello, World!',
         explanation: 'The `print()` function outputs text to the standard output console. Single or double quotes are both valid string delimiters in Python.'
       },
@@ -416,7 +416,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-2-code-1',
         prompt: 'Modify the list comprehension to square only the odd numbers from `1` to `5` (inclusive), then print the resulting list.',
-        boilerplate: '# Modify the list comprehension to square only odd numbers from 1 to 5 (inclusive)\nresult = [x for x in range(1, 6) if x % 2 == 0]\nprint(result)\n',
+        boilerplate: '# Modify the list comprehension to square only odd numbers from 1 to 5 (inclusive)\nresult = [x for x in range(1, 6) if x % 2 == 0]\n',
         expectedOutput: '[1, 9, 25]',
         explanation: 'A list comprehension follows the format `[expression for item in iterable if condition]`. To get the squares of odd numbers, we square `x` (`x**2`) and check if `x % 2 != 0`.'
       }
@@ -1011,7 +1011,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-5-code-1',
         prompt: 'Write a function `process_command(cmd: tuple[str, int]) -> str` that uses structural pattern matching (`match`/`case`) to handle commands: `"up"` and `"down"` with their associated values. Any other command should return `"Unknown command"`.',
-        boilerplate: 'def process_command(cmd: tuple[str, int]) -> str:\n    # Use match/case to handle ("up", value) and ("down", value)\n    match cmd:\n        case _:\n            return "Unknown command"\n\nprint(process_command(("up", 10)))\nprint(process_command(("down", 5)))\nprint(process_command(("left", 2)))\n',
+        boilerplate: 'def process_command(cmd: tuple[str, int]) -> str:\n    # Use match/case to handle ("up", value) and ("down", value)\n    match cmd:\n        case _:\n            return "Unknown command"\n\nif __name__ == "__main__":\n    process_command(("up", 10))\n    process_command(("down", 5))\n    process_command(("left", 2))\n',
         expectedOutput: 'Moving up by 10\nMoving down by 5\nUnknown command',
         explanation: 'Structural pattern matching (introduced in Python 3.10) using `match` and `case` allows matching the structure of sequences and binding matched values directly to local variables.'
       }
@@ -1378,7 +1378,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-7-code-1',
         prompt: 'Optimise string construction: modify the `build_string` function to construct a string containing the string representation of all numbers from `0` to `n-1` joined by commas, using the efficient `\',\'.join()` method with a generator expression.',
-        boilerplate: 'def build_string(n: int) -> str:\n    # Use \',\'.join() to join stringified numbers\n    return "".join(str(i) for i in range(n))\n\nif __name__ == "__main__":\n    print(build_string(5))\n',
+        boilerplate: 'def build_string(n: int) -> str:\n    # Use \',\'.join() to join stringified numbers\n    return "".join(str(i) for i in range(n))\n\nif __name__ == "__main__":\n    build_string(5)\n',
         expectedOutput: '0,1,2,3,4',
         explanation: 'Using `\',\'.join(...)` is much more efficient than using `+=` inside a loop because it calculates the total size of the final string and makes a single allocation, whereas `+=` triggers multiple copies and allocations.'
       }
@@ -1566,7 +1566,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-8-code-1',
         prompt: 'Define a Pydantic model named `Item` with `id` (int), `name` (str), and `price` (float, default 0.0) fields. Modify the `parse_item` function to correctly instantiate the `Item` model using dict unpacking.',
-        boilerplate: 'from pydantic import BaseModel\n\n# Define a Pydantic model named Item with id (int), name (str), and price (float, default 0.0)\nclass Item(BaseModel):\n    id: int\n    name: str\n    price: float = 0.0\n\ndef parse_item(data: dict) -> Item:\n    # Use dict unpacking to instantiate the Item model\n    return Item(data)\n\nif __name__ == "__main__":\n    item = parse_item({"id": 101, "name": "Laptop"})\n    print(f"{item.name}: {item.price}")\n',
+        boilerplate: 'from pydantic import BaseModel\n\n# Define a Pydantic model named Item with id (int), name (str), and price (float, default 0.0)\nclass Item(BaseModel):\n    id: int\n    name: str\n    price: float = 0.0\n\ndef parse_item(data: dict) -> Item:\n    # Use dict unpacking to instantiate the Item model\n    return Item(data)\n\nif __name__ == "__main__":\n    item = parse_item({"id": 101, "name": "Laptop"})\n',
         expectedOutput: 'Laptop: 0.0',
         explanation: 'Pydantic models inherit from `BaseModel`. You can instantiate them using keyword arguments, or by unpacking a dictionary with the `**` operator.'
       }
@@ -1942,7 +1942,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-10-code-1',
         prompt: 'Use the standard library `tomllib` module to parse a TOML-formatted configuration string and retrieve the project version from the `[project]` table.',
-        boilerplate: 'import tomllib\n\ndef parse_version(toml_str: str) -> str:\n    # Parse the TOML string and return the project version\n    data = tomllib.loads(toml_str)\n    return ""\n\nif __name__ == "__main__":\n    toml_config = \'[project]\\nname = "fastcount"\\nversion = "0.1.1"\'\n    print(parse_version(toml_config))\n',
+        boilerplate: 'import tomllib\n\ndef parse_version(toml_str: str) -> str:\n    # Parse the TOML string and return the project version\n    data = tomllib.loads(toml_str)\n    return ""\n\nif __name__ == "__main__":\n    toml_config = \'[project]\\nname = "fastcount"\\nversion = "0.1.1"\'\n    parse_version(toml_config)\n',
         expectedOutput: '0.1.1',
         explanation: 'The `tomllib` module (available in Python 3.11+) provides the `loads` function to parse TOML-formatted strings into standard Python dictionaries.'
       }
