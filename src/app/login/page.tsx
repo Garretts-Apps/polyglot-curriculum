@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -78,9 +79,12 @@ export default async function LoginPage() {
           backgroundColor: 'var(--bg-elevated)',
         }}
       >
-        <span className="inline-flex items-center gap-2 truncate">
+        <span className="inline-flex items-center gap-3 truncate">
           <span style={{ color: 'var(--accent-prompt)' }}>●</span>
           <span>polyglot-curriculum v1.0.0</span>
+          <span style={{ color: 'var(--border)' }}>|</span>
+          <Link href="/privacy" className="hover:text-[var(--accent-info)] transition-colors underline decoration-dotted">privacy</Link>
+          <Link href="/terms" className="hover:text-[var(--accent-info)] transition-colors">terms</Link>
         </span>
         <span className="inline-flex items-center">
           waiting<TerminalCursor thin />
