@@ -259,11 +259,11 @@ export function CodeTerminalCheck({
     >
       <Confetti active={showConfetti} />
 
-      {/* Sandbox Iframe (strict sandboxing: no allow-same-origin) */}
+      {/* Sandbox Iframe — allow-same-origin needed for Pyodide's sessionStorage cache */}
       <iframe
         ref={iframeRef}
         src="/sandbox.html"
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         style={{ display: 'none' }}
         title={`Sandbox runner for ${fileName}`}
       />
