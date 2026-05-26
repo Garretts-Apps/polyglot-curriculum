@@ -222,7 +222,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
       <section className="mb-12">
         <SectionHeader command="cat README.md" />
         <div
-          className="border pl-4 pr-4 py-4 relative"
+          className="border"
           style={{
             borderColor: 'var(--border)',
             backgroundColor: 'var(--bg-elevated)',
@@ -230,19 +230,22 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
             borderLeftColor: accentColor,
           }}
         >
-          {/* file-header strip */}
+          {/* File Header Bar */}
           <div
-            className="absolute top-0 right-0 px-2 py-0.5 text-[10px] uppercase tracking-widest"
+            className="flex items-center justify-between px-4 py-1.5 border-b text-[10px] uppercase tracking-widest"
             style={{
               color: 'var(--fg-dim)',
               backgroundColor: 'var(--bg)',
-              borderLeft: '1px solid var(--border)',
-              borderBottom: '1px solid var(--border)',
+              borderColor: 'var(--border)',
             }}
           >
-            readme.md
+            <span>README.md</span>
+            <span>UTF-8</span>
           </div>
-          <Markdown content={phase.intro} className="prose-terminal" />
+          {/* Markdown Content */}
+          <div className="pl-4 pr-4 py-4">
+            <Markdown content={phase.intro} className="prose-terminal" />
+          </div>
         </div>
       </section>
 
