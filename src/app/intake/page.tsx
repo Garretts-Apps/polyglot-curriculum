@@ -15,7 +15,7 @@ export default function IntakePage() {
   if (state.intake !== null) {
     return (
       <AppShell>
-        <div className="mx-auto w-full max-w-2xl px-3 sm:px-6 py-12 text-left font-mono">
+        <div className="w-full px-4 sm:px-8 py-12 text-left font-mono">
           <pre
             className="text-xs leading-snug mb-6 whitespace-pre"
             style={{
@@ -47,7 +47,7 @@ export default function IntakePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-2xl px-3 sm:px-6 py-8 sm:py-12">
+      <div className="w-full px-4 sm:px-8 py-8 sm:py-12">
         <header className="mb-8">
           <h1
             className="text-xl sm:text-2xl font-semibold mb-2"

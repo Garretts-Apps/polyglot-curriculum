@@ -74,7 +74,7 @@ export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
   const hero = tokeniseHero(langMeta.id);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
+    <div className="w-full px-4 sm:px-8 py-6 sm:py-10 font-mono">
       {/* ── Pre-hero command line ─────────────────────────────────────────── */}
       <p
         className="text-[11px] uppercase tracking-widest mb-3"

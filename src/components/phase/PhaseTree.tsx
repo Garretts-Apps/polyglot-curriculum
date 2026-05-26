@@ -66,7 +66,7 @@ export function PhaseTree({ phases, langMeta }: PhaseTreeProps) {
         }}
       />
 
-      <div className="w-full max-w-2xl relative z-10 flex flex-col gap-12">
+      <div className="w-full relative z-10 flex flex-col gap-12">
         {visiblePhases.map((phase, idx) => {
           const { pct, rowState, isLocked, isCompleted, passedChecks, totalChecks } = getPhaseData(phase, idx);
           const isLeft = idx % 2 === 0;

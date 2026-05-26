@@ -150,7 +150,7 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-5xl px-3 sm:px-6 py-5 sm:py-8 pb-16">
+      <div className="w-full px-4 sm:px-8 py-5 sm:py-8 pb-16">
         {/* ───────── BOOT SEQUENCE ───────── */}
         {!bootDone && (
           <section className="mb-10" aria-label="System boot">

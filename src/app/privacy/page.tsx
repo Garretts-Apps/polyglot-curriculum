@@ -8,7 +8,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <div className="min-h-dvh flex flex-col font-mono text-sm leading-relaxed" style={{ backgroundColor: 'var(--bg)', color: 'var(--fg)' }}>
-      <main className="flex-1 max-w-3xl mx-auto w-full px-3 sm:px-6 py-10 flex flex-col justify-between">
+      <main className="flex-1 w-full px-4 sm:px-8 py-10 flex flex-col justify-between">
         <div>
           {/* Man Header */}
           <div className="flex justify-between border-b pb-2 mb-8 uppercase text-[11px]" style={{ borderColor: 'var(--border)', color: 'var(--fg-dim)' }}>

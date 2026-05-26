@@ -137,7 +137,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
 
   if (isLocked) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-20 text-center font-mono">
+      <div className="w-full px-4 sm:px-8 py-20 text-center font-mono">
         <p className="text-sm text-[var(--accent-error)] mb-4">
           [ ERROR: LEVEL LOCKED ]
         </p>
@@ -154,7 +154,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
+    <div className="w-full px-4 sm:px-8 py-6 sm:py-10 font-mono">
       {/* ─── Phase header ─────────────────────────────────────────────────── */}
       <header className="mb-10">
         {/* Path breadcrumb — `~/curriculum/python/03_modules-pip.phase` */}
