@@ -246,12 +246,13 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
                       {/* ## */}
                       <Cell>
                         <span
-                          className="tabular-nums text-xs"
+                          className="tabular-nums text-xs flex items-center gap-1"
                           style={{
                             color: isCompleted ? 'var(--accent-prompt)' : accent,
                           }}
                         >
-                          {paddedLevel(phase.level)}
+                          <span aria-hidden="true" className="opacity-70">{isCompleted ? '✓' : isLocked ? '×' : ' '}</span>
+                          <span>{paddedLevel(phase.level)}</span>
                         </span>
                       </Cell>
 
@@ -366,12 +367,13 @@ export function PhaseList({ phases, langMeta }: PhaseListProps) {
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="flex items-center gap-2 min-w-0">
                         <span
-                          className="text-xs tabular-nums flex-shrink-0"
+                          className="text-xs tabular-nums flex-shrink-0 flex items-center gap-1"
                           style={{
                             color: isCompleted ? 'var(--accent-prompt)' : accent,
                           }}
                         >
-                          {paddedLevel(phase.level)}
+                          <span aria-hidden="true" className="opacity-70">{isCompleted ? '✓' : isLocked ? '×' : ' '}</span>
+                          <span>{paddedLevel(phase.level)}</span>
                         </span>
                         <span
                           className="text-sm font-medium truncate"

@@ -106,15 +106,16 @@ export function PhaseTree({ phases, langMeta }: PhaseTreeProps) {
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <span className="flex items-center gap-2">
-                      <span
-                        className="text-xs font-semibold tabular-nums px-1.5 py-0.5 border"
+                       <span
+                        className="text-xs font-semibold tabular-nums px-1.5 py-0.5 border flex items-center gap-1"
                         style={{
                           borderColor: isCompleted ? 'var(--accent-prompt)' : accent,
                           color: isCompleted ? 'var(--accent-prompt)' : accent,
                           backgroundColor: 'var(--bg)',
                         }}
                       >
-                        L{paddedLevel(phase.level)}
+                        <span aria-hidden="true" className="opacity-70">{isCompleted ? '✓' : isLocked ? '×' : ' '}</span>
+                        <span>L{paddedLevel(phase.level)}</span>
                       </span>
                       <span className="text-sm font-semibold text-[var(--fg)] truncate max-w-[160px] sm:max-w-xs group-hover:text-[var(--accent-info)] transition-colors">
                         {phase.title}

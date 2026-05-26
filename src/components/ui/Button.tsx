@@ -51,13 +51,13 @@ const sizeStyles: Record<ButtonSize, string> = {
  */
 const variantStyles: Record<ButtonVariant, string> = {
   primary: [
-    'bg-transparent text-[var(--accent-prompt)]',
+    'bg-[color-mix(in_srgb,var(--accent-prompt)_5%,transparent)] text-[var(--accent-prompt)]',
     'border border-[var(--accent-prompt)]',
     'hover:bg-[var(--accent-prompt)] hover:text-[var(--bg)]',
     'active:bg-[var(--accent-prompt)] active:text-[var(--bg)]',
   ].join(' '),
   secondary: [
-    'bg-transparent text-[var(--fg)]',
+    'bg-[color-mix(in_srgb,var(--fg)_3%,transparent)] text-[var(--fg)]',
     'border border-[var(--border-active)]',
     'hover:border-[var(--accent-prompt)] hover:text-[var(--accent-prompt)]',
     'active:border-[var(--accent-prompt)] active:text-[var(--accent-prompt)]',
@@ -70,7 +70,7 @@ const variantStyles: Record<ButtonVariant, string> = {
     'active:bg-[color-mix(in_srgb,var(--accent-prompt)_6%,transparent)]',
   ].join(' '),
   danger: [
-    'bg-transparent text-[var(--accent-error)]',
+    'bg-[color-mix(in_srgb,var(--accent-error)_5%,transparent)] text-[var(--accent-error)]',
     'border border-[var(--accent-error)]',
     'hover:bg-[var(--accent-error)] hover:text-[var(--bg)]',
     'active:bg-[var(--accent-error)] active:text-[var(--bg)]',

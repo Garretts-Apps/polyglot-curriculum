@@ -27,7 +27,8 @@ const META: Record<StatusKind, { label: string; color: string; symbol: string }>
  */
 export function StatusTag({ status, label, className = '', glow = true }: StatusTagProps) {
   const meta = META[status];
-  const text = (label ?? meta.label).padStart(4, ' ').slice(0, 4);
+  const text = (label ?? meta.label).trim();
+  const displayVal = `${meta.symbol} ${text}`;
 
   const style: CSSProperties = {
     color: meta.color,
@@ -48,7 +49,7 @@ export function StatusTag({ status, label, className = '', glow = true }: Status
       role="status"
       aria-label={`status: ${meta.label.trim()}`}
     >
-      [{text}]
+      [{displayVal}]
     </span>
   );
 }
