@@ -71,8 +71,6 @@ export function SettingsForm() {
 
   function handleTargetChange(lang: Language, val: number) {
     if (!intake) return;
-    const startLevel = intake.startLevels[lang] ?? 0;
-    if (val <= startLevel) return;
     const newIntake = {
       ...intake,
       targetLevels: { ...intake.targetLevels, [lang]: val },
@@ -132,7 +130,7 @@ export function SettingsForm() {
                     id={`tgt-${lang.id}`}
                     aria-label={`target level for ${lang.name}`}
                     type="range"
-                    min={startLevel + 1}
+                    min={1}
                     max={10}
                     value={targetLevel}
                     onChange={(e) => handleTargetChange(lang.id, Number(e.target.value))}
