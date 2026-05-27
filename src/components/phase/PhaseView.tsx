@@ -120,18 +120,22 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
 
   const handleMarkComplete = useCallback(async () => {
     let credentialId: string | undefined;
-    try {
-      const res = await fetch('/api/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: phase.language, phaseLevel: phase.level }),
-      });
-      if (res.ok) {
-        const json = await res.json() as { id?: string };
-        credentialId = json.id;
+    // Only issue credentials for phases the user actually earned — not self-attested levels
+    const isEarned = phase.level > startLevel;
+    if (isEarned) {
+      try {
+        const res = await fetch('/api/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: phase.language, phaseLevel: phase.level }),
+        });
+        if (res.ok) {
+          const json = await res.json() as { id?: string };
+          credentialId = json.id;
+        }
+      } catch {
+        // credential issuance is best-effort — don't block completion
       }
-    } catch {
-      // credential issuance is best-effort — don't block completion
     }
 
     updatePhase(phase.id, (prev) => ({
@@ -144,7 +148,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
       notes: prev?.notes ?? '',
       checkResults: prev?.checkResults ?? {},
     }));
-  }, [phase.id, phase.language, phase.level, updatePhase]);
+  }, [phase.id, phase.language, phase.level, startLevel, updatePhase]);
 
   const accentVar = langMeta.accentVar;
   const accentColor = `var(${accentVar})`;
