@@ -27,7 +27,7 @@ export function SettingsForm() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `polyglot-curriculum-progress-${date}.json`;
+    a.download = `knowyourlanguage-progress-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -255,7 +255,7 @@ export function SettingsForm() {
       {/* GitHub Progress Badges */}
       <section>
         <h2 className="text-sm font-semibold mb-3">
-          <ShellPrompt minimal command=" polyglot --badges --github" />
+          <ShellPrompt minimal command=" kyl --badges --github" />
         </h2>
         <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
           {'// copy markdown codes to show your skillset levels on your GitHub profile'}
@@ -289,7 +289,7 @@ export function SettingsForm() {
             // Link to the user's progress path page or homepage
             const targetUrl = typeof window !== 'undefined' 
               ? `${window.location.origin}/${lang.id}`
-              : `https://polyglot-curriculum.vercel.app/${lang.id}`;
+              : `https://knowyourlanguage.dev/${lang.id}`;
 
             const markdownString = `[![${lang.name} Skill Level](${badgeUrl})](${targetUrl})`;
 
@@ -351,7 +351,7 @@ export function SettingsForm() {
         style={{ borderColor: 'var(--border)' }}
       >
         <p className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          $ polyglot-curriculum --version
+          $ kyl --version
         </p>
         <p className="text-[11px]" style={{ color: 'var(--accent-prompt)' }}>
           v{APP_VERSION}

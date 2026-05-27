@@ -33,19 +33,19 @@ async function getCredential(id: string): Promise<Credential | null> {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const credential = await getCredential(id);
-  if (!credential) return { title: 'Credential Not Found — polyglot@terminal' };
+  if (!credential) return { title: 'Credential Not Found — know your language™' };
 
   const badge = PHASE_BADGES[`${credential.language}-${credential.phase_level}`];
   const langMeta = LANGUAGES.find((l) => l.id === credential.language);
   const title = badge?.title ?? `${langMeta?.name ?? credential.language} Phase ${credential.phase_level}`;
 
   return {
-    title: `${title} — polyglot@terminal`,
+    title: `${title} — know your language™`,
     description: `${credential.earner_handle} demonstrated: ${badge?.skills.join('; ') ?? title}`,
     openGraph: {
-      title: `${title} — polyglot@terminal`,
+      title: `${title} — know your language™`,
       description: badge?.skills[0] ?? title,
-      siteName: 'polyglot@terminal',
+      siteName: 'know your language™',
     },
   };
 }

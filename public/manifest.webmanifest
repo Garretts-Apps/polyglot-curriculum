@@ -1,7 +1,7 @@
 {
-  "name": "Polyglot Curriculum",
-  "short_name": "Polyglot",
-  "description": "Personalized self-study tracker for six programming languages, terminal-aesthetic, single-user.",
+  "name": "know your language™",
+  "short_name": "kyl",
+  "description": "Personalized self-study tracker for six programming languages, terminal-aesthetic.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

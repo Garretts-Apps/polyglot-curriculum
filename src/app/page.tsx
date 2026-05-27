@@ -156,7 +156,7 @@ export default function HomePage() {
           <section className="mb-10" aria-label="System boot">
             <BootSequence
               lines={[
-                { text: 'boot polyglot-curriculum v1.0.0', pause: 60 },
+                { text: 'boot know your language™ v1.0.0', pause: 60 },
                 { text: 'loading curriculum modules...', pause: 50 },
                 {
                   text: `linked ${LANGUAGES.length} language runtimes`,
@@ -211,11 +211,10 @@ export default function HomePage() {
             }}
           >
             <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft">
-              polyglot
+              know your language
             </span>
-            <span style={{ color: 'var(--fg-muted)' }}>@</span>
             <span style={{ color: 'var(--accent-info)' }} className="glow-soft">
-              curriculum
+              ™
             </span>
             <TerminalCursor />
           </h1>

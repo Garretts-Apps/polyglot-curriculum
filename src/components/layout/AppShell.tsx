@@ -79,17 +79,13 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 font-mono text-xs leading-none flex-shrink-0 -mx-2 px-2 h-11 sm:h-9"
-              aria-label="polyglot home"
+              aria-label="know your language home"
             >
               <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft font-semibold">
-                polyglot
+                know your language
               </span>
-              <span style={{ color: 'var(--fg-muted)' }}>@</span>
               <span style={{ color: 'var(--accent-info)' }} className="hidden sm:inline">
-                terminal
-              </span>
-              <span style={{ color: 'var(--fg-muted)' }} className="hidden sm:inline">
-                :
+                ™
               </span>
             </Link>
 
@@ -215,7 +211,7 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
       >
         <span className="inline-flex items-center gap-2 truncate">
           <span style={{ color: 'var(--accent-prompt)' }}>●</span>
-          <span className="hidden xs:inline sm:inline">polyglot-curriculum v1.0.0</span>
+          <span className="hidden xs:inline sm:inline">know your language™ v1.0.0</span>
           <span className="sm:hidden">v1.0.0</span>
         </span>
         <span className="inline-flex items-center gap-2 truncate">

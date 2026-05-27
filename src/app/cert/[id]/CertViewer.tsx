@@ -153,7 +153,7 @@ function runCommand(raw: string, ctx: Ctx): TLine[] | 'clear' | 'replay' {
           return [
             tl(s('# ', warn), s(`${ctx.earnerHandle} — ${ctx.languageName} ${ctx.phaseTitle}`)),
             blank(),
-            colored(muted, 'Issued by polyglot@terminal.'),
+            colored(muted, 'Issued by know your language™.'),
             colored(muted, 'Earned through demonstrated proficiency, not self-attestation.'),
             blank(),
             tl(s('verify  ', info), s(ctx.verifyUrl, muted)),
@@ -165,11 +165,11 @@ function runCommand(raw: string, ctx: Ctx): TLine[] | 'clear' | 'replay' {
     }
 
     case 'neofetch': {
-      const title = `${ctx.earnerHandle}@polyglot-terminal`;
+      const title = `${ctx.earnerHandle}@knowyourlanguage`;
       return [
-        tl(s(ctx.earnerHandle, accent), s('@polyglot-terminal', muted)),
+        tl(s(ctx.earnerHandle, accent), s('@knowyourlanguage', muted)),
         colored(dim, '─'.repeat(title.length)),
-        tl(s('OS       ', warn), s('polyglot terminal 1.0')),
+        tl(s('OS       ', warn), s('know your language™ 1.0')),
         tl(s('host     ', warn), s('credential registry')),
         tl(s('kernel   ', warn), s('vercel/edge/2026')),
         tl(s('uptime   ', warn), s(`since ${ctx.issuedDate}`)),
@@ -198,7 +198,7 @@ function runCommand(raw: string, ctx: Ctx): TLine[] | 'clear' | 'replay' {
         const authorSlug = ctx.earnerHandle.toLowerCase().replace(/\s+/g, '.');
         return [
           tl(s('commit ', dim), s(short, accent), s(' (HEAD -> earned, origin/main)', dim)),
-          tl(s('Author: ', warn), s(`${ctx.earnerHandle} <${authorSlug}@polyglot>`)),
+          tl(s('Author: ', warn), s(`${ctx.earnerHandle} <${authorSlug}@knowyourlanguage>`)),
           tl(s('Date:   ', warn), s(ctx.issuedDate)),
           blank(),
           plain(`    feat(${ctx.languageName.toLowerCase()}): earn ${ctx.phaseTitle}`),
@@ -320,7 +320,7 @@ export function CertViewer({
   const issuedDate = new Date(issuedAt).toISOString().slice(0, 10);
   const verifyUrl  = typeof window !== 'undefined'
     ? `${window.location.host}/cert/${credentialId}`
-    : `polyglot-curriculum.vercel.app/cert/${credentialId}`;
+    : `knowyourlanguage.dev/cert/${credentialId}`;
 
   const ctx: Ctx = { credentialId, earnerHandle, issuedDate, languageName, phaseTitle, skills, verifyUrl, accent };
 
@@ -411,7 +411,7 @@ export function CertViewer({
         >
           <span className="flex items-center gap-2">
             <span style={{ color: accent, textShadow: `0 0 8px ${accent}` }}>●</span>
-            <span>polyglot@terminal</span>
+            <span>know your language™</span>
             <span style={{ color: 'var(--fg-dim)' }}>—</span>
             <span style={{ color: accent }}>credential registry</span>
           </span>
@@ -465,7 +465,7 @@ export function CertViewer({
                   textShadow: `0 0 8px color-mix(in srgb, ${accent} 50%, transparent)`,
                 }}
               >
-                <span>polyglot terminal — issued credential</span>
+                <span>know your language™ — issued credential</span>
                 <span style={{ opacity: 0.7 }}>⬡ {languageName} · verified</span>
               </div>
 

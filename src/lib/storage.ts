@@ -51,7 +51,7 @@ export function loadLocal(): ProgressState {
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as ProgressState;
     if (parsed.version !== STORAGE_VERSION) {
-      console.warn('Polyglot Curriculum: stored version mismatch, resetting to defaults');
+      console.warn('know your language™: stored version mismatch, resetting to defaults');
       return DEFAULT_STATE;
     }
     return parsed;

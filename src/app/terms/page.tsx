@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/Button';
 
 export const metadata = {
-  title: 'Terms of Use - Polyglot Curriculum',
-  description: 'Terms of Use policy for Polyglot Curriculum tracker, presented as a terminal man-page.',
+  title: 'Terms of Use - know your language™',
+  description: 'Terms of Use policy for know your language™ tracker, presented as a terminal man-page.',
 };
 
 export default function TermsPage() {
@@ -13,7 +13,7 @@ export default function TermsPage() {
           {/* Man Header */}
           <div className="flex justify-between border-b pb-2 mb-8 uppercase text-[11px]" style={{ borderColor: 'var(--border)', color: 'var(--fg-dim)' }}>
             <span>TERMS(7)</span>
-            <span>Polyglot Curriculum Manual</span>
+            <span>know your language™ Manual</span>
             <span>TERMS(7)</span>
           </div>
 
@@ -21,7 +21,7 @@ export default function TermsPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Name</h2>
             <p className="pl-4">
-              <strong className="text-[var(--fg)]">terms</strong> - Terms of Use for the Polyglot Curriculum self-study tracker.
+              <strong className="text-[var(--fg)]">terms</strong> - Terms of Use for the know your language™ self-study tracker.
             </p>
           </section>
 
@@ -29,7 +29,7 @@ export default function TermsPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Synopsis</h2>
             <p className="pl-4 font-semibold text-[var(--accent-info)]">
-              polyglot-curriculum --show-policy=terms
+              kyl --show-policy=terms
             </p>
           </section>
 
@@ -37,7 +37,7 @@ export default function TermsPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Description</h2>
             <p className="pl-4 text-[var(--fg-muted)]">
-              By registering an account or accessing the Polyglot Curriculum tracker, you acknowledge that you have read, understood, and agree to be bound by these Terms of Use.
+              By registering an account or accessing the know your language™ tracker, you acknowledge that you have read, understood, and agree to be bound by these Terms of Use.
             </p>
           </section>
 
@@ -84,7 +84,7 @@ export default function TermsPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Limitation of Liability</h2>
             <p className="pl-4 text-[var(--fg-muted)]">
-              In no event shall Polyglot Curriculum or its developers be liable for any direct, indirect, incidental, special, or consequential damages (including, but not limited to, loss of data, browser crashes, CPU overheating, or study disruptions) arising out of the use or inability to use this platform.
+              In no event shall know your language™ or its developers be liable for any direct, indirect, incidental, special, or consequential damages (including, but not limited to, loss of data, browser crashes, CPU overheating, or study disruptions) arising out of the use or inability to use this platform.
             </p>
           </section>
 
