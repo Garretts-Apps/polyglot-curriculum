@@ -25,39 +25,48 @@ function useReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-/** Build a copyable ASCII badge string. Inner content is 46 chars wide. */
+/** Build a copyable ASCII badge string matching the canonical layout. */
 function buildAsciiBadge(
   earnerHandle: string,
   languageName: string,
   phaseTitle: string,
   issuedDate: string,
   credentialId: string,
+  verifyUrl: string,
 ): string {
-  const IW = 46;
-  const pad = (s: string) => s.padEnd(IW);
-  const trunc = (s: string, n: number) => s.length > n ? s.slice(0, n - 1) + '…' : s;
-  const row = (s: string) => `║  ${pad(trunc(s, IW))}  ║`;
+  const INNER = 50;       // chars between the two ║
+  const LPAD  = 2;        // leading spaces inside each row
+  const CW    = INNER - LPAD; // 48 chars for content + right-padding
+  const LABEL = 13;       // label column width ("credential   ", "issued       " etc.)
+
+  const row   = (s: string) => `║${' '.repeat(LPAD)}${s.padEnd(CW)}║`;
   const blank = row('');
-  const hr = '╠' + '═'.repeat(IW + 4) + '╣';
-  const top = '╔' + '═'.repeat(IW + 4) + '╗';
-  const bot = '╚' + '═'.repeat(IW + 4) + '╝';
+  const kv    = (label: string, val: string) => row(`${label.padEnd(LABEL)}${val}`);
+  const top   = '╔' + '═'.repeat(INNER) + '╗';
+  const mid   = '╠' + '═'.repeat(INNER) + '╣';
+  const bot   = '╚' + '═'.repeat(INNER) + '╝';
 
   return [
     top,
-    row('  ⬡  POLYGLOT@TERMINAL  ·  VERIFIED CREDENTIAL'),
-    hr,
+    row('polyglot@terminal'),
+    row('VERIFIED CREDENTIAL'),
+    mid,
     blank,
-    row(`  AWARDED TO  ${earnerHandle}`),
+    row('awarded to'),
+    row(earnerHandle),
     blank,
-    row(`  CREDENTIAL  ${languageName}`),
-    row(`  TITLE       ${trunc(phaseTitle, 34)}`),
+    kv('credential', languageName),
+    kv('title', phaseTitle),
     blank,
-    row(`  ISSUED      ${issuedDate}`),
-    row(`  EXPIRES     never`),
+    kv('issued', issuedDate),
+    kv('expires', 'never'),
     blank,
-    hr,
-    row(`  ✓ publicly verifiable  ·  no expiry`),
-    row(`  ${trunc(credentialId, IW - 2)}`),
+    row('credential id'),
+    row(credentialId),
+    blank,
+    mid,
+    row('publicly verifiable'),
+    row(verifyUrl),
     bot,
   ].join('\n');
 }
@@ -93,7 +102,10 @@ export function CertViewer({
 
   const accent = `var(${languageAccentVar})`;
   const issuedDate = new Date(issuedAt).toISOString().slice(0, 10);
-  const asciiBadge = buildAsciiBadge(earnerHandle, languageName, phaseTitle, issuedDate, credentialId);
+  const verifyUrl = typeof window !== 'undefined'
+    ? `${window.location.host}/cert/${credentialId}`
+    : `polyglot-curriculum.vercel.app/cert/${credentialId}`;
+  const asciiBadge = buildAsciiBadge(earnerHandle, languageName, phaseTitle, issuedDate, credentialId, verifyUrl);
 
   function handleCopy() {
     void navigator.clipboard.writeText(asciiBadge).then(() => {
