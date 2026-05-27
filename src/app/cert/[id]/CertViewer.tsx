@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
 
 interface CertViewerProps {
   credentialId: string;
@@ -559,22 +560,29 @@ export function CertViewer({
             </div>
           ))}
 
-          {/* Input line */}
-          <div className="mt-3 flex items-center gap-2">
-            <span style={{ color: accent }}>$</span>
+          {/* Input line — hidden real input + visual prompt */}
+          <div
+            className="mt-3 flex items-center gap-2 relative"
+            onClick={() => inputRef.current?.focus()}
+          >
+            {/* Hidden input: opacity-0 keeps it focusable on mobile (triggers keyboard).
+                font-size 16px prevents iOS auto-zoom. */}
             <input
               ref={inputRef}
               value={inputVal}
               onChange={(e) => { setInputVal(e.target.value); setHistIdx(-1); }}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none border-none text-sm"
-              style={{ color: 'var(--fg)', caretColor: accent }}
+              className="absolute opacity-0 w-px h-px"
+              style={{ fontSize: '16px' }}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
               aria-label="terminal input"
             />
+            <span style={{ color: accent }}>$</span>
+            <span style={{ color: 'var(--fg)' }}>{inputVal}</span>
+            <TerminalCursor color={accent} />
           </div>
           <div ref={endRef} />
         </div>
