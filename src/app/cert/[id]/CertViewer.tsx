@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { TerminalCursor } from '@/components/ui/TerminalCursor';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 interface CertViewerProps {
   credentialId: string;
@@ -25,6 +24,252 @@ function useReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+// ── Terminal output types ─────────────────────────────────────────────────────
+// Security: all commands are a static lookup table. No eval, no Function(),
+// no network calls, no server path. Input never executes — it only selects
+// from this pre-defined map of string → ReactNode.
+
+interface Seg  { text: string; color?: string }
+interface TLine { segs: Seg[] }
+
+const s    = (text: string, color?: string): Seg  => ({ text, color });
+const tl   = (...segs: Seg[]): TLine              => ({ segs });
+const plain  = (text: string): TLine              => tl(s(text));
+const colored = (color: string, text: string): TLine => tl(s(text, color));
+const blank  = (): TLine                          => plain('');
+
+// ── Command definitions ───────────────────────────────────────────────────────
+
+interface Ctx {
+  credentialId: string;
+  earnerHandle: string;
+  issuedDate: string;
+  languageName: string;
+  phaseTitle: string;
+  skills: string[];
+  verifyUrl: string;
+  accent: string;
+}
+
+const FORTUNES = [
+  '"The best error message is the one that never shows up." — Thomas Fuchs',
+  '"Any fool can write code that a computer can understand. Good programmers write code humans can understand." — Fowler',
+  '"First, solve the problem. Then, write the code." — John Johnson',
+  '"It works on my machine." — every developer, ever',
+  '"99 little bugs in the code. Take one down, patch it around. 127 little bugs in the code."',
+  '"There are only two hard things in CS: cache invalidation and naming things." — Phil Karlton',
+  '"Talk is cheap. Show me the code." — Linus Torvalds',
+  '"Programs must be written for people to read, only incidentally for machines to execute." — Abelson & Sussman',
+  '"Make it work, make it right, make it fast." — Kent Beck',
+  '"Weeks of coding can save you hours of planning." — unknown',
+];
+
+const FILES = ['credential.json', 'skills.txt', 'verify.sh', 'README.md'];
+const COMMAND_NAMES = [
+  'cat', 'clear', 'exit', 'fortune', 'git', 'help',
+  'logout', 'ls', 'neofetch', 'pwd', 'rm', 'sudo', 'verify', 'whoami',
+];
+
+function runCommand(raw: string, ctx: Ctx): TLine[] | 'clear' | 'replay' {
+  const parts = raw.trim().split(/\s+/);
+  const cmd  = (parts[0] ?? '').toLowerCase();
+  const args = parts.slice(1);
+
+  const warn   = 'var(--accent-warn)';
+  const info   = 'var(--accent-info)';
+  const prompt = 'var(--accent-prompt)';
+  const muted  = 'var(--fg-muted)';
+  const dim    = 'var(--fg-dim)';
+  const { accent } = ctx;
+
+  switch (cmd) {
+    case 'help':
+      return [
+        colored(muted, 'available commands:'),
+        blank(),
+        tl(s('  whoami         ', accent), s('show earner identity',            muted)),
+        tl(s('  ls             ', accent), s('list credential files',            muted)),
+        tl(s('  cat <file>     ', accent), s('read a file',                      muted)),
+        tl(s('  neofetch       ', accent), s('system info panel',                muted)),
+        tl(s('  verify         ', accent), s('re-run credential verification',   muted)),
+        tl(s('  git log        ', accent), s('commit history',                   muted)),
+        tl(s('  fortune        ', accent), s('random programming quote',         muted)),
+        tl(s('  pwd            ', accent), s('print working directory',          muted)),
+        tl(s('  clear          ', accent), s('clear terminal output',            muted)),
+        tl(s('  sudo <cmd>     ', accent), s('attempt superuser command',        muted)),
+        blank(),
+        colored(dim, '  tab: complete · ↑↓: history'),
+      ];
+
+    case 'whoami':
+      return [
+        colored(accent, ctx.earnerHandle),
+        blank(),
+        tl(s('credential  ', warn), s(`${ctx.languageName} · ${ctx.phaseTitle}`)),
+        tl(s('issued      ', warn), s(ctx.issuedDate)),
+        tl(s('id          ', warn), s(ctx.credentialId, muted)),
+        tl(s('verify      ', warn), s(ctx.verifyUrl,    muted)),
+      ];
+
+    case 'pwd':
+      return [
+        plain(`/home/${ctx.earnerHandle.toLowerCase().replace(/\s+/g, '.')}/credentials/${ctx.credentialId}`),
+      ];
+
+    case 'ls':
+      return [tl(
+        s('credential.json', info),  s('  '),
+        s('skills.txt',      info),  s('  '),
+        s('verify.sh',       prompt), s('  '),
+        s('README.md',       muted),
+      )];
+
+    case 'cat': {
+      const file = (args[0] ?? '').replace(/^\.?\//, '');
+      switch (file.toLowerCase()) {
+        case 'credential.json':
+          return [
+            colored(dim, '{'),
+            tl(s('  "id":          ', warn), s(`"${ctx.credentialId}"`,  info)),
+            tl(s('  "earner":      ', warn), s(`"${ctx.earnerHandle}"`,  info)),
+            tl(s('  "language":    ', warn), s(`"${ctx.languageName}"`,  info)),
+            tl(s('  "phase":       ', warn), s(`"${ctx.phaseTitle}"`,    info)),
+            tl(s('  "issued":      ', warn), s(`"${ctx.issuedDate}"`,    info)),
+            tl(s('  "expires":     ', warn), s('"never"',               prompt)),
+            tl(s('  "verify":      ', warn), s(`"${ctx.verifyUrl}"`,     muted)),
+            colored(dim, '}'),
+          ];
+        case 'skills.txt':
+          if (!ctx.skills.length) return [colored(muted, '(no skills on file)')];
+          return ctx.skills.map((sk) => tl(s('✓ ', prompt), s(sk)));
+        case 'verify.sh':
+          return [
+            colored(dim,  '#!/bin/sh'),
+            blank(),
+            tl(s('curl', warn), s(' -s '), s(`https://${ctx.verifyUrl}`, info)),
+            tl(s('echo', warn), s(' "✓ credential verified"')),
+          ];
+        case 'readme.md':
+          return [
+            tl(s('# ', warn), s(`${ctx.earnerHandle} — ${ctx.languageName} ${ctx.phaseTitle}`)),
+            blank(),
+            colored(muted, 'Issued by polyglot@terminal.'),
+            colored(muted, 'Earned through demonstrated proficiency, not self-attestation.'),
+            blank(),
+            tl(s('verify  ', info), s(ctx.verifyUrl, muted)),
+          ];
+        default:
+          if (!file) return [tl(s('usage: ', warn), s('cat <file>'), s('  (try: ls)', muted))];
+          return [colored(muted, `cat: ${file}: No such file or directory`)];
+      }
+    }
+
+    case 'neofetch': {
+      const title = `${ctx.earnerHandle}@polyglot-terminal`;
+      return [
+        tl(s(ctx.earnerHandle, accent), s('@polyglot-terminal', muted)),
+        colored(dim, '─'.repeat(title.length)),
+        tl(s('OS       ', warn), s('polyglot terminal 1.0')),
+        tl(s('host     ', warn), s('credential registry')),
+        tl(s('kernel   ', warn), s('vercel/edge/2026')),
+        tl(s('uptime   ', warn), s(`since ${ctx.issuedDate}`)),
+        blank(),
+        tl(s('language ', accent), s(ctx.languageName)),
+        tl(s('phase    ', accent), s(ctx.phaseTitle)),
+        tl(s('skills   ', accent), s(`${ctx.skills.length} demonstrated`)),
+        blank(),
+        tl(s('issued   ', info), s(ctx.issuedDate)),
+        tl(s('expires  ', info), s('never', prompt)),
+        tl(s('id       ', info), s(ctx.credentialId, muted)),
+      ];
+    }
+
+    case 'verify':
+      return 'replay';
+
+    case 'fortune': {
+      const q = FORTUNES[Math.floor(Math.random() * FORTUNES.length)]!;
+      return [colored(muted, q)];
+    }
+
+    case 'git':
+      if (args[0] === 'log') {
+        const short      = ctx.credentialId.slice(0, 7);
+        const authorSlug = ctx.earnerHandle.toLowerCase().replace(/\s+/g, '.');
+        return [
+          tl(s('commit ', dim), s(short, accent), s(' (HEAD -> earned, origin/main)', dim)),
+          tl(s('Author: ', warn), s(`${ctx.earnerHandle} <${authorSlug}@polyglot>`)),
+          tl(s('Date:   ', warn), s(ctx.issuedDate)),
+          blank(),
+          plain(`    feat(${ctx.languageName.toLowerCase()}): earn ${ctx.phaseTitle}`),
+          ...(ctx.skills.length > 0 ? [
+            blank(),
+            colored(muted, `    demonstrated: ${ctx.skills.slice(0, 2).join(', ')}${ctx.skills.length > 2 ? ' ...' : ''}`),
+          ] : []),
+        ];
+      }
+      return [
+        colored(muted, `git: '${args[0] ?? ''}' is not a git command`),
+        colored(dim,   "did you mean: git log"),
+      ];
+
+    case 'sudo': {
+      const firstName = ctx.earnerHandle.split(' ')[0]?.toLowerCase() ?? 'user';
+      const sub       = args.join(' ').toLowerCase();
+      const pwPrompt  = colored(muted, `[sudo] password for ${firstName}:`);
+      if (sub === 'hire me' || sub === 'hire-me') {
+        return [
+          pwPrompt,
+          colored(muted, 'Sorry, try again.'),
+          colored(muted, 'Sorry, try again.'),
+          colored(muted, `${ctx.earnerHandle} is not in the sudoers file. This incident will be reported.`),
+          blank(),
+          colored(accent, '(credentials speak louder than sudo — share your cert link)'),
+        ];
+      }
+      if (sub.includes('sandwich')) {
+        return [pwPrompt, colored(accent, 'Okay.'), blank(), plain('🥪')];
+      }
+      if (sub.startsWith('rm')) {
+        return [
+          pwPrompt,
+          colored(muted,  "rm: cannot remove '/': Permission denied"),
+          colored(accent, 'earner too valuable to delete'),
+        ];
+      }
+      return [
+        pwPrompt,
+        colored(muted, `sudo: ${args[0] ?? 'command'}: command not found`),
+      ];
+    }
+
+    case 'rm':
+      return [
+        colored(muted, "rm: cannot remove '/': Permission denied"),
+        colored(dim,   'nice try'),
+      ];
+
+    case 'exit':
+    case 'logout':
+    case 'quit':
+      return [colored(muted, "logout: you can't leave. your credentials live here.")];
+
+    case 'clear':
+      return 'clear';
+
+    case '':
+      return [];
+
+    default:
+      return [
+        colored(muted, `command not found: ${cmd}`),
+        colored(dim,   "type 'help' for available commands"),
+      ];
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function CertViewer({
   credentialId,
   earnerHandle,
@@ -34,27 +279,108 @@ export function CertViewer({
   phaseTitle,
   skills,
 }: CertViewerProps) {
-  const [step, setStep] = useState(-1);
-  const [showCert, setShowCert] = useState(false);
+  const [verifyStep, setVerifyStep] = useState(-1);
+  const [showCert,   setShowCert]   = useState(false);
+  const [replayKey,  setReplayKey]  = useState(0);
   const instant = useReducedMotion();
 
   useEffect(() => {
     if (instant) {
-      setStep(VERIFY_STEPS.length - 1);
+      setVerifyStep(VERIFY_STEPS.length - 1);
       setShowCert(true);
       return;
     }
-
-    VERIFY_STEPS.forEach((s, i) => {
-      window.setTimeout(() => setStep(i), s.delay);
+    setVerifyStep(-1);
+    setShowCert(false);
+    const timers: number[] = [];
+    VERIFY_STEPS.forEach((step, i) => {
+      timers.push(window.setTimeout(() => setVerifyStep(i), step.delay));
     });
-
     const last = VERIFY_STEPS[VERIFY_STEPS.length - 1]!.delay;
-    window.setTimeout(() => setShowCert(true), last + 400);
-  }, [instant]);
+    timers.push(window.setTimeout(() => setShowCert(true), last + 400));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [instant, replayKey]);
 
-  const accent = `var(${languageAccentVar})`;
+  const [termHistory, setTermHistory] = useState<Array<{ cmd: string; output: TLine[] }>>([]);
+  const [inputVal,    setInputVal]    = useState('');
+  const [histIdx,     setHistIdx]     = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const bodyRef  = useRef<HTMLDivElement>(null);
+  const endRef   = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [termHistory]);
+
+  useEffect(() => {
+    if (showCert) setTimeout(() => inputRef.current?.focus(), 150);
+  }, [showCert]);
+
+  const accent     = `var(${languageAccentVar})`;
   const issuedDate = new Date(issuedAt).toISOString().slice(0, 10);
+  const verifyUrl  = typeof window !== 'undefined'
+    ? `${window.location.host}/cert/${credentialId}`
+    : `polyglot-curriculum.vercel.app/cert/${credentialId}`;
+
+  const ctx: Ctx = { credentialId, earnerHandle, issuedDate, languageName, phaseTitle, skills, verifyUrl, accent };
+
+  function submit() {
+    const raw = inputVal.trim();
+    setInputVal('');
+    setHistIdx(-1);
+    const result = runCommand(raw, ctx);
+    if (result === 'clear') { setTermHistory([]); return; }
+    if (result === 'replay') {
+      setTermHistory([]);
+      setReplayKey((k) => k + 1);
+      bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setTermHistory((h) => [...h, { cmd: raw, output: result }]);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') { e.preventDefault(); submit(); return; }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const cmds = termHistory.map((h) => h.cmd).filter(Boolean).reverse();
+      if (!cmds.length) return;
+      const next = Math.min(histIdx + 1, cmds.length - 1);
+      setHistIdx(next);
+      setInputVal(cmds[next]!);
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (histIdx <= 0) { setHistIdx(-1); setInputVal(''); return; }
+      const cmds = termHistory.map((h) => h.cmd).filter(Boolean).reverse();
+      const next = histIdx - 1;
+      setHistIdx(next);
+      setInputVal(cmds[next] ?? '');
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = inputVal;
+      if (val.toLowerCase().startsWith('cat ')) {
+        const partial = val.slice(4).toLowerCase();
+        const matches = FILES.filter((f) => f.toLowerCase().startsWith(partial));
+        if (matches.length === 1) { setInputVal(`cat ${matches[0]}`); }
+        else if (matches.length > 1) {
+          setTermHistory((h) => [...h, { cmd: '', output: [tl(...matches.flatMap((m) => [s(m, accent), s('  ')]))] }]);
+        }
+        return;
+      }
+      const matches = COMMAND_NAMES.filter((c) => c.startsWith(val.toLowerCase()));
+      if (matches.length === 1) { setInputVal(matches[0]!); }
+      else if (matches.length > 1 && val.length > 0) {
+        setTermHistory((h) => [...h, { cmd: '', output: [tl(...matches.flatMap((m) => [s(m, accent), s('  ')]))] }]);
+      }
+    }
+  }
 
   return (
     <div
@@ -65,9 +391,8 @@ export function CertViewer({
         backgroundSize: '28px 28px',
       }}
     >
-      {/* Terminal window */}
       <div
-        className="flex-1 flex flex-col border-0 sm:border transition-all duration-700"
+        className="flex-1 flex flex-col border-0 sm:border"
         style={{
           borderColor: accent,
           boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 30%, transparent),
@@ -94,38 +419,43 @@ export function CertViewer({
         </div>
 
         {/* Terminal body */}
-        <div className="flex-1 overflow-y-auto px-5 sm:px-10 py-6 space-y-1 text-sm">
-          <p style={{ color: 'var(--fg-muted)' }}>
+        <div
+          ref={bodyRef}
+          className="flex-1 overflow-y-auto px-5 sm:px-10 py-6 text-sm cursor-text"
+          onClick={() => inputRef.current?.focus()}
+        >
+          {/* Boot command */}
+          <p className="mb-1" style={{ color: 'var(--fg-muted)' }}>
             <span style={{ color: accent }}>$</span>
             {' verify --credential '}
             <span style={{ color: 'var(--fg)' }}>{credentialId}</span>
           </p>
 
-          {VERIFY_STEPS.map((s, i) => (
+          {/* Verify animation */}
+          {VERIFY_STEPS.map((step, i) => (
             <p
               key={i}
-              className="transition-opacity duration-300"
+              className="mb-1 transition-opacity duration-300"
               style={{
-                opacity: step >= i ? 1 : 0,
-                color: s.accent ? accent : 'var(--fg-muted)',
-                textShadow: s.accent ? `0 0 12px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
+                opacity: verifyStep >= i ? 1 : 0,
+                color: step.accent ? accent : 'var(--fg-muted)',
+                textShadow: step.accent ? `0 0 12px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
               }}
             >
-              {s.text}
+              {step.text}
             </p>
           ))}
 
+          {/* Cert card */}
           {showCert && (
             <div
-              className="mt-5 transition-opacity duration-500 border"
+              className="mt-4 mb-5 border"
               style={{
-                opacity: showCert ? 1 : 0,
                 borderColor: accent,
                 backgroundColor: `color-mix(in srgb, ${accent} 5%, var(--bg))`,
                 boxShadow: `inset 0 0 40px color-mix(in srgb, ${accent} 4%, transparent)`,
               }}
             >
-              {/* Card title bar */}
               <div
                 className="px-4 sm:px-6 py-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] border-b"
                 style={{
@@ -147,8 +477,6 @@ export function CertViewer({
                     boxShadow: `0 0 6px color-mix(in srgb, ${accent} 60%, transparent)`,
                   }}
                 />
-
-                {/* Earner */}
                 <div className="border-l-2 pl-4 py-1" style={{ borderColor: accent }}>
                   <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
                     awarded to
@@ -160,8 +488,6 @@ export function CertViewer({
                     {earnerHandle}
                   </p>
                 </div>
-
-                {/* Credential */}
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
                     credential
@@ -172,8 +498,6 @@ export function CertViewer({
                     <span>{phaseTitle}</span>
                   </p>
                 </div>
-
-                {/* Skills */}
                 {skills.length > 0 && (
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--accent-warn)' }}>
@@ -181,22 +505,18 @@ export function CertViewer({
                     </p>
                     <ul className="space-y-3">
                       {skills.map((skill, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                        <li key={i} className="flex items-start gap-2.5">
                           <span
                             className="shrink-0 mt-px"
                             style={{ color: 'var(--accent-prompt)', textShadow: '0 0 8px var(--accent-prompt)' }}
                             aria-hidden="true"
-                          >
-                            ✓
-                          </span>
+                          >✓</span>
                           <span style={{ color: 'var(--fg)' }}>{skill}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
-
-                {/* Metadata */}
                 <div
                   className="pt-4 border-t grid grid-cols-2 gap-x-6 gap-y-4"
                   style={{ borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))` }}
@@ -220,11 +540,43 @@ export function CertViewer({
             </div>
           )}
 
-          <p className="pt-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
+          {/* Command history */}
+          {termHistory.map((entry, i) => (
+            <div key={i} className="mt-3">
+              {entry.cmd && (
+                <p className="mb-1" style={{ color: 'var(--fg-muted)' }}>
+                  <span style={{ color: accent }}>$</span>
+                  {' '}{entry.cmd}
+                </p>
+              )}
+              {entry.output.map((line, j) => (
+                <p key={j} className="leading-relaxed">
+                  {line.segs.map((seg, k) => (
+                    <span key={k} style={{ color: seg.color ?? 'var(--fg)' }}>{seg.text}</span>
+                  ))}
+                </p>
+              ))}
+            </div>
+          ))}
+
+          {/* Input line */}
+          <div className="mt-3 flex items-center gap-2">
             <span style={{ color: accent }}>$</span>
-            {' '}
-            <TerminalCursor />
-          </p>
+            <input
+              ref={inputRef}
+              value={inputVal}
+              onChange={(e) => { setInputVal(e.target.value); setHistIdx(-1); }}
+              onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent outline-none border-none text-sm"
+              style={{ color: 'var(--fg)', caretColor: accent }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-label="terminal input"
+            />
+          </div>
+          <div ref={endRef} />
         </div>
       </div>
     </div>
