@@ -32,6 +32,7 @@ export function IntakeForm({ existing }: IntakeFormProps) {
     LANGUAGES.map((l) => [l.id, existing?.targetLevels[l.id] ?? Math.max(l.defaultStartLevel + 1, 4)]),
   ) as LevelMap;
 
+  const [fullName, setFullName] = useState(existing?.fullName ?? '');
   const [startLevels, setStartLevels] = useState<LevelMap>(defaultStart);
   const [targetLevels, setTargetLevels] = useState<LevelMap>(defaultTarget);
   const [weeklyHours, setWeeklyHours] = useState(existing?.weeklyHours ?? 8);
@@ -41,6 +42,7 @@ export function IntakeForm({ existing }: IntakeFormProps) {
 
   function validateAndSubmit() {
     const intake: IntakeAnswers = {
+      fullName: fullName.trim() || undefined,
       startLevels,
       targetLevels,
       weeklyHours,
@@ -48,6 +50,14 @@ export function IntakeForm({ existing }: IntakeFormProps) {
       completedAt: existing?.completedAt ?? new Date().toISOString(),
     };
     setIntake(intake);
+    // If a name is set, sync it to all existing credentials
+    if (intake.fullName) {
+      void fetch('/api/credentials', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ earnerName: intake.fullName }),
+      });
+    }
     router.push('/');
   }
 
@@ -64,6 +74,33 @@ export function IntakeForm({ existing }: IntakeFormProps) {
 
   return (
     <div className="space-y-10 font-mono">
+      {/* Full name */}
+      <section>
+        <h2 className="text-sm font-semibold mb-3">
+          <ShellPrompt minimal command=" set --name" />
+        </h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label htmlFor="full-name" className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+            full_name =
+          </label>
+          <input
+            id="full-name"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Garrett Eaglin"
+            className="border px-3 py-1.5 text-sm bg-transparent font-mono flex-1 max-w-xs"
+            style={{
+              borderColor: 'var(--border-active)',
+              color: 'var(--accent-prompt)',
+            }}
+          />
+          <span className="text-xs" style={{ color: 'var(--fg-dim)' }}>
+            {'// appears on your credentials'}
+          </span>
+        </div>
+      </section>
+
       {/* Language levels */}
       <section>
         <h2 className="text-sm font-semibold mb-4">

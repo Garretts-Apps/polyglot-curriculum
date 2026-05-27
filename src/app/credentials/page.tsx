@@ -41,7 +41,7 @@ export default function CredentialsPage() {
             const res = await fetch('/api/credentials', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ language: p.language, phaseLevel: p.level }),
+              body: JSON.stringify({ language: p.language, phaseLevel: p.level, earnerName: intake.fullName }),
             });
             if (res.ok) {
               const data = await res.json() as { id?: string };
@@ -76,10 +76,11 @@ export default function CredentialsPage() {
   async function handleClaim(phaseId: string, language: string, level: number) {
     setClaiming((c) => ({ ...c, [phaseId]: 'loading' }));
     try {
+      const earnerName = state.intake?.fullName;
       const res = await fetch('/api/credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language, phaseLevel: level }),
+        body: JSON.stringify({ language, phaseLevel: level, earnerName }),
       });
       if (res.ok) {
         const data = await res.json() as { id?: string };

@@ -124,10 +124,11 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
     const isEarned = phase.level > startLevel;
     if (isEarned) {
       try {
+        const earnerName = state.intake?.fullName;
         const res = await fetch('/api/credentials', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: phase.language, phaseLevel: phase.level }),
+          body: JSON.stringify({ language: phase.language, phaseLevel: phase.level, earnerName }),
         });
         if (res.ok) {
           const json = await res.json() as { id?: string };
@@ -148,7 +149,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
       notes: prev?.notes ?? '',
       checkResults: prev?.checkResults ?? {},
     }));
-  }, [phase.id, phase.language, phase.level, startLevel, updatePhase]);
+  }, [phase.id, phase.language, phase.level, startLevel, state.intake?.fullName, updatePhase]);
 
   const accentVar = langMeta.accentVar;
   const accentColor = `var(${accentVar})`;

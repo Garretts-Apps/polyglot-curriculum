@@ -22,6 +22,7 @@ export type PhaseProgress = {
 };
 
 export type IntakeAnswers = {
+  fullName?: string;
   startLevels: Record<Language, number>; // 0..10
   targetLevels: Record<Language, number>; // 1..10
   weeklyHours: number;
