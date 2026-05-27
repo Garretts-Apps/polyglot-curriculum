@@ -25,7 +25,7 @@ function useReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-/** Build a copyable ASCII badge string matching the canonical layout. */
+/** Build a copyable ASCII badge string. */
 function buildAsciiBadge(
   earnerHandle: string,
   languageName: string,
@@ -34,32 +34,33 @@ function buildAsciiBadge(
   credentialId: string,
   verifyUrl: string,
 ): string {
-  const LPAD  = 2;
-  const RPAD  = 2;
-  const LABEL = 13; // "credential   ", "issued       " etc.
+  const LPAD = 2;
+  const RPAD = 2;
 
-  // Pre-compute every content string so we can size the box to fit
   const contentLines = [
     'polyglot@terminal',
     'VERIFIED CREDENTIAL',
     'awarded to',
     earnerHandle,
-    `${'credential'.padEnd(LABEL)}${languageName}`,
-    `${'title'.padEnd(LABEL)}${phaseTitle}`,
-    `${'issued'.padEnd(LABEL)}${issuedDate}`,
-    `${'expires'.padEnd(LABEL)}never`,
+    'credential',
+    languageName,
+    'title',
+    phaseTitle,
+    'issued',
+    issuedDate,
+    'expires',
+    'never',
     'credential id',
     credentialId,
     'publicly verifiable',
     verifyUrl,
   ];
 
-  const INNER = Math.max(50, Math.max(...contentLines.map((l) => l.length)) + LPAD + RPAD);
-  const CW    = INNER - LPAD; // content + right-padding width
+  const INNER = Math.max(40, Math.max(...contentLines.map((l) => l.length)) + LPAD + RPAD);
+  const CW    = INNER - LPAD;
 
   const row   = (s: string) => `║${' '.repeat(LPAD)}${s.padEnd(CW)}║`;
   const blank = row('');
-  const kv    = (label: string, val: string) => row(`${label.padEnd(LABEL)}${val}`);
   const top   = '╔' + '═'.repeat(INNER) + '╗';
   const mid   = '╠' + '═'.repeat(INNER) + '╣';
   const bot   = '╚' + '═'.repeat(INNER) + '╝';
@@ -73,11 +74,17 @@ function buildAsciiBadge(
     row('awarded to'),
     row(earnerHandle),
     blank,
-    kv('credential', languageName),
-    kv('title', phaseTitle),
+    row('credential'),
+    row(languageName),
     blank,
-    kv('issued', issuedDate),
-    kv('expires', 'never'),
+    row('title'),
+    row(phaseTitle),
+    blank,
+    row('issued'),
+    row(issuedDate),
+    blank,
+    row('expires'),
+    row('never'),
     blank,
     row('credential id'),
     row(credentialId),
