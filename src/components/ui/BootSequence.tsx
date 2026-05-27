@@ -33,7 +33,7 @@ function reducedMotion(): boolean {
 /**
  * Plays a short fake-boot terminal animation:
  *
- *   > boot polyglot-curriculum v1.0.0
+ *   > boot know your language™ v1.0.0
  *   > loading curriculum...
  *   > 6 languages loaded
  *   > 60 phases ready
