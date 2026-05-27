@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { TerminalCursor } from '@/components/ui/TerminalCursor';
 
 interface CertViewerProps {
   credentialId: string;
@@ -560,32 +559,21 @@ export function CertViewer({
             </div>
           ))}
 
-          {/* Input line — visual prompt with invisible overlay input.
-              The input is the same size as the prompt row and sits on top,
-              but is fully transparent (no opacity trick — that leaves iOS
-              focus rings). Tapping the row hits the input directly. */}
-          <div className="mt-3 relative" style={{ minHeight: '1.5em' }}>
-            <div className="flex items-center gap-2 pointer-events-none select-none">
-              <span style={{ color: accent }}>$</span>
-              <span style={{ color: 'var(--fg)' }}>{inputVal}</span>
-              <TerminalCursor color={accent} />
-            </div>
+          {/* Input line */}
+          <div className="mt-3 flex items-center gap-2">
+            <span style={{ color: accent }}>$</span>
             <input
               ref={inputRef}
               value={inputVal}
               onChange={(e) => { setInputVal(e.target.value); setHistIdx(-1); }}
               onKeyDown={handleKeyDown}
-              className="absolute inset-0 w-full h-full"
+              className="flex-1 bg-transparent border-0 p-0 m-0 outline-none focus:outline-none focus:ring-0 text-sm"
               style={{
-                color: 'transparent',
-                backgroundColor: 'transparent',
-                caretColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                WebkitAppearance: 'none',
-                WebkitTapHighlightColor: 'transparent',
+                color: 'var(--fg)',
+                caretColor: accent,
                 fontSize: '16px',
-                padding: 0,
+                WebkitAppearance: 'none',
+                boxShadow: 'none',
               }}
               autoComplete="off"
               autoCorrect="off"
