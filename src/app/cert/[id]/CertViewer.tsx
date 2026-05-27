@@ -34,10 +34,28 @@ function buildAsciiBadge(
   credentialId: string,
   verifyUrl: string,
 ): string {
-  const INNER = 50;       // chars between the two ║
-  const LPAD  = 2;        // leading spaces inside each row
-  const CW    = INNER - LPAD; // 48 chars for content + right-padding
-  const LABEL = 13;       // label column width ("credential   ", "issued       " etc.)
+  const LPAD  = 2;
+  const RPAD  = 2;
+  const LABEL = 13; // "credential   ", "issued       " etc.
+
+  // Pre-compute every content string so we can size the box to fit
+  const contentLines = [
+    'polyglot@terminal',
+    'VERIFIED CREDENTIAL',
+    'awarded to',
+    earnerHandle,
+    `${'credential'.padEnd(LABEL)}${languageName}`,
+    `${'title'.padEnd(LABEL)}${phaseTitle}`,
+    `${'issued'.padEnd(LABEL)}${issuedDate}`,
+    `${'expires'.padEnd(LABEL)}never`,
+    'credential id',
+    credentialId,
+    'publicly verifiable',
+    verifyUrl,
+  ];
+
+  const INNER = Math.max(50, Math.max(...contentLines.map((l) => l.length)) + LPAD + RPAD);
+  const CW    = INNER - LPAD; // content + right-padding width
 
   const row   = (s: string) => `║${' '.repeat(LPAD)}${s.padEnd(CW)}║`;
   const blank = row('');
