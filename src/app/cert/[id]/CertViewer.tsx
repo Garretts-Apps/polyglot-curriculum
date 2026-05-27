@@ -560,29 +560,39 @@ export function CertViewer({
             </div>
           ))}
 
-          {/* Input line — hidden real input + visual prompt */}
-          <div
-            className="mt-3 flex items-center gap-2 relative"
-            onClick={() => inputRef.current?.focus()}
-          >
-            {/* Hidden input: opacity-0 keeps it focusable on mobile (triggers keyboard).
-                font-size 16px prevents iOS auto-zoom. */}
+          {/* Input line — visual prompt with invisible overlay input.
+              The input is the same size as the prompt row and sits on top,
+              but is fully transparent (no opacity trick — that leaves iOS
+              focus rings). Tapping the row hits the input directly. */}
+          <div className="mt-3 relative" style={{ minHeight: '1.5em' }}>
+            <div className="flex items-center gap-2 pointer-events-none select-none">
+              <span style={{ color: accent }}>$</span>
+              <span style={{ color: 'var(--fg)' }}>{inputVal}</span>
+              <TerminalCursor color={accent} />
+            </div>
             <input
               ref={inputRef}
               value={inputVal}
               onChange={(e) => { setInputVal(e.target.value); setHistIdx(-1); }}
               onKeyDown={handleKeyDown}
-              className="absolute opacity-0 w-px h-px"
-              style={{ fontSize: '16px' }}
+              className="absolute inset-0 w-full h-full"
+              style={{
+                color: 'transparent',
+                backgroundColor: 'transparent',
+                caretColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                WebkitAppearance: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                fontSize: '16px',
+                padding: 0,
+              }}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
               aria-label="terminal input"
             />
-            <span style={{ color: accent }}>$</span>
-            <span style={{ color: 'var(--fg)' }}>{inputVal}</span>
-            <TerminalCursor color={accent} />
           </div>
           <div ref={endRef} />
         </div>
