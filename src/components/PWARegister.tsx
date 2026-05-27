@@ -38,26 +38,6 @@ export function PWARegister() {
             });
           }
 
-          // Sync current progress state to the service worker cache
-          const localKey = 'polyglot-curriculum:v1';
-          const raw = localStorage.getItem(localKey);
-          if (raw) {
-            try {
-              const state = JSON.parse(raw);
-              // Wait for active service worker controller to post message
-              if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                  type: 'SYNC_PROGRESS',
-                  state
-                });
-              } else {
-                reg.active?.postMessage({
-                  type: 'SYNC_PROGRESS',
-                  state
-                });
-              }
-            } catch {}
-          }
         })
         .catch((err) => {
           // eslint-disable-next-line no-console

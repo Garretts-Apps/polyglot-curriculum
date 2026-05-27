@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { ProgressState, PhaseProgress } from './storage';
-import { loadLocal, saveLocal, DEFAULT_STATE, STORAGE_VERSION } from './storage';
+import { DEFAULT_STATE, STORAGE_VERSION } from './storage';
 
 interface ProgressContextProps {
   state: ProgressState;
@@ -19,35 +19,25 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hydrate from localStorage on mount, then merge with server if server is newer
+  // Hydrate from server on mount — server is the source of truth
   useEffect(() => {
-    const local = loadLocal();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState(local);
-    setHydrated(true);
     fetch('/api/progress')
       .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
       .then((server: ProgressState | null) => {
         if (server && server.version === STORAGE_VERSION) {
-          setState((curr) => {
-            const serverDate = new Date(server.lastActiveAt).getTime();
-            const currDate = new Date(curr.lastActiveAt).getTime();
-            if (serverDate > currDate) {
-              saveLocal(server);
-              return server;
-            }
-            return curr;
-          });
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setState(server);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setHydrated(true);
+      });
   }, []);
 
-  // Save to localStorage on every change after hydration
+  // Sync to server on every change after hydration (debounced)
   useEffect(() => {
     if (!hydrated) return;
-    saveLocal(state);
-    // Debounced server sync
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => {
       fetch('/api/progress', {
@@ -56,7 +46,6 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(state),
       }).catch(() => {});
     }, 800);
-    // Clean up pending debounce timer on unmount
     return () => {
       if (syncTimer.current) clearTimeout(syncTimer.current);
     };

@@ -1,7 +1,6 @@
 import type { Language } from '@/curriculum/types';
 
 export const STORAGE_VERSION = 1;
-export const STORAGE_KEY = 'polyglot-curriculum:v1';
 
 export type CheckResult = {
   checkId: string;
@@ -43,31 +42,6 @@ export const DEFAULT_STATE: ProgressState = {
   phases: {},
   lastActiveAt: new Date(0).toISOString(),
 };
-
-export function loadLocal(): ProgressState {
-  if (typeof window === 'undefined') return DEFAULT_STATE;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
-    const parsed = JSON.parse(raw) as ProgressState;
-    if (parsed.version !== STORAGE_VERSION) {
-      console.warn('know your language™: stored version mismatch, resetting to defaults');
-      return DEFAULT_STATE;
-    }
-    return parsed;
-  } catch {
-    return DEFAULT_STATE;
-  }
-}
-
-export function saveLocal(state: ProgressState): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // storage quota exceeded or unavailable — silently ignore
-  }
-}
 
 export function exportJson(state: ProgressState): string {
   return JSON.stringify(state, null, 2);
