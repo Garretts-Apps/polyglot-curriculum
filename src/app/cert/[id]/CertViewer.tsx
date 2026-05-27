@@ -25,77 +25,6 @@ function useReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-/** Build a copyable ASCII badge string. */
-function buildAsciiBadge(
-  earnerHandle: string,
-  languageName: string,
-  phaseTitle: string,
-  issuedDate: string,
-  credentialId: string,
-  verifyUrl: string,
-): string {
-  const LPAD = 2;
-  const RPAD = 2;
-
-  const contentLines = [
-    'polyglot@terminal',
-    'VERIFIED CREDENTIAL',
-    'awarded to',
-    earnerHandle,
-    'credential',
-    languageName,
-    'title',
-    phaseTitle,
-    'issued',
-    issuedDate,
-    'expires',
-    'never',
-    'credential id',
-    credentialId,
-    'publicly verifiable',
-    verifyUrl,
-  ];
-
-  const INNER = Math.max(40, Math.max(...contentLines.map((l) => l.length)) + LPAD + RPAD);
-  const CW    = INNER - LPAD;
-
-  const row   = (s: string) => `║${' '.repeat(LPAD)}${s.padEnd(CW)}║`;
-  const blank = row('');
-  const top   = '╔' + '═'.repeat(INNER) + '╗';
-  const mid   = '╠' + '═'.repeat(INNER) + '╣';
-  const bot   = '╚' + '═'.repeat(INNER) + '╝';
-
-  return [
-    top,
-    row('polyglot@terminal'),
-    row('VERIFIED CREDENTIAL'),
-    mid,
-    blank,
-    row('awarded to'),
-    row(earnerHandle),
-    blank,
-    row('credential'),
-    row(languageName),
-    blank,
-    row('title'),
-    row(phaseTitle),
-    blank,
-    row('issued'),
-    row(issuedDate),
-    blank,
-    row('expires'),
-    row('never'),
-    blank,
-    row('credential id'),
-    row(credentialId),
-    blank,
-    mid,
-    row('publicly verifiable'),
-    row(verifyUrl),
-    bot,
-  ].join('\n');
-}
-
 export function CertViewer({
   credentialId,
   earnerHandle,
@@ -107,7 +36,6 @@ export function CertViewer({
 }: CertViewerProps) {
   const [step, setStep] = useState(-1);
   const [showCert, setShowCert] = useState(false);
-  const [copied, setCopied] = useState(false);
   const instant = useReducedMotion();
 
   useEffect(() => {
@@ -127,17 +55,6 @@ export function CertViewer({
 
   const accent = `var(${languageAccentVar})`;
   const issuedDate = new Date(issuedAt).toISOString().slice(0, 10);
-  const verifyUrl = typeof window !== 'undefined'
-    ? `${window.location.host}/cert/${credentialId}`
-    : `polyglot-curriculum.vercel.app/cert/${credentialId}`;
-  const asciiBadge = buildAsciiBadge(earnerHandle, languageName, phaseTitle, issuedDate, credentialId, verifyUrl);
-
-  function handleCopy() {
-    void navigator.clipboard.writeText(asciiBadge).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   return (
     <div
@@ -148,7 +65,7 @@ export function CertViewer({
         backgroundSize: '28px 28px',
       }}
     >
-      {/* Terminal window — fills viewport on desktop */}
+      {/* Terminal window */}
       <div
         className="flex-1 flex flex-col border-0 sm:border transition-all duration-700"
         style={{
@@ -176,16 +93,14 @@ export function CertViewer({
           <span style={{ color: 'var(--fg-dim)' }}>tty1</span>
         </div>
 
-        {/* Terminal body — scrollable */}
+        {/* Terminal body */}
         <div className="flex-1 overflow-y-auto px-5 sm:px-10 py-6 space-y-1 text-sm">
-          {/* Command */}
           <p style={{ color: 'var(--fg-muted)' }}>
             <span style={{ color: accent }}>$</span>
             {' verify --credential '}
             <span style={{ color: 'var(--fg)' }}>{credentialId}</span>
           </p>
 
-          {/* Verification steps */}
           {VERIFY_STEPS.map((s, i) => (
             <p
               key={i}
@@ -200,7 +115,6 @@ export function CertViewer({
             </p>
           ))}
 
-          {/* Certificate card */}
           {showCert && (
             <div
               className="mt-5 transition-opacity duration-500 border"
@@ -225,9 +139,7 @@ export function CertViewer({
                 <span style={{ opacity: 0.7 }}>⬡ {languageName} · verified</span>
               </div>
 
-              {/* Single-column body */}
               <div className="px-5 sm:px-8 py-6 space-y-6">
-                {/* Top accent bar */}
                 <div
                   className="h-px w-full"
                   style={{
@@ -249,7 +161,7 @@ export function CertViewer({
                   </p>
                 </div>
 
-                {/* Credential title */}
+                {/* Credential */}
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
                     credential
@@ -304,47 +216,10 @@ export function CertViewer({
                     </p>
                   </div>
                 </div>
-
-                {/* ASCII Badge — min-w-0 + overflow-hidden so pre never widens the page */}
-                <div
-                  className="border min-w-0 overflow-hidden"
-                  style={{ borderColor: `color-mix(in srgb, ${accent} 35%, var(--border))` }}
-                >
-                  <div
-                    className="px-3 py-1.5 border-b flex items-center justify-between text-[10px] uppercase tracking-widest"
-                    style={{
-                      borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))`,
-                      backgroundColor: `color-mix(in srgb, ${accent} 8%, var(--bg-elevated))`,
-                      color: `color-mix(in srgb, ${accent} 70%, var(--fg-muted))`,
-                    }}
-                  >
-                    <span>ascii badge</span>
-                    <button
-                      type="button"
-                      onClick={handleCopy}
-                      className="hover:underline transition-colors duration-100"
-                      style={{ color: copied ? 'var(--accent-prompt)' : `color-mix(in srgb, ${accent} 70%, var(--fg-muted))` }}
-                    >
-                      {copied ? '✓ copied' : '[ copy ]'}
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <pre
-                      className="px-4 py-4 text-[10px] leading-[1.55]"
-                      style={{
-                        color: accent,
-                        textShadow: `0 0 6px color-mix(in srgb, ${accent} 35%, transparent)`,
-                      }}
-                    >
-                      {asciiBadge}
-                    </pre>
-                  </div>
-                </div>
               </div>
             </div>
           )}
 
-          {/* Final prompt with blinking cursor */}
           <p className="pt-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
             <span style={{ color: accent }}>$</span>
             {' '}
