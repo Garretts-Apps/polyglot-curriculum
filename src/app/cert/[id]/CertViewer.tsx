@@ -25,6 +25,43 @@ function useReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+/** Build a copyable ASCII badge string. Inner content is 46 chars wide. */
+function buildAsciiBadge(
+  earnerHandle: string,
+  languageName: string,
+  phaseTitle: string,
+  issuedDate: string,
+  credentialId: string,
+): string {
+  const IW = 46;
+  const pad = (s: string) => s.padEnd(IW);
+  const trunc = (s: string, n: number) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+  const row = (s: string) => `║  ${pad(trunc(s, IW))}  ║`;
+  const blank = row('');
+  const hr = '╠' + '═'.repeat(IW + 4) + '╣';
+  const top = '╔' + '═'.repeat(IW + 4) + '╗';
+  const bot = '╚' + '═'.repeat(IW + 4) + '╝';
+
+  return [
+    top,
+    row('  ⬡  POLYGLOT@TERMINAL  ·  VERIFIED CREDENTIAL'),
+    hr,
+    blank,
+    row(`  AWARDED TO  ${earnerHandle}`),
+    blank,
+    row(`  CREDENTIAL  ${languageName}`),
+    row(`  TITLE       ${trunc(phaseTitle, 34)}`),
+    blank,
+    row(`  ISSUED      ${issuedDate}`),
+    row(`  EXPIRES     never`),
+    blank,
+    hr,
+    row(`  ✓ publicly verifiable  ·  no expiry`),
+    row(`  ${trunc(credentialId, IW - 2)}`),
+    bot,
+  ].join('\n');
+}
+
 export function CertViewer({
   credentialId,
   earnerHandle,
@@ -36,6 +73,7 @@ export function CertViewer({
 }: CertViewerProps) {
   const [step, setStep] = useState(-1);
   const [showCert, setShowCert] = useState(false);
+  const [copied, setCopied] = useState(false);
   const instant = useReducedMotion();
 
   useEffect(() => {
@@ -55,29 +93,48 @@ export function CertViewer({
 
   const accent = `var(${languageAccentVar})`;
   const issuedDate = new Date(issuedAt).toISOString().slice(0, 10);
+  const asciiBadge = buildAsciiBadge(earnerHandle, languageName, phaseTitle, issuedDate, credentialId);
+
+  function handleCopy() {
+    void navigator.clipboard.writeText(asciiBadge).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   return (
     <div
       className="min-h-dvh flex flex-col items-center justify-start px-4 py-10 font-mono"
-      style={{ backgroundColor: 'var(--bg)', color: 'var(--fg)' }}
+      style={{
+        backgroundColor: 'var(--bg)',
+        backgroundImage: `radial-gradient(circle, color-mix(in srgb, ${accent} 8%, transparent) 1px, transparent 1px)`,
+        backgroundSize: '28px 28px',
+      }}
     >
       {/* Terminal window */}
       <div
-        className="w-full max-w-2xl border"
-        style={{ borderColor: 'var(--border)' }}
+        className="w-full max-w-2xl border transition-all duration-700"
+        style={{
+          borderColor: accent,
+          boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 30%, transparent),
+                      0 0 40px color-mix(in srgb, ${accent} 15%, transparent),
+                      inset 0 0 60px color-mix(in srgb, ${accent} 4%, transparent)`,
+        }}
       >
         {/* Window chrome */}
         <div
           className="px-4 py-2 flex items-center justify-between text-[11px] tracking-wider border-b"
           style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--bg-elevated)',
+            borderColor: `color-mix(in srgb, ${accent} 30%, var(--border))`,
+            backgroundColor: `color-mix(in srgb, ${accent} 6%, var(--bg-elevated))`,
             color: 'var(--fg-muted)',
           }}
         >
-          <span>
-            <span style={{ color: accent }}>●</span>
-            {' '}polyglot@terminal — credential registry
+          <span className="flex items-center gap-2">
+            <span style={{ color: accent, textShadow: `0 0 8px ${accent}` }}>●</span>
+            <span>polyglot@terminal</span>
+            <span style={{ color: 'var(--fg-dim)' }}>—</span>
+            <span style={{ color: accent }}>credential registry</span>
           </span>
           <span style={{ color: 'var(--fg-dim)' }}>tty1</span>
         </div>
@@ -99,6 +156,7 @@ export function CertViewer({
               style={{
                 opacity: step >= i ? 1 : 0,
                 color: s.accent ? accent : 'var(--fg-muted)',
+                textShadow: s.accent ? `0 0 12px color-mix(in srgb, ${accent} 60%, transparent)` : undefined,
               }}
             >
               {s.text}
@@ -108,29 +166,63 @@ export function CertViewer({
           {/* Certificate card */}
           {showCert && (
             <div
-              className="mt-6 border px-5 py-6 space-y-5 transition-opacity duration-500"
-              style={{ borderColor: accent, opacity: showCert ? 1 : 0 }}
+              className="mt-6 space-y-5 transition-opacity duration-500"
+              style={{ opacity: showCert ? 1 : 0 }}
             >
+              {/* Top accent bar */}
+              <div
+                className="h-0.5 w-full"
+                style={{
+                  background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 20%, transparent))`,
+                  boxShadow: `0 0 8px color-mix(in srgb, ${accent} 50%, transparent)`,
+                }}
+              />
+
               {/* Header */}
-              <div>
-                <p
-                  className="text-[10px] uppercase tracking-[0.2em] mb-1"
-                  style={{ color: 'var(--fg-dim)' }}
-                >
-                  polyglot terminal — issued credential
-                </p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.2em] mb-1"
+                    style={{ color: 'var(--fg-dim)' }}
+                  >
+                    polyglot terminal — issued credential
+                  </p>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.12em]"
+                    style={{ color: `color-mix(in srgb, ${accent} 60%, var(--fg-dim))` }}
+                  >
+                    {languageName} · verified
+                  </p>
+                </div>
+                {/* Language hex badge */}
                 <div
-                  className="h-px w-full"
-                  style={{ backgroundColor: accent, opacity: 0.35 }}
-                />
+                  className="text-lg shrink-0 select-none"
+                  style={{
+                    color: accent,
+                    textShadow: `0 0 20px ${accent}`,
+                    lineHeight: 1,
+                  }}
+                  aria-hidden="true"
+                >
+                  ⬡
+                </div>
               </div>
 
               {/* Earner */}
-              <div>
+              <div
+                className="border-l-2 pl-4 py-1"
+                style={{ borderColor: accent }}
+              >
                 <p className="text-[10px] uppercase tracking-[0.15em] mb-1" style={{ color: 'var(--fg-dim)' }}>
                   awarded to
                 </p>
-                <p className="text-xl font-semibold" style={{ color: accent }}>
+                <p
+                  className="text-2xl font-semibold"
+                  style={{
+                    color: accent,
+                    textShadow: `0 0 20px color-mix(in srgb, ${accent} 50%, transparent)`,
+                  }}
+                >
                   {earnerHandle}
                 </p>
               </div>
@@ -142,7 +234,7 @@ export function CertViewer({
                 </p>
                 <p className="text-base" style={{ color: 'var(--fg)' }}>
                   <span style={{ color: accent }}>{languageName}</span>
-                  {' · '}
+                  <span style={{ color: 'var(--fg-dim)' }}>{' · '}</span>
                   {phaseTitle}
                 </p>
               </div>
@@ -153,10 +245,18 @@ export function CertViewer({
                   <p className="text-[10px] uppercase tracking-[0.15em] mb-2" style={{ color: 'var(--fg-dim)' }}>
                     demonstrated
                   </p>
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {skills.map((skill, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
-                        <span style={{ color: accent }} aria-hidden="true">✓</span>
+                        <span
+                          style={{
+                            color: accent,
+                            textShadow: `0 0 8px color-mix(in srgb, ${accent} 70%, transparent)`,
+                          }}
+                          aria-hidden="true"
+                        >
+                          ✓
+                        </span>
                         <span style={{ color: 'var(--fg-muted)' }}>{skill}</span>
                       </li>
                     ))}
@@ -164,34 +264,71 @@ export function CertViewer({
                 </div>
               )}
 
-              {/* Dates */}
-              <div className="flex gap-10">
+              {/* Dates + ID */}
+              <div
+                className="pt-3 border-t flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-8"
+                style={{ borderColor: `color-mix(in srgb, ${accent} 20%, var(--border))` }}
+              >
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.15em] mb-0.5" style={{ color: 'var(--fg-dim)' }}>
-                    issued
-                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.15em] mb-0.5" style={{ color: 'var(--fg-dim)' }}>issued</p>
                   <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>{issuedDate}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.15em] mb-0.5" style={{ color: 'var(--fg-dim)' }}>
-                    expires
-                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.15em] mb-0.5" style={{ color: 'var(--fg-dim)' }}>expires</p>
                   <p className="text-sm" style={{ color: 'var(--fg-dim)' }}>never</p>
+                </div>
+                <div className="sm:ml-auto">
+                  <p className="text-[10px] uppercase tracking-[0.15em] mb-0.5" style={{ color: 'var(--fg-dim)' }}>credential id</p>
+                  <p className="text-xs break-all" style={{ color: 'var(--fg-dim)', letterSpacing: '0.04em' }}>
+                    {credentialId}
+                  </p>
                 </div>
               </div>
 
-              {/* Credential ID */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.15em] mb-1" style={{ color: 'var(--fg-dim)' }}>
-                  credential id
-                </p>
-                <p
-                  className="text-xs break-all"
-                  style={{ color: 'var(--fg-muted)', letterSpacing: '0.04em' }}
+              {/* ASCII Badge */}
+              <div
+                className="mt-2 border"
+                style={{
+                  borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))`,
+                  backgroundColor: `color-mix(in srgb, ${accent} 4%, var(--bg))`,
+                }}
+              >
+                <div
+                  className="px-3 py-1.5 border-b flex items-center justify-between text-[10px] uppercase tracking-widest"
+                  style={{
+                    borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))`,
+                    color: 'var(--fg-dim)',
+                  }}
                 >
-                  {credentialId}
-                </p>
+                  <span>ascii badge</span>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="hover:underline transition-colors duration-100"
+                    style={{ color: copied ? accent : 'var(--fg-dim)' }}
+                  >
+                    {copied ? '✓ copied' : '[ copy ]'}
+                  </button>
+                </div>
+                <pre
+                  className="px-4 py-4 text-[11px] leading-[1.55] overflow-x-auto"
+                  style={{
+                    color: accent,
+                    textShadow: `0 0 6px color-mix(in srgb, ${accent} 35%, transparent)`,
+                  }}
+                >
+                  {asciiBadge}
+                </pre>
               </div>
+
+              {/* Bottom accent bar */}
+              <div
+                className="h-px w-full"
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+                  opacity: 0.4,
+                }}
+              />
             </div>
           )}
 
@@ -205,15 +342,8 @@ export function CertViewer({
       </div>
 
       {/* Footer */}
-      <p
-        className="mt-6 text-[11px] text-center"
-        style={{ color: 'var(--fg-dim)' }}
-      >
-        <a
-          href="/"
-          className="hover:underline"
-          style={{ color: 'var(--fg-dim)' }}
-        >
+      <p className="mt-6 text-[11px] text-center" style={{ color: 'var(--fg-dim)' }}>
+        <a href="/" className="hover:underline" style={{ color: 'var(--fg-dim)' }}>
           polyglot@terminal
         </a>
         {' · '}
