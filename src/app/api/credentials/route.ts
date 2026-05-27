@@ -20,23 +20,42 @@ export async function POST(req: Request) {
 
     const handle = user.email?.split('@')[0] ?? 'user';
 
-    const { data, error } = await supabase
+    // Try INSERT … ON CONFLICT DO NOTHING (avoids needing an UPDATE RLS policy)
+    const { data: inserted, error: insertError } = await supabase
       .from('credentials')
       .upsert(
         { user_id: user.id, language, phase_level: phaseLevel, earner_handle: handle },
-        { onConflict: 'user_id,language,phase_level', ignoreDuplicates: false }
+        { onConflict: 'user_id,language,phase_level', ignoreDuplicates: true }
       )
       .select('id')
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error issuing credential:', error);
-      return Response.json({ error: error.message }, { status: 500 });
+    if (insertError) {
+      console.error('[credentials] upsert error:', insertError);
+      return Response.json({ error: insertError.message }, { status: 500 });
     }
 
-    return Response.json({ id: data.id }, { status: 201 });
+    // If there was a conflict the upsert is a no-op — fetch the existing row
+    if (!inserted) {
+      const { data: existing, error: fetchError } = await supabase
+        .from('credentials')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('language', language)
+        .eq('phase_level', phaseLevel)
+        .single();
+
+      if (fetchError || !existing) {
+        console.error('[credentials] fetch after conflict error:', fetchError);
+        return Response.json({ error: 'could not resolve credential' }, { status: 500 });
+      }
+
+      return Response.json({ id: existing.id }, { status: 200 });
+    }
+
+    return Response.json({ id: inserted.id }, { status: 201 });
   } catch (err) {
-    console.error('Unexpected error issuing credential:', err);
+    console.error('[credentials] unexpected error:', err);
     return Response.json({ error: 'internal server error' }, { status: 500 });
   }
 }
