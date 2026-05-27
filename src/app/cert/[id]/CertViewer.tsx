@@ -218,122 +218,112 @@ export function CertViewer({
                 <span style={{ opacity: 0.7 }}>⬡ {languageName} · verified</span>
               </div>
 
-              {/* Two-column layout on desktop */}
-              <div className="md:grid md:grid-cols-2" style={{ borderColor: `color-mix(in srgb, ${accent} 30%, var(--border))` }}>
-                {/* Left col: earner + credential + metadata */}
+              {/* Single-column body */}
+              <div className="px-5 sm:px-8 py-6 space-y-6">
+                {/* Top accent bar */}
                 <div
-                  className="px-5 sm:px-8 py-6 space-y-6 md:border-r"
+                  className="h-px w-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 10%, transparent))`,
+                    boxShadow: `0 0 6px color-mix(in srgb, ${accent} 60%, transparent)`,
+                  }}
+                />
+
+                {/* Earner */}
+                <div className="border-l-2 pl-4 py-1" style={{ borderColor: accent }}>
+                  <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
+                    awarded to
+                  </p>
+                  <p
+                    className="text-2xl sm:text-3xl font-semibold"
+                    style={{ color: accent, textShadow: `0 0 24px color-mix(in srgb, ${accent} 55%, transparent)` }}
+                  >
+                    {earnerHandle}
+                  </p>
+                </div>
+
+                {/* Credential title */}
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
+                    credential
+                  </p>
+                  <p className="text-base font-medium" style={{ color: 'var(--fg)' }}>
+                    <span style={{ color: accent }}>{languageName}</span>
+                    <span style={{ color: 'var(--fg-dim)' }}>{' · '}</span>
+                    <span>{phaseTitle}</span>
+                  </p>
+                </div>
+
+                {/* Skills */}
+                {skills.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--accent-warn)' }}>
+                      demonstrated
+                    </p>
+                    <ul className="space-y-3">
+                      {skills.map((skill, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                          <span
+                            className="shrink-0 mt-px"
+                            style={{ color: 'var(--accent-prompt)', textShadow: '0 0 8px var(--accent-prompt)' }}
+                            aria-hidden="true"
+                          >
+                            ✓
+                          </span>
+                          <span style={{ color: 'var(--fg)' }}>{skill}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Metadata */}
+                <div
+                  className="pt-4 border-t grid grid-cols-2 gap-x-6 gap-y-4"
                   style={{ borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))` }}
                 >
-                  {/* Top accent bar */}
-                  <div
-                    className="h-px w-full"
-                    style={{
-                      background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 10%, transparent))`,
-                      boxShadow: `0 0 6px color-mix(in srgb, ${accent} 60%, transparent)`,
-                    }}
-                  />
-
-                  {/* Earner */}
-                  <div className="border-l-2 pl-4 py-1" style={{ borderColor: accent }}>
-                    <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
-                      awarded to
-                    </p>
-                    <p
-                      className="text-2xl sm:text-3xl font-semibold"
-                      style={{ color: accent, textShadow: `0 0 24px color-mix(in srgb, ${accent} 55%, transparent)` }}
-                    >
-                      {earnerHandle}
-                    </p>
-                  </div>
-
-                  {/* Credential title */}
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'var(--accent-warn)' }}>
-                      credential
-                    </p>
-                    <p className="text-base font-medium" style={{ color: 'var(--fg)' }}>
-                      <span style={{ color: accent }}>{languageName}</span>
-                      <span style={{ color: 'var(--fg-dim)' }}>{' · '}</span>
-                      <span>{phaseTitle}</span>
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>issued</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--fg)' }}>{issuedDate}</p>
                   </div>
-
-                  {/* Metadata */}
-                  <div
-                    className="pt-4 border-t grid grid-cols-2 gap-x-6 gap-y-4"
-                    style={{ borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))` }}
-                  >
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>issued</p>
-                      <p className="text-sm font-medium" style={{ color: 'var(--fg)' }}>{issuedDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>expires</p>
-                      <p className="text-sm font-medium" style={{ color: 'var(--accent-prompt)' }}>never</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>credential id</p>
-                      <p className="text-xs break-all" style={{ color: 'var(--fg-muted)', letterSpacing: '0.04em' }}>
-                        {credentialId}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>expires</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--accent-prompt)' }}>never</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] uppercase tracking-[0.18em] mb-0.5" style={{ color: 'var(--accent-info)' }}>credential id</p>
+                    <p className="text-xs break-all" style={{ color: 'var(--fg-muted)', letterSpacing: '0.04em' }}>
+                      {credentialId}
+                    </p>
                   </div>
                 </div>
 
-                {/* Right col: demonstrated + ASCII badge */}
+                {/* ASCII Badge — min-w-0 + overflow-hidden so pre never widens the page */}
                 <div
-                  className="px-5 sm:px-8 py-6 space-y-6 border-t md:border-t-0"
-                  style={{ borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))` }}
+                  className="border min-w-0 overflow-hidden"
+                  style={{ borderColor: `color-mix(in srgb, ${accent} 35%, var(--border))` }}
                 >
-                  {/* Skills */}
-                  {skills.length > 0 && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--accent-warn)' }}>
-                        demonstrated
-                      </p>
-                      <ul className="space-y-3">
-                        {skills.map((skill, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm">
-                            <span
-                              className="shrink-0 mt-px"
-                              style={{ color: 'var(--accent-prompt)', textShadow: '0 0 8px var(--accent-prompt)' }}
-                              aria-hidden="true"
-                            >
-                              ✓
-                            </span>
-                            <span style={{ color: 'var(--fg)' }}>{skill}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* ASCII Badge */}
                   <div
-                    className="border"
-                    style={{ borderColor: `color-mix(in srgb, ${accent} 35%, var(--border))` }}
+                    className="px-3 py-1.5 border-b flex items-center justify-between text-[10px] uppercase tracking-widest"
+                    style={{
+                      borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))`,
+                      backgroundColor: `color-mix(in srgb, ${accent} 8%, var(--bg-elevated))`,
+                      color: `color-mix(in srgb, ${accent} 70%, var(--fg-muted))`,
+                    }}
                   >
-                    <div
-                      className="px-3 py-1.5 border-b flex items-center justify-between text-[10px] uppercase tracking-widest"
-                      style={{
-                        borderColor: `color-mix(in srgb, ${accent} 25%, var(--border))`,
-                        backgroundColor: `color-mix(in srgb, ${accent} 8%, var(--bg-elevated))`,
-                        color: `color-mix(in srgb, ${accent} 70%, var(--fg-muted))`,
-                      }}
+                    <span>ascii badge</span>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="hover:underline transition-colors duration-100"
+                      style={{ color: copied ? 'var(--accent-prompt)' : `color-mix(in srgb, ${accent} 70%, var(--fg-muted))` }}
                     >
-                      <span>ascii badge</span>
-                      <button
-                        type="button"
-                        onClick={handleCopy}
-                        className="hover:underline transition-colors duration-100"
-                        style={{ color: copied ? 'var(--accent-prompt)' : `color-mix(in srgb, ${accent} 70%, var(--fg-muted))` }}
-                      >
-                        {copied ? '✓ copied' : '[ copy ]'}
-                      </button>
-                    </div>
+                      {copied ? '✓ copied' : '[ copy ]'}
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
                     <pre
-                      className="px-4 py-4 text-[11px] leading-[1.55] overflow-x-auto"
+                      className="px-4 py-4 text-[10px] leading-[1.55]"
                       style={{
                         color: accent,
                         textShadow: `0 0 6px color-mix(in srgb, ${accent} 35%, transparent)`,
