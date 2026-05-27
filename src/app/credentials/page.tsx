@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { ShellPrompt } from '@/components/ui/ShellPrompt';
@@ -71,6 +71,34 @@ export default function CredentialsPage() {
     return () => clearTimeout(timerId);
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [claiming, setClaiming] = useState<Record<string, 'loading' | 'error'>>({});
+
+  async function handleClaim(phaseId: string, language: string, level: number) {
+    setClaiming((c) => ({ ...c, [phaseId]: 'loading' }));
+    try {
+      const res = await fetch('/api/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language, phaseLevel: level }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { id?: string };
+        if (data.id) {
+          updatePhase(phaseId, (prev) =>
+            prev
+              ? { ...prev, credentialId: data.id }
+              : { phaseId, language: language as never, level, completed: true, notes: '', checkResults: {}, credentialId: data.id },
+          );
+          setClaiming((c) => { const next = { ...c }; delete next[phaseId]; return next; });
+          return;
+        }
+      }
+      setClaiming((c) => ({ ...c, [phaseId]: 'error' }));
+    } catch {
+      setClaiming((c) => ({ ...c, [phaseId]: 'error' }));
+    }
+  }
+
   if (!hydrated) return null;
 
   const intake = state.intake;
@@ -81,10 +109,10 @@ export default function CredentialsPage() {
 
   const allPhases = getAllPhases();
 
-  // Attainable: phases the user hasn't yet earned a credential for, above their
-  // self-attested start level. Grouped by language, sorted by level.
+  // Attainable: phases above the user's effective start level (intake value, or
+  // language default if no intake) that don't yet have a credential.
   const attainableByLang = LANGUAGES.map((lang) => {
-    const startLevel = intake?.startLevels[lang.id] ?? -1;
+    const startLevel = intake?.startLevels[lang.id] ?? lang.defaultStartLevel;
     const earnedIds = new Set(
       Object.values(state.phases)
         .filter((p) => p.language === lang.id && p.credentialId)
@@ -211,16 +239,17 @@ export default function CredentialsPage() {
                       const badge = PHASE_BADGES[`${lang.id}-${ph.level}`];
                       const title = badge?.title ?? ph.title;
                       const phaseProgress = state.phases[ph.id];
-                      const isCompleted = phaseProgress?.completed && !phaseProgress.credentialId;
+                      // Completed but no credential — can be claimed directly
+                      const isClaimable = !!(phaseProgress?.completed && !phaseProgress.credentialId);
+                      const claimState = claiming[ph.id];
                       return (
                         <li
                           key={ph.id}
                           className="border px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap"
                           style={{
                             borderColor: 'var(--border)',
-                            borderStyle: isCompleted ? 'dashed' : 'solid',
+                            borderStyle: isClaimable ? 'dashed' : 'solid',
                             backgroundColor: 'var(--bg-elevated)',
-                            opacity: isCompleted ? 0.7 : 1,
                           }}
                         >
                           <div className="flex items-center gap-3 min-w-0">
@@ -234,15 +263,29 @@ export default function CredentialsPage() {
                               {title}
                             </span>
                           </div>
-                          <Link
-                            href={`/${lang.id}/${ph.level}`}
-                            className="text-xs font-mono inline-flex items-center gap-1 hover:underline whitespace-nowrap shrink-0"
-                            style={{ color: `var(--accent-${lang.id})` }}
-                          >
-                            <span aria-hidden="true">[</span>
-                            <span>{isCompleted ? 'claim' : 'start'}</span>
-                            <span aria-hidden="true">]</span>
-                          </Link>
+                          {isClaimable ? (
+                            <button
+                              type="button"
+                              disabled={claimState === 'loading'}
+                              onClick={() => void handleClaim(ph.id, lang.id, ph.level)}
+                              className="text-xs font-mono inline-flex items-center gap-1 hover:underline whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-wait"
+                              style={{ color: `var(--accent-${lang.id})` }}
+                            >
+                              <span aria-hidden="true">[</span>
+                              <span>{claimState === 'loading' ? '…' : claimState === 'error' ? 'retry' : 'claim'}</span>
+                              <span aria-hidden="true">]</span>
+                            </button>
+                          ) : (
+                            <Link
+                              href={`/${lang.id}/${ph.level}`}
+                              className="text-xs font-mono inline-flex items-center gap-1 hover:underline whitespace-nowrap shrink-0"
+                              style={{ color: `var(--accent-${lang.id})` }}
+                            >
+                              <span aria-hidden="true">[</span>
+                              <span>start</span>
+                              <span aria-hidden="true">]</span>
+                            </Link>
+                          )}
                         </li>
                       );
                     })}
