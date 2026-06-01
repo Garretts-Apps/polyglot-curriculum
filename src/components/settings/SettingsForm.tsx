@@ -273,18 +273,16 @@ export function SettingsForm() {
               0
             );
             
-            const badgeColorHex = lang.id === 'python' ? 'f0c674'
-              : lang.id === 'csharp' ? 'b294bb'
-              : lang.id === 'typescript' ? '81a2be'
-              : lang.id === 'rust' ? 'de935f'
-              : lang.id === 'fsharp' ? '8abeb7'
-              : '5fb3b3';
+            const badgeColorHex = lang.hexColor;
 
-            const logoName = lang.id === 'csharp' ? 'c-sharp'
-              : lang.id === 'fsharp' ? 'fsharp'
-              : lang.id;
+            // simple-icons slug for the shields.io badge; omit the logo param
+            // entirely when the language has no recognised icon.
+            const logoParam = lang.shieldsLogo
+              ? `&logo=${lang.shieldsLogo}&logoColor=white`
+              : '';
 
-            const badgeUrl = `https://img.shields.io/badge/${lang.name}-Level%20${highestLevel}-%23${badgeColorHex}?style=flat-square&logo=${logoName}&logoColor=white`;
+            const badgeLabel = encodeURIComponent(lang.name);
+            const badgeUrl = `https://img.shields.io/badge/${badgeLabel}-Level%20${highestLevel}-%23${badgeColorHex}?style=flat-square${logoParam}`;
             
             // Link to the user's progress path page or homepage
             const targetUrl = typeof window !== 'undefined' 

@@ -1,5 +1,6 @@
 import type { ProgressState } from './storage';
 import type { Language } from '@/curriculum/types';
+import { getLanguageMeta } from '@/curriculum/types';
 import { getPhasesForLanguage } from '@/curriculum/phases';
 
 export interface GamificationStats {
@@ -165,16 +166,7 @@ export function getContextualReminder(state: ProgressState): { title: string; bo
     }
   }
 
-  const langNames: Record<Language, string> = {
-    python: 'Python',
-    typescript: 'TypeScript',
-    go: 'Go',
-    rust: 'Rust',
-    csharp: 'C#',
-    fsharp: 'F#',
-  };
-
-  const name = langNames[targetLang] || 'coding';
+  const name = getLanguageMeta(targetLang)?.name || 'coding';
 
   if (stats.streak > 0) {
     return {
