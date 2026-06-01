@@ -8,8 +8,13 @@ export const rubyPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to Ruby — a language famously \"optimised for programmer happiness.\" In this level you'll confirm Ruby is installed (`ruby -v`), meet the interactive shell `irb`, and run your first script. Absolute beginners start here. Ruby ships with macOS and most Linux distributions, and Windows users install it via RubyInstaller.",
+    intro: `Welcome to Ruby — a language famously "optimised for programmer happiness." If you have never written a line of code in your life, you are in exactly the right place; we will assume nothing.
+
+A **program** is just a text file full of instructions that you hand to a computer. Ruby instructions are written in plain-ish English-looking words, saved in a file ending in \`.rb\`, and run by a tool called \`ruby\`. In this level you'll confirm Ruby is installed (type \`ruby -v\` in a terminal and it prints the version number), meet the interactive shell \`irb\` (a place where you type one line and immediately see the answer, like a calculator), and run your very first script.
+
+Your first program is a single line: \`puts "Hello, World!"\`. Let's read it slowly, left to right, the way you'd sound out a new sentence — every piece is explained in the code check below, defining each word and symbol so nothing is mysterious. By the end you'll be able to write a line that makes the computer print any message you choose.
+
+Ruby comes pre-installed on macOS and most Linux distributions; Windows users install it via RubyInstaller. The "Installing Ruby" link below covers all three.`,
     topics: [
       {
         label: 'Installing Ruby',
@@ -35,8 +40,25 @@ export const rubyPhases: Phase[] = [
         prompt: 'Run the starter program so it prints `Hello, World!` to standard output.',
         boilerplate: 'puts "Hello, World!"\n',
         expectedOutput: 'Hello, World!',
-        explanation:
-          '`puts` ("put string") writes its argument to standard output followed by a newline. Unlike many languages, Ruby needs no `main` function, no imports, and no semicolons — a single statement in a `.rb` file is a complete program.',
+        explanation: `Let's dissect this one line token by token, left to right, defining every word and symbol.
+
+\`\`\`
+puts "Hello, World!"
+^^^^ ^^^^^^^^^^^^^^^^
+ |          |
+ |          the TEXT to show (a "string")
+ the COMMAND that shows text
+\`\`\`
+
+**\`puts\`** — Say it as "put string." It is a **command** (in Ruby, a *method*: a named, ready-made action) that means "display this on the screen and then move to a new line." It is on this line because *something* has to do the showing — text does not appear by itself. If you removed \`puts\`, the line would just be a piece of text sitting there with nothing told to do with it, and you'd see no output. At the moment the program runs, \`puts\` is the action being carried out.
+
+**The space after \`puts\`** — Ruby uses the space to separate the command from the thing you're giving it, the way "open door" has a space between the verb and the thing. Without it, \`puts"Hello"\` would still work here, but the space is the normal, readable way to hand a value to a command.
+
+**\`"\` ... \`"\` (the double quotes)** — A pair of quotation marks marks the start and end of a **string**, which is the programming word for *a piece of text*: letters, spaces, punctuation — anything you want shown literally. The quotes are not printed; they are fences that tell Ruby "everything between us is plain text, not a command." If you removed the quotes, Ruby would try to read \`Hello, World!\` as instructions, not see any such commands, and stop with an error. At runtime, the value living between the quotes is the text \`Hello, World!\` — that exact sequence of characters is what \`puts\` receives and displays.
+
+**\`Hello, World!\`** — The actual message. You can change it to anything: \`puts "Good morning"\` prints \`Good morning\`. This is the one part that is purely yours to decide.
+
+Putting it together: "Take the text \`Hello, World!\` and print it, followed by a newline." Unlike many languages, Ruby needs no \`main\` function to start, no \`import\` lines, and no semicolons to end statements — a single line in a \`.rb\` file is already a complete, runnable program.`,
       },
       {
         kind: 'mcq',
@@ -66,7 +88,15 @@ export const rubyPhases: Phase[] = [
     level: 1,
     title: 'Ruby Basics — Variables, Strings & Methods',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll read short Ruby programs and predict their output, focusing on the things that surprise newcomers: everything returns a value, methods need no \`return\` for their last expression, and strings interpolate with \`#{}\` only inside double quotes. You'll learn variable naming conventions (\`snake_case\`), the difference between \`puts\`, \`print\`, and \`p\`, and how to define methods with \`def ... end\`.
+    intro: `Before we write more code, here are three bedrock ideas every program is built from. Take them slowly — once they click, the rest of Ruby is just variations on them.
+
+**A value** is a single piece of data: a number like \`42\`, or a piece of text like \`"Ada"\`. **A variable** is a labelled box you put a value in so you can refer to it by name later. In Ruby you make one with \`=\`, read left-to-right as "store the value on the right into the name on the left": \`name = "Ada"\` means "put the text \`Ada\` in a box called \`name\`." After that, writing \`name\` anywhere gives you back \`"Ada"\`. The \`=\` is *not* "equals like in maths" — it is the act of storing. By convention Ruby names use \`snake_case\` (lowercase words joined by underscores, e.g. \`first_name\`).
+
+**A type** is the *kind* of value something is, which decides what you can do with it. \`42\` is an \`Integer\` (a whole number you can add and multiply); \`"Ada"\` is a \`String\` (text you can join or upcase); \`3.5\` is a \`Float\` (a number with a decimal point). You generally don't have to announce the type in Ruby — it figures it out from the value you wrote — but knowing the type explains why \`2 + 2\` is \`4\` while \`"2" + "2"\` is the text \`"22"\`.
+
+**A method** is a named, reusable action — give it a name once, then "call" (run) it whenever you like. You define one with \`def name ... end\` and the words inside the parentheses are its **parameters**: named boxes that get filled with the **arguments** you hand in when you call it. For example \`def greet(name) ... end\` defines an action \`greet\` that expects one piece of info; calling \`greet("Ada")\` runs it with \`name\` set to \`"Ada"\`. A method hands back a **return value** — and a Ruby quirk worth memorising now: a method automatically returns the value of its **last line**, so you rarely need the word \`return\`.
+
+By the end of this phase you'll read short Ruby programs and predict their output, focusing on the things that surprise newcomers: everything returns a value, methods need no \`return\` for their last expression, and strings **interpolate** with \`#{}\` (drop a value into the middle of text) only inside double quotes. You'll learn the difference between \`puts\`, \`print\`, and \`p\`, and how to define methods with \`def ... end\`.
 
 To build the muscle, write a small script locally: a \`tip_calculator.rb\` that defines a \`total(bill, percent)\` method and prints the bill, tip, and grand total using string interpolation. Run it with \`ruby tip_calculator.rb\` and experiment in \`irb\` by calling the method with different arguments.`,
     video: {
@@ -182,7 +212,7 @@ To practise locally, write \`word_count.rb\`: split a sentence into words with \
     topics: [
       { label: 'Array class reference', url: 'https://docs.ruby-lang.org/en/master/Array.html', note: 'map, select, reject, reduce, each, and friends.' },
       { label: 'Hash class reference', url: 'https://docs.ruby-lang.org/en/master/Hash.html', note: 'Key/value collections and their iterators.' },
-      { label: 'Blocks, Procs & Lambdas', url: 'https://docs.ruby-lang.org/en/master/syntax/proc_rdoc.html', note: 'How blocks attach to method calls.' },
+      { label: 'Blocks, Procs & Lambdas', url: 'https://docs.ruby-lang.org/en/master/Proc.html', note: 'How blocks attach to method calls.' },
       { label: 'Enumerable module', url: 'https://docs.ruby-lang.org/en/master/Enumerable.html', note: 'The mixin that powers map/select/etc. on any collection.' },
       { label: 'Integer#times / Range#each', url: 'https://docs.ruby-lang.org/en/master/Integer.html#method-i-times', note: 'Counting iterators used throughout Ruby.' },
     ],
@@ -501,10 +531,10 @@ puts port
 
 Locally, write a \`my_each.rb\` that reimplements \`each\` on an array using \`yield\`, then build a \`repeat(n) { ... }\` method that yields \`n\` times. Compare \`lambda { return 1 }\` vs \`proc { return 1 }\` behaviour in \`irb\`.`,
     topics: [
-      { label: 'Procs and blocks', url: 'https://docs.ruby-lang.org/en/master/syntax/proc_rdoc.html', note: 'yield, block_given?, and &block conversion.' },
+      { label: 'Methods (def, yield, blocks)', url: 'https://docs.ruby-lang.org/en/master/syntax/methods_rdoc.html', note: 'How a method receives a block, plus yield and &block.' },
       { label: 'Proc class reference', url: 'https://docs.ruby-lang.org/en/master/Proc.html', note: 'Proc.new, lambda, call, and arity rules.' },
       { label: 'Method class reference', url: 'https://docs.ruby-lang.org/en/master/Method.html', note: 'Objectified methods you can pass around.' },
-      { label: 'Procs, Lambdas and Blocks (guide)', url: 'https://www.honeybadger.io/blog/using-procs-lambdas-and-blocks-in-ruby/', note: 'Clear walkthrough of the differences.' },
+      { label: 'Symbol#to_proc', url: 'https://docs.ruby-lang.org/en/master/Symbol.html#method-i-to_proc', note: 'The &:method shorthand that turns a symbol into a block.' },
     ],
     deliverable: 'Write `my_each.rb` reimplementing each via yield, plus a repeat(n) { } helper.',
     checks: [
@@ -539,7 +569,7 @@ puts run
         ],
         correctIndex: 0,
         explanation:
-          '`block_given?` reports whether a block was passed. The first call supplies a block, so `yield` runs it and returns `"from block"`. The second call has no block, so the guard returns `"no block"` before reaching `yield` (which would otherwise raise `LocalJumpError`). See [Proc documentation](https://docs.ruby-lang.org/en/master/syntax/proc_rdoc.html).',
+          '`block_given?` reports whether a block was passed. The first call supplies a block, so `yield` runs it and returns `"from block"`. The second call has no block, so the guard returns `"no block"` before reaching `yield` (which would otherwise raise `LocalJumpError`). See [Methods (yield & blocks)](https://docs.ruby-lang.org/en/master/syntax/methods_rdoc.html).',
       },
       {
         kind: 'mcq',
@@ -608,7 +638,7 @@ Locally, build a \`config.rb\` "open struct" that uses \`method_missing\` to tre
       { label: 'Module#define_method', url: 'https://docs.ruby-lang.org/en/master/Module.html#method-i-define_method', note: 'Define methods programmatically from a block.' },
       { label: 'Object#send / public_send', url: 'https://docs.ruby-lang.org/en/master/Object.html#method-i-send', note: 'Invoke a method by its name (symbol/string).' },
       { label: 'Object#respond_to?', url: 'https://docs.ruby-lang.org/en/master/Object.html#method-i-respond_to-3F', note: 'Pair with respond_to_missing? for honest introspection.' },
-      { label: 'Ruby metaprogramming (guide)', url: 'https://www.honeybadger.io/blog/ruby-metaprogramming/', note: 'Practical tour of the dynamic toolkit.' },
+      { label: 'Module class reference', url: 'https://docs.ruby-lang.org/en/master/Module.html', note: 'define_method, attr_*, and the metaprogramming toolkit.' },
     ],
     deliverable: 'Build `config.rb`, a method_missing-backed open struct with respond_to_missing? support.',
     checks: [
@@ -1016,7 +1046,7 @@ Locally, benchmark two implementations with the \`benchmark\` stdlib (\`Benchmar
       { label: 'Ractor class reference', url: 'https://docs.ruby-lang.org/en/master/Ractor.html', note: 'Actor-based true parallelism with isolated state.' },
       { label: 'Fiber class reference', url: 'https://docs.ruby-lang.org/en/master/Fiber.html', note: 'Cooperative, resumable lightweight concurrency.' },
       { label: 'Thread class reference', url: 'https://docs.ruby-lang.org/en/master/Thread.html', note: 'Why threads overlap I/O but not CPU work in CRuby.' },
-      { label: 'YJIT documentation', url: 'https://docs.ruby-lang.org/en/master/yjit/yjit_md.html', note: 'Ruby\'s in-process just-in-time compiler.' },
+      { label: 'YJIT (Ruby 3.3 release notes)', url: 'https://www.ruby-lang.org/en/news/2023/12/25/ruby-3-3-0-released/', note: 'Ruby\'s in-process just-in-time compiler and its progress.' },
       { label: 'Benchmark module', url: 'https://docs.ruby-lang.org/en/master/Benchmark.html', note: 'Measure real/user/system time before optimising.' },
       { label: 'Object#freeze', url: 'https://docs.ruby-lang.org/en/master/Object.html#method-i-freeze', note: 'Immutability and the frozen_string_literal pragma.' },
     ],

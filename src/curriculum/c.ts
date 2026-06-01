@@ -8,9 +8,34 @@ export const cPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to C — the small, sharp language that the operating systems, databases, and interpreters you use every day are written in. In this level you'll install a compiler (\`gcc\` or \`clang\`), translate a source file into a native executable, and run your first program. Unlike scripting languages, C is *compiled ahead of time*: a \`.c\` file becomes machine code before it runs.
+    intro: `Welcome to C — the small, sharp language that the operating systems, databases, and interpreters you use every day are written in. If you have never programmed before, start here: a *program* is just a text file full of instructions, and a *compiler* is a tool that translates that text into the ones-and-zeros (machine code) your CPU actually runs. Unlike scripting languages that read your text line-by-line as they go, C is *compiled ahead of time*: your \`.c\` text file is turned into a standalone executable program first, and then you run that program.
 
-Locally, save a file \`hello.c\`, build it with \`gcc hello.c -o hello\` (or \`clang hello.c -o hello\`), then run \`./hello\`. Confirm your toolchain with \`gcc --version\`. The browser check below runs a simplified C subset so you can verify the shape of a program before you compile it for real.`,
+By the end of this level you'll install a compiler (\`gcc\` or \`clang\`), turn a source file into a runnable program, and run it. Locally, save a file called \`hello.c\`, build it with \`gcc hello.c -o hello\` (the \`-o hello\` part names the finished program "hello"), then run it by typing \`./hello\`. Confirm your toolchain is installed with \`gcc --version\`.
+
+Here is the entire first program — five lines that print one greeting:
+
+\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    printf("Hello, World!\\n");
+    return 0;
+}
+\`\`\`
+
+Let's read it **left to right, word by word**, because every single symbol is there for a reason. For each piece we answer the same four questions a newcomer naturally asks: *what does this word mean, why is it here, what breaks if I delete it,* and *what is actually happening in the machine when it runs?*
+
+**\`#include <stdio.h>\`** — Read \`#include\` as plain-English "include," meaning "fetch and paste in." It is an instruction to the *preprocessor*, a helper step that runs *before* the real compiler and does nothing but shuffle text. This line says "paste the entire contents of another file in right here." The file it pastes, \`stdio.h\`, is the **st**andard **i**nput/**o**utput header (\`.h\` = "header," a file of descriptions). It contains the official description of printing tools like \`printf\`, the way a parts catalogue lists each part. *Why it's here:* without it the compiler has never heard the word \`printf\` and refuses to continue. *Remove it and the build fails* with an error like "implicit declaration of printf." *In the machine:* nothing runs yet — this all happens at build time, and by the time your program is an executable this line has already done its job and vanished. The \`< >\` angle brackets mean "find this file among the system's standard headers"; quotes \`"..."\` would mean "look in my own project folder first."
+
+**\`int main(void)\`** — First, *what is a function?* A **function** is a named box of instructions you can run as a unit — picture a recipe card with a title: say its name and the steps inside run. This line names a function \`main\`. The name is not arbitrary: \`main\` is the **entry point**, the one exact place the computer looks for to *start running your program*. (Rename it to \`start\` and the program will not link — nothing tells the system where to begin.) The word in front, \`int\`, is the **return type**: a promise that when \`main\` finishes it will give back one whole number — an "**int**eger" like \`0\`, \`1\`, or \`-4\` (no fractions). The \`(void)\` is the **parameter list** — the slot where information is handed *in* to a function. \`void\` is C's word for "nothing," so \`(void)\` means "this function takes no inputs." (Parentheses are *always* where a function receives inputs; here they are deliberately empty.) *In the machine:* when you run the program, the operating system jumps to \`main\` and executes its steps top to bottom; it also reserves a small spot in memory to hold the integer \`main\` will eventually return. Put together: "Define the start-here function \`main\`, which takes no inputs and will give back one integer."
+
+**\`{ ... }\`** — The curly braces are a fence around the **body** of the function: everything between the opening \`{\` and the closing \`}\` is the list of steps \`main\` performs, top to bottom. Delete one and the compiler can no longer tell where the steps start or stop, and the build fails. *In the machine:* the braces themselves produce no instructions — they are punctuation that tells the compiler how to group the steps inside.
+
+**\`printf("Hello, World!\\n");\`** — This whole line is one **statement** (one complete instruction, like one sentence). \`printf\` is a function — the one we imported from \`stdio.h\` — and writing its name followed by \`( )\` means **call it**: "run printf's steps right now." Inside the parentheses we hand it one piece of information: the text \`"Hello, World!\\n"\`. The double quotes \`" "\` mark a **string**, just a run of text characters strung together. The \`\\n\` near the end *looks* like two characters but is really *one* special character called **newline**; it means "move to the start of the next line," so whatever prints next begins fresh instead of jammed onto the same line. The closing \`;\` is a **semicolon**, ending a statement the way a period ends a sentence — leave it off and the compiler complains the statement never finished. *In the machine:* when this line runs, the bytes \`H e l l o ,   W o r l d !\` followed by a newline are written to *standard output* (your terminal) and appear on screen.
+
+**\`return 0;\`** — \`return\` means "stop running this function now and hand a value back to whoever called it." Here \`main\` hands back the number \`0\`. By long-standing convention \`0\` means "everything went fine," while any *non-zero* number means "something went wrong" (so scripts can tell whether your program succeeded). This \`0\` is exactly the integer \`int main\` promised at the top. *Remove this line* and \`main\` still ends, but it no longer clearly reports success — explicitly returning \`0\` is the correct habit. *In the machine:* the value \`0\` is placed into the memory spot reserved for \`main\`'s result, and when the program exits the operating system reads that spot as the program's **exit status** to learn whether it succeeded.
+
+The browser check below runs a simplified C subset so you can verify the *shape* of a program before you compile it for real.`,
     topics: [
       { label: 'GCC — the GNU Compiler Collection', url: 'https://gcc.gnu.org/', note: 'The most common open-source C compiler.' },
       { label: 'Clang / LLVM', url: 'https://clang.llvm.org/', note: 'A modern C compiler with excellent diagnostics.' },
@@ -24,7 +49,7 @@ Locally, save a file \`hello.c\`, build it with \`gcc hello.c -o hello\` (or \`c
         prompt: 'Run the starter program. It must print `Hello, World!` to standard output.',
         boilerplate: '#include <stdio.h>\n\nint main(void) {\n    printf("Hello, World!\\n");\n    return 0;\n}\n',
         expectedOutput: 'Hello, World!',
-        explanation: 'Every hosted C program begins execution at `main`. `#include <stdio.h>` brings in the declaration of `printf`, and `return 0;` reports success to the operating system. The `\\n` emits a newline.',
+        explanation: 'Read the program token by token. `#include <stdio.h>` tells the preprocessor to paste in the standard input/output header so the compiler knows what `printf` is — remove it and the build fails with "implicit declaration of printf." `int main(void)` defines a *function* (a named, runnable box of instructions) called `main`; `main` is the *entry point* where the program starts, `int` promises it returns one whole number to the operating system, and `(void)` says it takes no inputs. The `{ }` braces fence in the steps `main` runs, top to bottom. `printf("Hello, World!\\n")` *calls* the `printf` tool and hands it one *string* of text to display; the `\\n` inside is a single newline character that moves output to the next line. The `;` ends the statement like a period ends a sentence. `return 0;` finishes `main` and hands back `0`, which by convention means "success" — the operating system reads this as the program\'s exit status. Together these five lines are the smallest complete C program that produces output.',
       },
       {
         kind: 'mcq',
@@ -62,7 +87,9 @@ Locally, save a file \`hello.c\`, build it with \`gcc hello.c -o hello\` (or \`c
     level: 1,
     title: 'Types, Variables & printf Formatting',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll declare variables of C's fundamental types (\`int\`, \`double\`, \`char\`), reason about *integer vs. floating-point* arithmetic, and drive \`printf\` with the right conversion specifiers. C is statically and weakly typed: every variable has a fixed type chosen at declaration, but the language will happily let one type bleed into another (integer division truncates, \`char\` is just a small integer).
+    intro: `Before we go further, let's nail down four words you'll use constantly. A **statement** is one complete instruction — like one sentence — and in C it almost always ends with a semicolon \`;\`. A **variable** is a named box in memory that holds a value you can read and change later; \`int age = 30;\` carves out a box, labels it \`age\`, and puts \`30\` inside. A **type** is the kind of thing a box may hold and how big the box is: \`int\` holds a whole number, \`double\` holds a number with a fractional part (like \`3.14\`), and \`char\` holds a single character (like \`'A'\`). C is **statically typed**, meaning you must state a variable's type when you create it and that type never changes — the compiler checks your types before the program ever runs. Finally, a **function** is a named, reusable block of statements (you already met \`main\`); you can define your own, give it inputs, and have it hand back a result. The general shape is \`returnType name(inputs) { statements }\`, e.g. \`int add(int a, int b) { return a + b; }\`.
+
+By the end of this phase you'll declare variables of C's fundamental types (\`int\`, \`double\`, \`char\`), reason about *integer vs. floating-point* arithmetic, and drive \`printf\` with the right **conversion specifiers** — the \`%\`-codes that tell \`printf\` how to display each value (\`%d\` for an integer, \`%f\` for a floating-point number, \`%c\` for a single character, \`%s\` for a string). A key C quirk: it is statically but *weakly* typed, so one type readily bleeds into another — dividing two \`int\`s throws away the remainder (\`7 / 2\` is \`3\`, not \`3.5\`), and a \`char\` is really just a small integer holding a character code.
 
 Build locally: a tiny \`convert.c\` that reads no input but prints a table — Celsius to Fahrenheit for a few hardcoded values — using \`printf("%d -> %.1f\\n", c, f)\`. Experiment with \`%d\`, \`%f\`, \`%c\`, \`%x\`, and width/precision flags like \`%5.2f\` to internalise how formatting works.`,
     video: {
@@ -176,12 +203,6 @@ int main(void) {
     intro: `This phase covers the structured-programming core of C: \`if\`/\`else\`, \`while\`, \`do/while\`, \`for\`, \`switch\`, and how to factor logic into functions with prototypes. You'll learn that C requires a function to be *declared before it is called* (hence header prototypes), that arguments are passed *by value*, and that \`switch\` falls through cases unless you \`break\`.
 
 Build locally: a \`fizzbuzz.c\` that loops 1..100, printing "Fizz", "Buzz", or "FizzBuzz" using the modulo operator \`%\`. Then refactor the divisibility test into a \`bool divides(int n, int d)\` helper (include \`<stdbool.h>\`). Run it and verify the output against a reference.`,
-    video: {
-      title: 'C Programming Full Course',
-      youtubeId: '87SH2Cn0s9A',
-      channelName: 'freeCodeCamp.org',
-      duration: '15 hours',
-    },
     topics: [
       { label: 'cppreference — if statement', url: 'https://en.cppreference.com/w/c/language/if', note: 'Conditional branching.' },
       { label: 'cppreference — for loop', url: 'https://en.cppreference.com/w/c/language/for', note: 'The three-clause counting loop.' },
@@ -494,12 +515,6 @@ strcpy(dst, "hello");
     intro: `C lets you build aggregate types: \`struct\` groups named fields into one object, \`union\` overlays fields in the same storage, \`enum\` names integer constants, and \`typedef\` gives types convenient aliases. You'll learn member access with \`.\` (on a value) versus \`->\` (through a pointer), why struct *layout* includes padding for alignment, and how a \`union\` only holds one member at a time.
 
 Because structs live in memory and the sandbox does not model them, the struct/union behaviour is taught via MCQs. Locally, define \`typedef struct { double x, y; } Point;\` and a \`double dist(Point a, Point b)\` function, then print distances to verify your geometry. Inspect layout with \`sizeof\` and \`offsetof\`.`,
-    video: {
-      title: 'C Programming Full Course',
-      youtubeId: '87SH2Cn0s9A',
-      channelName: 'freeCodeCamp.org',
-      duration: '15 hours',
-    },
     topics: [
       { label: 'cppreference — struct', url: 'https://en.cppreference.com/w/c/language/struct', note: 'Defining and using structures.' },
       { label: 'cppreference — union', url: 'https://en.cppreference.com/w/c/language/union', note: 'Overlapping storage for members.' },

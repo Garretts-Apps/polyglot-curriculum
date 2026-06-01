@@ -8,8 +8,32 @@ export const luaPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to Lua! Lua is a tiny, fast, embeddable scripting language — the glue inside games (Roblox, World of Warcraft), config systems (Redis, Nginx via OpenResty), and embedded devices. In this level you'll install the standalone `lua` interpreter, confirm its version, and run your first program. Absolute beginners start here.",
+    intro: `Welcome to Lua, and welcome to programming! A computer program is just a list of instructions you write down so the computer can follow them, one after another. Lua is a tiny, fast, embeddable scripting language — the glue inside games (Roblox, World of Warcraft), config systems (Redis, Nginx via OpenResty), and embedded devices. Its whole appeal is that it is small and friendly, which makes it a great first language. In this level you'll install the standalone \`lua\` interpreter (the program that *reads* your Lua instructions and *does* them), confirm its version, and write your very first program. If you have never programmed before, you are in exactly the right place — we will not assume you know anything.
+
+Here is the entire first program — one single line:
+
+\`\`\`lua
+print("Hello, World!")
+\`\`\`
+
+It has just three pieces. Here is what each one is called:
+
+\`\`\`
+print ( "Hello, World!" )
+└─┬─┘ │ └──────┬──────┘ │
+  │   │        │        └─ closing parenthesis
+  │   │        └─ a string (the text to show)
+  │   └─ opening parenthesis (the "hand-in" slot)
+  └─ the name of a built-in function
+\`\`\`
+
+Let's read it slowly, left to right, the way the computer does. For each piece we'll answer four questions: *what is this word?*, *what job does it do here?*, *what breaks if I remove it?*, and *what is actually sitting in the computer's memory when the program runs?*
+
+- \`print\` — **What is it?** The name of a *function*: a named action the computer already knows how to do (programmers also call this a "command" or "built-in"). **What job?** The word \`print\` is a bit old-fashioned — it does NOT send anything to a paper printer; it means "show this text on the screen." Lua already has \`print\` built in, so just writing the name is enough for Lua to find it. **Remove it?** Without a function name there is nothing to run — the line is meaningless, or if you mistype it as \`prnt\` Lua stops and complains it has never heard of \`prnt\`. **In memory?** \`print\` is itself a value living in memory — specifically a *function value* — and the name \`print\` points at it, the same way a contact name in your phone points at a phone number.
+- \`( )\` — **What are they?** The round brackets (parentheses) right after a function's name. **What job?** They mean "run this function now, and here is the information to run it with." Think of \`print\` as a vending machine and the parentheses as the slot you drop your coin into: whatever you place between \`(\` and \`)\` is handed to \`print\` to work on. Every function call needs this pair, even when nothing is inside them (\`print()\` prints an empty line). **Remove them?** Then \`print\` is only *mentioned*, never *run* — Lua just looks at the function value and shrugs; nothing appears on screen. **In memory?** The parentheses themselves aren't stored — they're an instruction to the interpreter to perform a *call* and to pass along whatever is inside.
+- \`"Hello, World!"\` — **What is it?** A piece of text. In programming a piece of text is called a **string** (imagine letters strung together like beads on a string). **What job?** It's the actual information we hand to \`print\`. The double quotes \`"\` are fences that mark exactly where the text starts and stops; everything between them — here the 13 characters \`Hello, World!\` — is the literal text. The quotes are *not* part of the text and never appear on screen. **Remove them?** Delete the quotes and Lua reads \`Hello\` as the name of some command it doesn't recognise, and errors out. **In memory?** While the program runs, the string \`Hello, World!\` exists as a value in memory, and it is that value which gets handed to \`print\`.
+
+Put it together: "Run the built-in \`print\` function, handing it the string \`Hello, World!\`." When the program runs, the words \`Hello, World!\` appear on your screen, followed by Lua moving to a fresh line. That's it — there is no setup, no \`main\`, no imports, and no semicolon needed. To run it, save the line in a file called \`hello.lua\` and type \`lua hello.lua\` in your terminal. Absolute beginners start here.`,
     topics: [
       {
         label: 'Lua download',
@@ -36,7 +60,7 @@ export const luaPhases: Phase[] = [
         boilerplate: 'print("Hello, World!")\n',
         expectedOutput: 'Hello, World!',
         explanation:
-          'Lua needs no boilerplate — no `main`, no imports, no semicolons. `print` is a global function that writes its arguments (tab-separated) followed by a newline to stdout.',
+          'Reading this one line token by token: `print` is the name of a built-in **function** — a named action Lua already knows. It means "show text on the screen" (not "send to a paper printer"). The `( )` parentheses right after the name are how you **hand information in** to the function; whatever sits between them is the value `print` will work on. Remove the parentheses and `print` is only *named*, never *run*, so nothing appears. `"Hello, World!"` is a **string** — a piece of text. The double quotes `"` are fences marking where the text begins and ends; they are not part of the text and never show on screen. Delete a quote and Lua mistakes `Hello` for a command name and errors. So the whole line says: "run `print`, handing it the text `Hello, World!`." At runtime the characters `Hello, World!` are held in memory as a string value, passed to `print`, and written to standard output followed by a newline. Lua needs no boilerplate at all — no `main`, no imports, no semicolons. (When given several values, `print` separates them with a tab and still ends with one newline.)',
       },
       {
         kind: 'mcq',
@@ -66,9 +90,15 @@ export const luaPhases: Phase[] = [
     level: 1,
     title: 'Lua Basics — Values, Types & Variables',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll predict the output of small Lua programs and explain Lua's eight basic types: \`nil\`, \`boolean\`, \`number\`, \`string\`, \`function\`, \`table\`, \`userdata\`, and \`thread\`. You'll internalise the rules that trip up newcomers: variables are **global by default** (use \`local\`!), \`nil\` and \`false\` are the *only* falsy values (\`0\` and \`""\` are truthy!), and there is exactly one number type that since 5.3 distinguishes integer and float subtypes.
+    intro: `Before we touch Lua's type system, let's nail down four words you'll hear constantly: *statement*, *value*, *variable*, and *type*. A program is a list of **statements** — single complete instructions, read top to bottom. The line \`print("hi")\` is one statement; so is \`local x = 5\`. (Lua doesn't need a \`;\` at the end of each statement the way some languages do; a new line is enough.) A **value** is a single piece of data the computer is holding right now — the number \`42\`, the text \`"Ada"\`, the truth-fact \`true\`. A **variable** is a *name you give to a value* so you can refer to it later — like sticking a labelled sticky-note onto a box so you can find what's inside without opening it. In Lua you create one by writing \`local name = value\`, for example \`local age = 36\`. Read the \`=\` here as "is set to," not "equals" in the maths sense: it takes the value on the right and stores it under the name on the left. (Testing whether two things are equal is a *different* operator, \`==\`, which you'll meet in the next level.) The word \`local\` is a promise that this name only lives inside the current chunk of code — always start with \`local\`, because a name written *without* it silently becomes a **global** that's visible to your whole program, which is a classic beginner bug. Once declared, you can use \`age\` anywhere a value is expected, e.g. \`print(age)\`, and you can change it later with another \`age = 37\` (no \`local\` needed the second time — it already exists).
 
-To build the muscle, write a script locally that declares a few \`local\` values, concatenates them with \`..\` (which auto-coerces numbers to strings), and uses \`type(x)\` and \`#s\` (string length) to inspect them. Run it with \`lua scratch.lua\` and watch how \`print(1 == 1.0)\` and \`print(10 // 3)\` behave.`,
+A **function** is a reusable mini-program with a name: you hand it some inputs (the values in the parentheses, called *arguments*), it does some work, and it may hand back a result. You already met one — \`print\` — and you'll write your own this level with \`local function name(inputs) ... end\`, where everything between the function's first line and its \`end\` is the work it does. The huge payoff is that you write the steps *once* and then *call* the function by name as many times as you like.
+
+A **type** is simply "what *kind* of value this is." A number behaves differently from a piece of text — you can add two numbers, but adding two sentences makes no sense — so every value carries a type that tells Lua which operations are allowed. You can ask any value its type with the built-in \`type(x)\` function, which hands back a string naming the kind, e.g. \`type(42)\` gives \`"number"\`. Lua has exactly **eight** basic types: \`nil\` (the special "nothing here yet" value), \`boolean\` (\`true\` or \`false\`), \`number\`, \`string\` (text), \`function\` (a named action — yes, functions are values too, which is why \`type(print)\` is \`"function"\`), \`table\` (Lua's all-purpose container, covered later), and the two advanced ones \`userdata\` and \`thread\`.
+
+By the end of this phase you'll predict the output of small Lua programs and explain all eight types. You'll also internalise the rules that trip up newcomers: variables are **global by default** (so use \`local\`!), \`nil\` and \`false\` are the *only* falsy values (\`0\` and the empty string \`""\` are truthy!), and there is exactly one \`number\` type that since Lua 5.3 distinguishes integer and float *subtypes*. One more Lua quirk to meet early: to glue two strings together you use the \`..\` operator (two dots), e.g. \`"Hello, " .. name\`; the plain \`+\` is reserved strictly for adding numbers.
+
+To build the muscle, write a script locally that declares a few \`local\` values, concatenates them with \`..\` (which auto-coerces numbers to text), and uses \`type(x)\` and \`#s\` (the \`#\` operator gives a string's length) to inspect them. Run it with \`lua scratch.lua\` and watch how \`print(1 == 1.0)\` and \`print(10 // 3)\` behave.`,
     topics: [
       { label: 'PiL — Types and Values', url: 'https://www.lua.org/pil/2.html', note: 'The eight basic types, walked through with examples.' },
       { label: 'Manual §2.1 — Values and Types', url: 'https://www.lua.org/manual/5.4/manual.html#2.1', note: 'Authoritative definition of every type, including integer vs float.' },
@@ -172,7 +202,7 @@ Build it locally: write a FizzBuzz from 1 to 20 using a numeric \`for\` and \`if
       { label: 'Lua-users wiki — Goto Statement', url: 'https://lua-users.org/wiki/GotoStatement', note: 'How to emulate continue with `goto` (added in 5.2).' },
     ],
     video: {
-      title: 'Lua Tutorial for Beginners',
+      title: 'Lua Tutorial',
       youtubeId: 'iMacxZQMPXs',
       channelName: 'Derek Banas',
       duration: '1 hour',
@@ -364,12 +394,6 @@ Because the in-browser runner doesn't print tables, you'll *reason* about table 
       { label: 'Manual §3.4.9 — Table Constructors', url: 'https://www.lua.org/manual/5.4/manual.html#3.4.9', note: 'Exact constructor and indexing semantics.' },
       { label: 'Manual §6.6 — table library', url: 'https://www.lua.org/manual/5.4/manual.html#6.6', note: 'table.insert, table.remove, table.concat, table.sort.' },
     ],
-    video: {
-      title: 'Learn Lua in 15 Minutes',
-      youtubeId: 'kgiEFFXLM2g',
-      channelName: "Steve's teacher",
-      duration: '15 minutes',
-    },
     deliverable: 'A contacts.lua building a list of records and a name→number map, printing each via pairs/ipairs.',
     checks: [
       {

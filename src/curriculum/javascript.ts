@@ -8,12 +8,17 @@ export const javascriptPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to JavaScript! It is the only language that runs natively in every web browser, and — via Node.js — on servers, build tools, and the command line too. In this level you'll run your first program in two places: the browser DevTools console (`F12` → Console) and Node.js (`node hello.js`). Absolute beginners start here.",
+    intro: `Welcome — this might be the very first program you ever run, and that is exactly who this level is for. A *program* is just a list of written instructions that a computer follows from top to bottom, one line at a time. JavaScript is the language those instructions are written in. It is special because it runs *everywhere*: inside every web browser (it is what makes web pages interactive), and — through a free tool called **Node.js** — directly on your own computer from a text-only window called a *terminal* (or *command line*).
+
+In this level you will write one line of JavaScript that makes the computer display the words \`Hello, World!\`. That is the traditional first program in every language: it is tiny, but getting it to run proves your whole setup works.
+
+You will run it in two places. (1) In a browser: press \`F12\` (or right-click the page → "Inspect") to open the *DevTools*, click the **Console** tab, type your line, and press Enter. (2) On your computer with Node.js: install Node from nodejs.org, save your line in a plain-text file named \`hello.js\`, then in a terminal type \`node hello.js\` and press Enter. The word \`node\` means "run this file with Node.js"; \`hello.js\` is the file's name (the \`.js\` ending just tells everyone it contains JavaScript).
+
+Do not worry about memorising anything yet. Read the line below slowly, run it, and see the words appear. The code check explains every single piece of that line in plain English.`,
     topics: [
       {
         label: 'MDN — What is JavaScript?',
-        url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/What_is_JavaScript',
+        url: 'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/What_is_JavaScript',
         note: 'A gentle overview of the language and where it runs.',
       },
       {
@@ -35,7 +40,33 @@ export const javascriptPhases: Phase[] = [
         prompt: 'Use `console.log()` to print `Hello, World!` to the console.',
         boilerplate: '// Print a greeting to the console.\nconsole.log("Hello, World!");\n',
         expectedOutput: 'Hello, World!',
-        explanation: '`console.log()` writes its arguments to the console — the DevTools console in a browser, or standard output under Node.js. It is the workhorse of quick debugging in JavaScript.',
+        explanation: `Let's read the line \`console.log("Hello, World!");\` left to right, piece by piece — every symbol is there for a reason. Here is the whole line with each part labelled:
+
+\`\`\`text
+console . log ( "Hello, World!" ) ;
+   |    |  |  |        |        |  |
+   |    |  |  |        |        |  end of instruction (semicolon)
+   |    |  |  |        |        close parenthesis
+   |    |  |  |        the text to print (a string)
+   |    |  |  open parenthesis = "call it now, with this"
+   |    |  the action/function: "display this"
+   |    "reach inside console"
+   the built-in output toolbox
+\`\`\`
+
+**\`console\`** — *What it means:* the name of a thing the computer already provides for you, called an *object* — think of it as a small toolbox named "console" whose job is showing text output. *Why it's here:* it's the place the words get sent to. *What's in memory:* when the program starts, JavaScript has already created this console object and made the name \`console\` point at it, before your line even runs. *Remove it* (e.g. write \`.log("hi")\`) and JavaScript has no toolbox to reach into, so it reports an error and nothing prints.
+
+**\`.\` (the dot)** — *What it means:* "reach inside." \`console.log\` says "go into the console toolbox and grab the tool called \`log\`," like saying *kitchen.oven* to mean the oven belonging to the kitchen. *Why it's here:* to pick out one specific tool from the toolbox. *Remove it* and \`consolelog\` becomes one meaningless word JavaScript has never heard of — an error.
+
+**\`log\`** — *What it means:* a *function* — a named action you can trigger. *Its job:* "write whatever I'm given onto the console." (Here "log" means *display/record*, not the math kind of log.) *What's in memory:* \`console.log\` is itself a value — a function — sitting inside the console object. *On its own* \`console.log\` is just the *name* of the action; written alone it does nothing because you never told it to run.
+
+**\`( ... )\` (the parentheses)** — *What they mean:* putting parentheses right after a function's name is how you *call* (run) it — "do it now." *Why they're here:* whatever you put *inside* is handed to the function as the information to work with — here, the text to display. *Remove them* and you'd only be *mentioning* the action, never performing it, so nothing prints. (Empty parentheses \`console.log()\` would still run, just with nothing to show.)
+
+**\`"Hello, World!"\`** — *What it means:* the double quotes mark the start and end of a *string* — the programming word for a piece of text. Everything between them is the literal text that will appear. *What's in memory:* while the line runs, the computer holds the 13 characters \`Hello, World!\` as a string value and passes that value into \`log\`. *The quotes themselves are not part of the text* — they are fences telling JavaScript "treat what's inside as plain text, not as commands." *Change the words* inside and the output changes to match; *remove the quotes* and JavaScript tries to read \`Hello\` as a command name and errors.
+
+**\`;\` (the semicolon)** — *What it means:* the end of this instruction, like a full stop ends a sentence. *Why it's here:* to clearly separate one statement from the next. *Remove it* and JavaScript usually still works (it forgives a missing one), but writing it is a tidy habit.
+
+Putting it together: at runtime the computer holds the text \`Hello, World!\` as a string value, hands it into the \`log\` action, and \`log\` writes those characters to the console — the DevTools Console panel in a browser, or your terminal under Node.js. That same \`console.log\` is the tool you'll use constantly to peek at values while you learn.`,
       },
       {
         kind: 'mcq',
@@ -68,9 +99,17 @@ export const javascriptPhases: Phase[] = [
     level: 1,
     title: 'Values, Types & Coercion — == vs ===',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll predict the result of any \`typeof\`, any \`==\` vs \`===\` comparison, and any sneaky coercion (\`"5" + 1\` vs \`"5" - 1\`). JavaScript has exactly seven primitive types — \`string\`, \`number\`, \`boolean\`, \`undefined\`, \`null\`, \`bigint\`, \`symbol\` — plus objects. Numbers are all IEEE-754 doubles, which is why \`0.1 + 0.2 !== 0.3\`.
+    intro: `Before the puzzles, here are the bedrock ideas this level rests on — explained for someone who has never programmed.
 
-To build the muscle, write a tiny \`describe.js\` locally that takes a few values and logs each one's \`typeof\` and whether it is "truthy". Run it with \`node describe.js\` and confirm your predictions. The golden rule you'll adopt: **always use \`===\`** unless you have a deliberate reason not to.`,
+**A value** is a single piece of data the computer can hold — the number \`42\`, the text \`"hello"\`, the yes/no answer \`true\`. **A type** is the *kind* of a value: \`42\` is a *number*, \`"hello"\` is a *string* (text), \`true\` is a *boolean* (a true/false answer). The type matters because it decides what you can do with the value — you can add two numbers, but "adding" two pieces of text just glues them together. JavaScript figures out the type automatically; you can ask for it with the word \`typeof\`.
+
+**A variable** is a labelled box you store a value in so you can refer to it by name later. You make one with \`let\`, like \`let age = 30;\` — read as "make a box named \`age\` and put the number 30 in it." The single \`=\` does not mean "equals" here; it means "put the value on the right into the box on the left." Afterwards, writing \`age\` anywhere means "whatever is currently in that box." Use \`const\` instead of \`let\` when the box should never be re-pointed at a different value.
+
+**A statement** is one complete instruction, like one sentence; it usually ends in a semicolon \`;\`. **A function** is a named, reusable action — you saw one in Level 0: \`console.log(...)\` is a function whose action is "display this." You *call* (run) a function by writing its name followed by parentheses, and anything inside the parentheses is the information you hand it.
+
+With that vocabulary in hand: by the end of this phase you'll predict the result of any \`typeof\`, any \`==\` vs \`===\` comparison, and any sneaky coercion (\`"5" + 1\` vs \`"5" - 1\`). JavaScript has exactly seven primitive (simple) types — \`string\`, \`number\`, \`boolean\`, \`undefined\`, \`null\`, \`bigint\`, \`symbol\` — plus objects (the catch-all for more complex things). All numbers are stored the same way internally (the IEEE-754 "double" format), which is why \`0.1 + 0.2 !== 0.3\` — a famous surprise you'll meet in the code check.
+
+To build the muscle, write a tiny \`describe.js\` locally that takes a few values and logs each one's \`typeof\` and whether it is "truthy" (counts as a yes in an \`if\`). Run it with \`node describe.js\` and confirm your predictions. The golden rule you'll adopt: **always use \`===\`** (strict equality) unless you have a deliberate reason not to.`,
     video: {
       title: 'JavaScript Programming - Full Course',
       youtubeId: 'jS4aFq5-91M',
@@ -288,7 +327,7 @@ To build the muscle, write a \`stats.js\` locally that takes an array of numbers
 console.log([3, 20, 100, 1].sort());
 \`\`\``,
         options: ['`[1, 3, 20, 100]`', '`[1, 100, 20, 3]`', '`[1, 3, 100, 20]`', '`[100, 20, 3, 1]`'],
-        correctIndex: 2,
+        correctIndex: 1,
         explanation: 'By default `sort()` converts elements to strings and compares them lexicographically (by UTF-16 code units), so `"100"` sorts before `"20"` because `"1"` < `"2"`. To sort numbers correctly, pass a comparator: `arr.sort((a, b) => a - b)`. Note `sort` also mutates the array in place. See [MDN — Array.prototype.sort()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort).',
       },
       {
@@ -629,7 +668,7 @@ To build the muscle, write a \`fetchUser.js\` locally that returns a Promise res
       duration: '8 hours',
     },
     topics: [
-      { label: 'MDN — Asynchronous JavaScript', url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous', note: 'The full async learning path.' },
+      { label: 'MDN — Asynchronous JavaScript', url: 'https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS', note: 'The full async learning path.' },
       { label: 'MDN — Using promises', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises', note: 'then/catch/finally and chaining.' },
       { label: 'MDN — async function', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function', note: 'async/await syntax and semantics.' },
       { label: 'MDN — The event loop', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Event_loop', note: 'Call stack, queues, run-to-completion.' },

@@ -8,8 +8,54 @@ export const zigPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to Zig! Zig is a small, explicit systems language: no hidden control flow, no hidden allocations, no preprocessor, and a compiler that doubles as a build system. In this level you'll install the toolchain, confirm your version, and run your first program with `std.debug.print`. Absolute beginners start here. Note: Zig moves fast and is pre-1.0 — this course targets 0.13+ semantics, so always cross-check against the version printed by `zig version`.",
+    intro: `Welcome to Zig! Zig is a small, explicit systems language: no hidden control flow, no hidden allocations, no preprocessor, and a compiler that doubles as a build system. In this level you'll install the toolchain, confirm your version, and run your very first program. Absolute beginners start here — we will read that first program one piece at a time.
+
+Here is the whole thing:
+
+\`\`\`zig
+const std = @import("std");
+
+pub fn main() void {
+    std.debug.print("Hello, World!\\n", .{});
+}
+\`\`\`
+
+Here is a map of the pieces before we walk through them one at a time:
+
+\`\`\`text
+const std = @import("std");
+  │     │        │
+  │     │        └─ pull in the standard-library toolbox
+  │     └─ the name we'll use to reach it
+  └─ this name never changes (a constant)
+
+pub fn main() void {  ...  }
+ │   │   │  │   │    └─ the body (the instructions)
+ │   │   │  │   └─ returns nothing
+ │   │   │  └─ takes no input
+ │   │   └─ the name (the program's entry point)
+ │   └─ "a function starts here"
+ └─ visible to the program launcher
+\`\`\`
+
+Now line by line, in plain English.
+
+**\`const std = @import("std");\`** — "Importing" means *pulling in code that someone else already wrote* so you can use it instead of writing it yourself. Zig ships with a big toolbox called the **standard library** ("std" for short): ready-made tools for printing, math, files, and more. \`@import("std")\` reaches into that toolbox and hands it back to you. \`const std = ...\` gives that toolbox a name — \`std\` — so the rest of your program can say "use the thing called \`std\`." \`const\` means *this name will never point at anything else* (it is a constant — change it later and the compiler stops you). The line ends in a semicolon \`;\`, which is how you tell Zig "this instruction is finished." Remove this line and the program can't find \`std.debug.print\`, so it won't compile. *In memory at runtime:* nothing extra is stored for \`std\` — it is a compile-time handle to library code, resolved while the program is being built, not a value sitting in memory as it runs.
+
+**\`pub fn main() void\`** — This line defines a **function**. A function is a *named set of instructions* — a recipe the computer can follow. Reading the words left to right:
+- \`pub\` means **public** — it makes \`main\` visible to the part of Zig that launches your program. Without \`pub\`, the launcher can't see \`main\` and the program won't start.
+- \`fn\` is the keyword that says "a function starts here" (short for "function"). Remove it and Zig no longer reads this as a function definition.
+- \`main\` is the function's **name**. The name \`main\` is special: when you run a Zig program, the computer looks for the function called \`main\` and starts there. It is the front door of your program. Rename it to something else and the program has no entry point.
+- \`()\` is an empty pair of parentheses. Parentheses are where a function receives information to work with. Empty parentheses mean "this function needs nothing handed to it." If \`main\` took inputs, their names and types would go between these parentheses.
+- \`void\` describes what the function *gives back* when it finishes. \`void\` means *nothing* — \`main\` does its work (printing) but hands no value back. *In memory at runtime:* because the return type is \`void\`, no return value is set aside; \`main\` simply runs its body and ends.
+
+The \`{\` at the end opens the function's **body** — the instructions it runs — and the matching \`}\` further down closes it. Everything between the braces is what \`main\` does.
+
+**\`std.debug.print("Hello, World!\\n", .{});\`** — This is the one instruction inside \`main\`, and it does the actual printing. \`std.debug.print\` means "reach into \`std\`, then into its \`debug\` section, and use the \`print\` tool." The dots are just "go inside." The parentheses hold the two things we hand to \`print\`:
+- \`"Hello, World!\\n"\` is a **string** — text wrapped in double quotes. This is the message to show. The \`\\n\` at the end is not two characters on screen; it is a single **newline** character — it means "move to the next line," like pressing Enter. Without it, the next thing printed would sit on the same line. *In memory:* those 14 bytes (\`H\`, \`e\`, \`l\`, … and the newline) are baked into the program and read straight from there when it runs.
+- \`.{}\` is an **empty tuple** — a little bundle of extra values to slot into the message. Our message has no blanks to fill, so the bundle is empty. (Later you'll write things like \`.{ name, age }\` to fill in blanks marked by \`{s}\`/\`{d}\`.) Zig requires this second argument even when it's empty. *In memory:* an empty tuple holds zero values and takes up no space.
+
+Run this and the computer prints \`Hello, World!\` and moves to a new line. Note: Zig moves fast and is pre-1.0 — this course targets 0.13+ semantics, so always cross-check against the version printed by \`zig version\`.`,
     topics: [
       {
         label: 'Download & install Zig',
@@ -37,7 +83,7 @@ export const zigPhases: Phase[] = [
           'const std = @import("std");\n\npub fn main() void {\n    std.debug.print("Hello, Zig!\\n", .{});\n}\n',
         expectedOutput: 'Hello, Zig!',
         explanation:
-          'Every Zig program with a `pub fn main()` is an entry point. `std.debug.print` takes a format string and an anonymous-struct tuple of arguments — here `.{}` is the empty tuple because there is nothing to interpolate. It writes to standard error, which is fine for debugging output.',
+          'Token by token: `const std = @import("std")` pulls in Zig\'s standard-library toolbox and names it `std` (a `const`, so the name never changes); without it, `std.debug.print` can\'t be found. `pub fn main() void` defines the function named `main`, which is where the program starts running — `fn` says "function," `main` is the special entry-point name, `()` means it takes no input, `void` means it returns nothing, and `pub` makes it visible to the launcher (drop `pub` and the program won\'t start). Inside the braces, `std.debug.print("Hello, Zig!\\n", .{})` does the printing: the first argument is the text to show (the `\\n` is a single newline character — "go to the next line"), and the second argument `.{}` is an empty tuple of values to fill into the message (empty here because there are no blanks to fill). At runtime no extra value sits in memory for that tuple — it is empty. `print` writes to standard error, which is fine for this kind of program. Change `"Hello, Zig!\\n"` and you change what appears on screen.',
       },
       {
         kind: 'mcq',
@@ -72,15 +118,15 @@ export const zigPhases: Phase[] = [
     level: 1,
     title: 'Zig Basics — const/var, Integer Types & Overflow',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll read short Zig programs and predict their output, with a sharp focus on what bites newcomers: \`const\` is the default and \`var\` must actually mutate, every integer has an explicit width and signedness (\`u8\`, \`i32\`, \`usize\`), and arithmetic overflow is *illegal behaviour* in safe builds rather than a silent wraparound. You'll learn how Zig's sized integers differ from C's \`int\`, and when to reach for wrapping operators like \`+%\`.
+    intro: `This phase introduces the three ideas every program is built from — **variables**, **types**, and **functions** — assuming you have never programmed before. We'll meet each from scratch and then look at the details that bite Zig newcomers.
 
-To build the muscle, write locally: a tiny program that declares a \`const\` width and a \`var\` counter, loops with \`while\`, and prints a running total with \`std.debug.print("total={d}\\n", .{total})\`. Try changing a \`var\` you never reassign and watch the compiler reject it.`,
-    video: {
-      title: 'Zig in 100 Seconds',
-      youtubeId: 'kxT8-C1vmd4',
-      channelName: 'Fireship',
-      duration: '2 minutes',
-    },
+**A variable is a named box that holds a value.** When you write \`const width = 10;\`, you are telling the computer: "set aside a little box, put the number 10 in it, and let me refer to that box by the name \`width\`." Later, writing \`width\` means "give me whatever is in that box" (here, 10). Zig has two kinds of box. \`const\` makes a box whose contents *never change* after you fill it — \`const\` is the one you should reach for by default. \`var\` makes a box you *can* change later, for example a running counter you add to inside a loop. In fact Zig is strict about this: if you declare a \`var\` but never actually change it, the compiler stops you and tells you to use \`const\` instead — this keeps your code honest about what does and doesn't move.
+
+**A type is the kind of thing a box holds.** A box can hold a whole number, or text, or a yes/no value — and the *type* says which. Zig is unusually explicit about number types: instead of one vague "integer," it has \`u8\`, \`i32\`, \`usize\`, and more. The letter says signed or unsigned (\`u\` = unsigned, only zero and up; \`i\` = signed, can be negative), and the number says how many **bits** of space it gets, which sets the range of values it can hold (a \`u8\` holds 0 through 255, for instance). \`usize\` is the type Zig uses for counts and list positions. You write the type after a colon: \`const n: u8 = 10;\` reads as "a box named \`n\`, of type \`u8\`, holding 10." A key consequence of fixed sizes is **overflow**: if a \`u8\` already holds 255 and you add 1, there is no room for 256 — and in a safe build Zig treats that as an error and stops, rather than silently giving a wrong answer. To deliberately wrap around (C-style), you opt in with a special operator like \`+%\`.
+
+**A function is a named recipe** — a block of instructions you can run by name. You write the recipe once, then "call" it whenever you need it, so you don't repeat yourself. A function can take **parameters** (values handed in, listed in the parentheses, each with a name and a type like \`a: i32\`) and can **return** one value back (whose type is written after the parentheses). For example \`fn double(n: i32) i32 { return n * 2; }\` reads as "a function named \`double\` that takes one \`i32\` called \`n\` and gives back an \`i32\` — namely \`n\` times 2." Calling it with \`double(5)\` runs the recipe with \`n\` set to 5 and produces 10. A function that returns nothing is marked \`void\`, which is exactly what you saw on \`pub fn main() void\` in Level 0: \`main\` is just a function the launcher calls for you, and \`void\` says it hands nothing back. A **statement** is one complete instruction — usually one line ending in a semicolon \`;\`, like \`total += i;\` — and a function's body is a sequence of statements run top to bottom.
+
+By the end of this phase you'll read short Zig programs and predict their output. To build the muscle, write locally: a tiny program that declares a \`const\` width and a \`var\` counter, loops with \`while\` to add up the numbers 1 through 5, and prints the running total with \`std.debug.print("total={d}\\n", .{total})\` — where \`{d}\` is a blank that gets filled in with the decimal number \`total\`. Then try declaring a \`var\` you never change, and watch the compiler reject it.`,
     topics: [
       { label: 'Language Reference — Variables', url: 'https://ziglang.org/documentation/master/#Variables', note: 'const, var, and the rules that govern them.' },
       { label: 'Language Reference — Integers', url: 'https://ziglang.org/documentation/master/#Integers', note: 'Arbitrary-width signed/unsigned integer types.' },
@@ -170,12 +216,6 @@ std.debug.print("{d}\\n", .{x});
     intro: `Now you'll express logic: \`if\` and \`while\` (with optional continue-expressions), \`for\` over ranges and slices, and functions with explicit parameter and return types. Two Zig surprises live here — \`if\` and \`switch\` are *expressions* that yield values, and there is no implicit numeric truthiness (conditions must be \`bool\`). You'll also see how \`break\` and \`continue\` interact with labelled loops.
 
 Locally, write a \`factorial\` function and a \`while\`-based Fibonacci, printing each with \`{d}\`. Then rewrite a \`while\` counter as a \`for (0..n) |i|\` range loop and confirm the output is identical.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — if', url: 'https://ziglang.org/documentation/master/#if', note: 'if as an expression; payload capture for optionals/errors.' },
       { label: 'Language Reference — while', url: 'https://ziglang.org/documentation/master/#while', note: 'while with continue-expressions and else.' },
@@ -270,12 +310,6 @@ std.debug.print("{s}\\n", .{label});
     intro: `Zig draws a hard line between **arrays** (fixed length known at compile time, e.g. \`[3]i32\`), **slices** (a pointer + runtime length, \`[]i32\`), and **many-item / sentinel-terminated** pointers like \`[*:0]const u8\` used for C strings. You'll learn that \`.len\` is part of the slice and that indexing is bounds-checked in safe builds. String literals are \`*const [N:0]u8\` — arrays with a 0 sentinel — which is why \`"hi".len\` is 2 but the data is null-terminated for C interop.
 
 Locally, build a function \`sum(slice: []const i32) i32\` that loops with \`for (slice) |v|\`, then call it on an array literal. Print the length and the sum.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — Arrays', url: 'https://ziglang.org/documentation/master/#Arrays', note: 'Fixed-length arrays and array literals.' },
       { label: 'Language Reference — Slices', url: 'https://ziglang.org/documentation/master/#Slices', note: 'Pointer + length; `.len`, slicing syntax `a[start..end]`.' },
@@ -364,12 +398,6 @@ std.debug.print("{d}\\n", .{arr.len});
     intro: `Zig has no null pointers lurking in ordinary types. Instead a value that might be absent has an **optional** type \`?T\`, and you must unwrap it explicitly before use. You'll learn the three idioms: \`if (opt) |value| { ... } else { ... }\` to branch with a capture, \`orelse\` to supply a default (\`opt orelse 0\`), and \`opt.?\` to assert non-null (which panics if it is null in safe builds). Because the runnable subset here doesn't model optionals, this phase teaches them through "what does this print?" MCQs — but the concepts are the heart of Zig's safety story.
 
 Locally, write \`fn findFirst(slice: []const i32, target: i32) ?usize\` returning the index or \`null\`, and print either the index or \`"not found"\` using \`orelse\`.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — Optionals', url: 'https://ziglang.org/documentation/master/#Optionals', note: '`?T`, `orelse`, `.?`, and optional pointers.' },
       { label: 'Language Reference — if', url: 'https://ziglang.org/documentation/master/#if', note: 'Capturing the payload of an optional in an `if`.' },
@@ -462,12 +490,6 @@ if (found) |idx| {
     intro: `Zig models recoverable failure with **error unions**: a function that can fail returns \`E!T\`, where \`E\` is an error set and \`T\` the success type. You'll learn the four moves: define errors with \`error{ OutOfRange, Empty }\`, propagate with \`try expr\` (return the error to the caller on failure), handle with \`catch\` (\`expr catch |err| ...\` or \`catch default\`), and run cleanup on the error path with \`errdefer\`. Errors are values — there are no exceptions and no hidden unwinding. The inferred error set written \`!T\` lets the compiler compute the union for you.
 
 Locally, write \`fn parsePositive(n: i32) error{Negative}!u32\` that returns an error for negatives, then a caller using \`catch\` to print a fallback. Add an \`errdefer\` log to see when it fires.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — Errors', url: 'https://ziglang.org/documentation/master/#Errors', note: 'Error sets, error unions, try, catch.' },
       { label: 'Language Reference — errdefer', url: 'https://ziglang.org/documentation/master/#errdefer', note: 'Cleanup that runs only when returning an error.' },
@@ -562,12 +584,6 @@ pub fn main() void {
     intro: `Zig's aggregate types are deliberately spare: \`struct\` groups fields (and can hold methods and default field values), \`enum\` is a set of named integer values, \`union\` overlays fields in the same memory, and a **tagged union** (\`union(enum)\`) pairs a union with an enum tag so it can be safely \`switch\`ed on. You'll learn that methods are just functions in the struct namespace called with \`instance.method()\`, that \`Self = @This()\` is the idiom for referring to the enclosing type, and that \`switch\` on a tagged union can capture each variant's payload.
 
 Locally, define \`const Point = struct { x: i32, y: i32, fn manhattan(self: Point) i32 {...} }\`, construct one with \`.{ .x = 3, .y = 4 }\`, and print \`p.manhattan()\`.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — struct', url: 'https://ziglang.org/documentation/master/#struct', note: 'Fields, methods, default values, and `@This()`.' },
       { label: 'Language Reference — enum', url: 'https://ziglang.org/documentation/master/#enum', note: 'Named integer sets and explicit tag types.' },
@@ -668,12 +684,6 @@ pub fn main() void {
     intro: `Zig has no separate macro or template language — instead, ordinary code can run at **compile time**. \`comptime\` parameters and blocks let the compiler execute Zig during compilation, and because **types are first-class comptime values**, generics are just functions that take a \`comptime T: type\` and return a type or a value. You'll learn \`comptime\` expressions, the \`anytype\` parameter, how \`std.ArrayList(T)\` is "a function that returns a struct type", and how \`comptime\`-known values drive \`inline\` loops and array sizes. This is Zig's superpower and its steepest concept.
 
 Locally, write a generic \`fn add(comptime T: type, a: T, b: T) T\`, then call it with \`add(i32, 2, 3)\` and \`add(f64, 1.5, 2.0)\` and print both.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — comptime', url: 'https://ziglang.org/documentation/master/#comptime', note: 'Compile-time evaluation of ordinary Zig code.' },
       { label: 'Language Reference — Generic Data Structures', url: 'https://ziglang.org/documentation/master/#Generic-Data-Structures', note: 'Types as comptime values; functions that return types.' },
@@ -771,12 +781,6 @@ pub fn main() void {
     intro: `Zig has no garbage collector and no hidden allocations — instead, any code that needs heap memory takes an \`std.mem.Allocator\` parameter explicitly. You'll learn the standard pattern: \`const x = try allocator.alloc(T, n);\` paired with \`defer allocator.free(x);\`, and the major allocators — \`std.heap.GeneralPurposeAllocator\` (detects leaks/double-frees in debug), \`ArenaAllocator\` (free everything at once), \`FixedBufferAllocator\` (no heap at all), and \`std.testing.allocator\` (fails tests on leaks). Because allocators can't run in the print-based subset, this phase teaches the patterns through MCQs — but "pass the allocator in" is the single most important Zig API convention.
 
 Locally, set up a \`GeneralPurposeAllocator\`, allocate a \`[]u8\`, write to it, and \`defer\` both the free and \`gpa.deinit()\`. Run it and confirm the leak detector reports clean.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — Memory', url: 'https://ziglang.org/documentation/master/#Memory', note: 'Why Zig has no implicit allocations; the allocator parameter convention.' },
       { label: 'std.mem.Allocator', url: 'https://ziglang.org/documentation/master/std/#std.mem.Allocator', note: 'The allocator interface: alloc, free, create, destroy.' },
@@ -864,12 +868,6 @@ Locally, set up a \`GeneralPurposeAllocator\`, allocate a \`[]u8\`, write to it,
     intro: `Zig is also a build system and a C/C++ toolchain. You'll learn the \`build.zig\` script (a normal Zig program that constructs a build graph via \`std.Build\`), the built-in test runner (\`test "name" { ... }\` blocks run with \`zig build test\`, using \`std.testing.expect\`/\`expectEqual\` and the leak-checking \`std.testing.allocator\`), and Zig's first-class C interop: \`@cImport\` to pull in C headers, \`zig cc\` as a drop-in C compiler, and seamless cross-compilation with \`-target\`. These are taught via MCQ since they don't fit the print-only runner.
 
 Locally, scaffold a project with \`zig init\`, add a \`test "adds"\` block, and run \`zig build test\`. Then try \`zig cc hello.c -o hello\` to use Zig as your C compiler.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Build System', url: 'https://ziglang.org/learn/build-system/', note: 'Official guide to build.zig and std.Build.' },
       { label: 'Language Reference — Zig Test', url: 'https://ziglang.org/documentation/master/#Zig-Test', note: '`test` blocks and `zig test` / `zig build test`.' },
@@ -960,12 +958,6 @@ Locally, scaffold a project with \`zig init\`, add a \`test "adds"\` block, and 
     intro: `The capstone covers low-level control and performance. You'll learn **packed structs** (\`packed struct\` with bit-precise field layout, e.g. \`u3\`/\`u5\` fields, for protocols and registers), **SIMD via vectors** (\`@Vector(4, f32)\` with element-wise operators and \`@reduce\`), the **build modes** (\`Debug\`, \`ReleaseSafe\`, \`ReleaseFast\`, \`ReleaseSmall\`) and what safety checks each keeps, and the current status of **async/await** (the syntax was removed pending a redesign — modern Zig concurrency uses threads and event loops; track the proposals). These are taught through MCQs.
 
 Locally, define a \`packed struct\` for an RGBA pixel summing to 32 bits, compute a dot product with \`@Vector(4, f32)\` and \`@reduce(.Add, ...)\`, and rebuild with \`-Doptimize=ReleaseFast\` to compare behaviour of safety checks.`,
-    video: {
-      title: 'Zig Programming Language Tutorial',
-      youtubeId: 'o3Hts9sox5c',
-      channelName: 'TJ DeVries',
-      duration: '1 hour',
-    },
     topics: [
       { label: 'Language Reference — packed struct', url: 'https://ziglang.org/documentation/master/#packed-struct', note: 'Bit-level layout with backing integers.' },
       { label: 'Language Reference — Vectors', url: 'https://ziglang.org/documentation/master/#Vectors', note: '`@Vector`, element-wise ops, and `@reduce` (SIMD).' },
@@ -1034,13 +1026,13 @@ std.debug.print("{d}\\n", .{total});
         prompt: 'What is the current status of `async`/`await` in mainstream Zig (0.13+)?',
         options: [
           'It is stable and the recommended way to do all I/O.',
-          'The `async`/`await` syntax was removed pending a redesign; current concurrency uses threads (`std.Thread`) and event loops, with async still being reworked.',
+          '`async`/`await` is not usable in the mainstream self-hosted compiler; it was shelved pending a redesign of the I/O and async model, so current concurrency uses threads (`std.Thread`) and event loops.',
           'Zig never had any async support.',
           'It works only on the WebAssembly target.',
         ],
         correctIndex: 1,
         explanation:
-          'Zig once had stackless coroutine `async`/`await`, but it was pulled from the language while the I/O and async model is being redesigned. For now, concurrency is done with `std.Thread` and event loops; follow the official proposals for the future direction. See [std.Thread](https://ziglang.org/documentation/master/std/#std.Thread).',
+          'Zig once had stackless coroutine `async`/`await` in the old bootstrap compiler, but it was disabled when the self-hosted compiler became the default and is unusable while the I/O and async model is being redesigned. For now, concurrency is done with `std.Thread` and event loops; follow the official proposals for the future direction. Async is the most version-fragile topic in this course, so always cross-check the release notes for the version you run. See [std.Thread](https://ziglang.org/documentation/master/std/#std.Thread).',
       },
     ],
   },

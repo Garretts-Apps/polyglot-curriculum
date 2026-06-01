@@ -8,8 +8,27 @@ export const cppPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to C++! In this level you'll install a modern compiler (`g++` or `clang++`), confirm it speaks at least C++17, and run your first program that streams text to standard output with `std::cout`. Absolute beginners start here.",
+    intro: `Welcome to C++ — and, if this is your very first program, welcome to programming. A *program* is just a list of written instructions that the computer carries out one after another, top to bottom. C++ is one *language* for writing those instructions; a tool called a **compiler** (\`g++\` or \`clang++\`) translates your text into the 1s and 0s the machine actually runs. In this level you'll install a modern compiler, confirm it understands at least the C++17 version of the language, and run a program that prints the words \`Hello, World!\` to the screen.
+
+Here is the whole program. Don't worry that it looks cryptic — we will name every single piece below.
+
+\`\`\`cpp
+#include <iostream>
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}
+\`\`\`
+
+Read it top to bottom, token by token (a *token* is the smallest meaningful chunk of text — a word or a symbol):
+
+- **\`#include <iostream>\`** — A line starting with \`#\` is a message to the compiler *before* your program is built, telling it to paste in some pre-written code. \`include\` means "bring this in". \`<iostream>\` is the name of a built-in toolbox (the "input/output stream" library). It contains the machinery for printing to the screen. Why is it here? Because the printing tool we use below (\`std::cout\`) lives in that toolbox — without this line the compiler wouldn't know what \`std::cout\` means and would refuse to build. If you remove it: a compile error.
+- **\`int main()\`** — This declares a **function**. A function is a named block of instructions. This one is named \`main\`, and \`main\` is special: it is the **starting point** — when you run the program, the computer looks for \`main\` and begins there. The word \`int\` in front is the function's *return type*: it promises to hand back a whole number (\`int\` = "integer", a number with no fractional part) when it finishes. The empty parentheses \`()\` mean "this function takes no information in". The \`{\` and matching \`}\` are braces that fence off the function's body — everything between them is what \`main\` does.
+- **\`std::cout << "Hello, World!" << std::endl;\`** — This is the line that actually prints. We break it down fully in the code exercise below, but in short: \`std::cout\` is the screen (the standard output), \`<<\` is the arrow that feeds something into it, \`"Hello, World!"\` is the literal text to print, and \`std::endl\` ends the line. The \`;\` at the end is a **semicolon** — it marks the end of a statement, the way a period ends a sentence. Almost every C++ statement ends with one.
+- **\`return 0;\`** — This ends \`main\` and hands the number \`0\` back to the operating system. By convention \`0\` means "everything went fine"; any other number signals an error. This satisfies the \`int\` promise made by \`int main()\`.
+
+Run the program below to see \`Hello, World!\` appear, then read the deep-dive in its explanation. Absolute beginners start here — nothing is assumed.`,
     topics: [
       {
         label: 'Get Started with C++ (isocpp.org)',
@@ -43,7 +62,12 @@ export const cppPhases: Phase[] = [
           '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}\n',
         expectedOutput: 'Hello, World!',
         explanation:
-          'Every C++ program begins execution at `main`. `#include <iostream>` pulls in the stream library, `std::cout` is the standard output stream, and `<<` is the (overloaded) stream-insertion operator. `std::endl` writes a newline and flushes the buffer. Returning `0` signals success to the operating system.',
+          'Let us dissect the printing line `std::cout << "Hello, World!" << std::endl;` token by token, left to right.\n\n' +
+          '`std::cout` — `cout` stands for "character output"; it is the program\'s connection to the screen (technically *standard output*). The `std::` in front is a *namespace* prefix: the standard library keeps all its names inside a labelled box called `std` so they do not clash with your own names. `std::cout` means "the `cout` that lives in the standard library box." Why is it here? It is the *destination* — the thing we want text to flow into. Remove it and there is nowhere for the text to go (compile error). At runtime, `cout` is a real object sitting in memory that knows how to forward characters to your terminal.\n\n' +
+          '`<<` — read this as a left-pointing arrow that means "send the thing on my right into the thing on my left." Its formal name is the *stream-insertion operator*. (The same `<<` symbol means a bit-shift on plain numbers, but for `cout` it has been given this special "insert" meaning.) Each `<<` hands back `cout` again, which is why you can chain several in a row on one line. Remove it and the compiler cannot connect the text to `cout`.\n\n' +
+          '`"Hello, World!"` — the double quotes make this a *string literal*: a fixed piece of text, exactly the characters between the quotes. This is the actual value that exists in memory and gets printed. Change the characters and the program prints something else; the quotes themselves are not printed.\n\n' +
+          '`std::endl` — short for "end line". Sending it to `cout` writes a newline character (moving the cursor to the next line) and then *flushes* the buffer (forces any held-back text out to the screen immediately). Remove it and the text still prints, just without a trailing line break.\n\n' +
+          '`;` — the semicolon ends the statement, like a period ends a sentence. Then `return 0;` ends `main` and reports success (`0`) to the operating system. Execution always starts at `main` and runs its statements top to bottom.',
       },
       {
         kind: 'mcq',
@@ -83,7 +107,9 @@ export const cppPhases: Phase[] = [
     level: 1,
     title: 'C++ Basics — Types, auto, References & Streams',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll read short programs and predict their output, with a feel for C++'s static type system: the fixed-width nature of \`int\`/\`double\`/\`bool\`, when integer division truncates, what \`auto\` deduces, and the difference between a copy and a reference (\`int&\`). You'll stream values with \`std::cout\` and format with manipulators.
+    intro: `Before C++'s type system can mean anything, you need four bedrock ideas. **(1) A statement** is one instruction, ended by a semicolon \`;\` — the program runs statements top to bottom. **(2) A variable** is a named box in memory that holds a value you can read and change. You *declare* one by writing its type, then its name, then optionally \`=\` and a starting value: \`int score = 10;\` creates a box called \`score\` holding the number \`10\`. Later \`score = 20;\` puts a new value in the same box. **(3) A type** is the kind of thing a box can hold — C++ makes you state it up front and checks it at compile time (this is called *static typing*). The everyday types are \`int\` (whole numbers like \`-3\`, \`0\`, \`42\`), \`double\` (numbers with a decimal point, like \`3.14\`), \`bool\` (a truth value, only \`true\` or \`false\`), and \`char\` (a single character like \`'A'\`). The type also fixes how much memory the box uses and what operations are allowed. **(4) A function** is a named, reusable block of statements; you saw \`main\` in Level 0. You can write your own, e.g. \`int square(int n) { return n * n; }\` — it takes an \`int\` named \`n\`, multiplies it by itself, and *returns* the result to whoever called \`square(...)\`.
+
+With those in hand, this phase builds real intuition for C++'s type system: why \`int\` division *truncates* (\`7 / 2\` is \`3\`, not \`3.5\`, because two \`int\`s produce an \`int\`), what the keyword \`auto\` deduces (it tells the compiler "figure out the type from the value I assigned"), and the difference between a **copy** and a **reference**. A reference, written \`int& r = score;\`, is a second *name* for an existing box rather than a new box — change \`r\` and you change \`score\`. By the end you'll read short programs and correctly predict their output, and stream values with \`std::cout\` using *manipulators* like \`std::boolalpha\` and \`std::setprecision\` to control formatting.
 
 To build the muscle locally, write a \`temps.cpp\` that stores a few temperatures as \`double\`, computes an average, and prints it with \`std::cout << std::fixed << std::setprecision(1)\`. Compile with \`g++ -std=c++20 -Wall temps.cpp\` and always keep \`-Wall\` on — the warnings are teaching you.`,
     video: {

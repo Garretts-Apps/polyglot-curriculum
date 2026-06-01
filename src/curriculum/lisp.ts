@@ -8,8 +8,17 @@ export const lispPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro:
-      "Welcome to Common Lisp — the language where code is data and the REPL is your workshop. In this level you'll install a Common Lisp implementation (SBCL is the canonical choice), start the interactive REPL, and print your first line with `format`. Absolute beginners start here.",
+    intro: `Welcome to Common Lisp — one of the oldest and most influential programming languages, and the one where "code is data". A *program* is just a list of instructions you write in a text file (or type live), and the computer carries them out top to bottom. In this level you'll install a Common Lisp implementation (SBCL is the canonical choice), start the interactive **REPL** (Read-Eval-Print Loop — a prompt that runs one expression at a time and shows the result), and print your very first line of text. Absolute beginners start here; we assume you have never written code before.
+
+Here is the whole program you'll run: \`(format t "Hello, Lisp!~%")\`. It looks alien, so let's take it apart slowly, left to right.
+
+- **The outer parentheses \`( ... )\`** are the single most important thing in Lisp. In most languages you'd write something like \`format("Hello")\`. In Lisp, the parentheses come *first* and the thing you want to do goes *inside them, at the front*. So \`(format t "Hello, Lisp!~%")\` means: "**call** the action named \`format\`, and hand it three pieces of information: \`t\`, the text, and nothing else." This "operator first, then its inputs" style is called **prefix notation**, and the parenthesised thing as a whole is called an **s-expression** (symbolic expression). Every action in Lisp is written this way: the verb, then its inputs, all wrapped in one pair of parentheses.
+- **\`format\`** is the name of a built-in tool (a *function*) whose job is to print text. Think of it as the word "print" — though it can do much fancier formatting too, which is why it has a more general name.
+- **\`t\`** tells \`format\` *where* to send the text. \`t\` here means "the screen" (technically *standard output*, the console window). It is the **destination**. If you wrote \`nil\` instead of \`t\`, \`format\` would build the text but hand it back to you quietly instead of showing it on screen.
+- **\`"Hello, Lisp!~%"\`** is the actual message. The double quotes mark the start and end of a piece of **text** (called a *string*) — everything between them is printed literally. Quotes are not printed; they just say "the text is this".
+- **\`~%\`** lives inside the string but is *not* printed as the characters tilde-percent. It is a **directive** — a little instruction to \`format\` meaning "start a new line here" (a newline). It's the portable Lisp way of doing what pressing Enter does. Without it, the next thing printed would sit on the same line.
+
+Run it and you'll see \`Hello, Lisp!\` appear, followed by the cursor dropping to a fresh line. That's your first program.`,
     topics: [
       {
         label: 'Steel Bank Common Lisp (SBCL)',
@@ -36,7 +45,7 @@ export const lispPhases: Phase[] = [
         boilerplate: '(format t "Hello, Lisp!~%")\n',
         expectedOutput: 'Hello, Lisp!',
         explanation:
-          'In Common Lisp, `(format t "...")` writes to standard output (the `t` stream). The directive `~%` emits a newline (it is portable, unlike a literal backslash-n). Everything in Lisp is a parenthesised expression with the operator first.',
+          'Let\'s read `(format t "Hello, Lisp!~%")` one token at a time. **The outer `( ... )`** mark a single *function call*: in Lisp the operator (the verb) comes first and its inputs follow, all inside one pair of parentheses — this is *prefix notation*. Remove a parenthesis and the program no longer reads as a complete call and errors. **`format`** is the function whose job is to produce output; it is what does the printing. **`t`** answers "print *where*?" — `t` means standard output, the screen. Change it to `nil` and nothing appears on screen (the text is returned to the caller instead); remove it and `format` has no destination and errors. **`"Hello, Lisp!~%"`** is the *string* — the literal text to print; the double quotes are delimiters that mark where the text starts and ends and are not themselves printed. **`~%`** is a *directive*: not the two characters tilde-percent, but an instruction meaning "emit a newline". Drop it and the output still says `Hello, Lisp!` but the cursor stays on the same line. At runtime, the value in memory is the string `"Hello, Lisp!\\n"` being sent character by character to the console; `format` itself returns `nil` after printing. (`~%` is preferred over a literal `\\n` because it is portable across all Lisp implementations.)',
       },
       {
         kind: 'mcq',
@@ -71,9 +80,17 @@ export const lispPhases: Phase[] = [
     level: 1,
     title: 'S-Expressions — Prefix Notation, Atoms, Lists & the Reader',
     timeEstimate: '4-6 hours',
-    intro: `Common Lisp's syntax is almost nonexistent: everything is an *s-expression* (symbolic expression). An s-expression is either an **atom** (a number, string, or symbol) or a **list** of s-expressions in parentheses. A list in *operator position* is a function call written in **prefix notation** — \`(+ 1 2 3)\` means "apply \`+\` to 1, 2 and 3". By the end of this phase you'll be able to read any Lisp form and say whether it's an atom or a list, and predict how the *reader* turns text into data.
+    intro: `Before going further we need four bedrock ideas. Take them slowly — once they click, all of Lisp follows.
 
-To build the muscle, open a REPL and type forms like \`(+ 1 2 (* 3 4))\`, \`'(a b c)\` and \`(list 1 2 3)\`. Notice that \`'\` (quote) stops evaluation so you get the literal list back, while an unquoted list is evaluated as a call.`,
+**1. An expression is a piece of code that has a value.** \`5\` is an expression whose value is 5. \`(+ 2 3)\` is an expression whose value is 5 too. Almost everything you write in Lisp is an expression with a value.
+
+**2. S-expressions: atoms vs lists.** Lisp has almost no syntax — *everything you write is an "s-expression"* (symbolic expression), and an s-expression is one of just two things. An **atom** is a single, indivisible thing: a number like \`42\`, a piece of text (string) like \`"hi"\`, or a *symbol* (a bare name) like \`hello\` or \`+\`. A **list** is zero or more s-expressions written inside parentheses, separated by spaces: \`(1 2 3)\`, \`(+ 2 3)\`, \`(a (b c) d)\`. Lists can contain other lists, nested as deep as you like. So \`(* 3 4)\` is a list of three atoms: the symbol \`*\`, the number \`3\`, and the number \`4\`.
+
+**3. Evaluating means "working out the value".** When you hand Lisp an expression, it **evaluates** it — figures out what it's worth. The rule for a list is the heart of the language: treat the **first element as a function (an action) and the rest as its inputs**, written in **prefix notation** (operator first). So evaluating \`(+ 1 2 3)\` means "apply the \`+\` function to 1, 2 and 3", giving 6. To evaluate \`(+ 1 2 (* 3 4))\`, Lisp first evaluates the inner list \`(* 3 4)\` to get 12, then computes \`(+ 1 2 12)\` = 15. An atom evaluates to itself (numbers and strings) — except a bare symbol, which evaluates to whatever value it currently names.
+
+**4. Functions and variables.** A **function** is a named action that takes inputs and produces a value — \`+\`, \`*\`, \`format\`, and \`list\` are all functions. A **variable** is a name that stands for a value, so \`x\` might name 10. When you write a bare symbol like \`x\`, Lisp looks up the value it names; when you write \`(f a b)\`, Lisp uses \`f\` as the function to call. (You'll meet how to *create* your own functions and variables in the next level.)
+
+By the end of this phase you'll be able to look at any Lisp form, say whether it's an atom or a list, and predict its value. One last tool you'll need: the **quote** \`'\`. Normally Lisp evaluates a list as a function call, but putting a \`'\` in front says "don't evaluate this — give me the literal list as data". So \`(list 1 2 3)\` and \`'(1 2 3)\` both produce the list \`(1 2 3)\`, but the first *runs* the \`list\` function while the second hands you the list verbatim. To build the muscle, open a REPL and type \`(+ 1 2 (* 3 4))\`, \`'(a b c)\`, and \`(list 1 2 3)\`, and watch which give atoms and which give lists.`,
     topics: [
       {
         label: 'Practical Common Lisp — Syntax and Semantics',
@@ -96,12 +113,6 @@ To build the muscle, open a REPL and type forms like \`(+ 1 2 (* 3 4))\`, \`'(a 
         note: 'The full specification of how characters are read into objects.',
       },
     ],
-    video: {
-      title: 'Learn Lisp in 20 Minutes (overview)',
-      youtubeId: 'mDkqsTBgGqM',
-      channelName: 'Derek Banas',
-      duration: '1 hour',
-    },
     deliverable: 'In the REPL, evaluate ten s-expressions mixing prefix arithmetic, quoted lists, and `list`; note which return atoms vs lists.',
     checks: [
       {
@@ -758,12 +769,6 @@ Locally, write \`(my-unless test body)\` as a macro that expands to \`(if (not t
         note: 'The reader syntax for quasiquote, unquote, and splicing.',
       },
     ],
-    video: {
-      title: 'Structure and Interpretation of Computer Programs — Lecture 1A',
-      youtubeId: '-J_xL4IGhJA',
-      channelName: 'MIT OpenCourseWare',
-      duration: '1 hour',
-    },
     deliverable: 'Write `swap` and `my-when` macros with backquote; verify their expansions with `macroexpand-1`; show one bug that `gensym` fixes.',
     checks: [
       {
