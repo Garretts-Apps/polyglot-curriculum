@@ -8,9 +8,27 @@ export const haskellPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to Haskell — a purely functional, lazily evaluated, statically typed language where the type system is your closest collaborator. In this level you'll install the toolchain and run your first program. The modern way to get GHC (the Glasgow Haskell Compiler), GHCi (its REPL), and the \`cabal\`/\`stack\` build tools is **GHCup**: run its one-line installer, then check \`ghc --version\` and start the REPL with \`ghci\`.
+    intro: `Welcome to Haskell — a purely functional, lazily evaluated, statically typed language. If you have never written a line of code before, that is fine: this level installs the tools and walks you through your very first program word by word. First, the toolchain. The modern way to get GHC (the **G**lasgow **H**askell **C**ompiler — the program that turns your text into something the machine runs), GHCi (an interactive playground for trying snippets), and the \`cabal\`/\`stack\` build tools is **GHCup**. Run its one-line installer, then confirm it worked by typing \`ghc --version\` in your terminal, and try the playground with \`ghci\`.
 
-A Haskell "Hello, World!" is a single top-level binding named \`main\` whose type is \`IO ()\` — an *action* the runtime executes. Inside it, \`putStrLn\` prints a string followed by a newline. Save it as \`Main.hs\`, then either \`runghc Main.hs\` to interpret it or \`ghc Main.hs && ./Main\` to compile a native binary.`,
+Now the program itself. Create a file \`Main.hs\` containing these two lines:
+
+\`\`\`haskell
+main :: IO ()
+main = do
+  putStrLn "Hello, World!"
+\`\`\`
+
+This looks unusual compared to other languages, and that is on purpose — Haskell is honest about which parts of a program can talk to the outside world (printing, reading files) and which parts are pure calculation. Let us read it left to right, token by token. For each piece we will ask the same four questions: what does it *mean*, what *job* does it do on that line, what *changes if you remove it*, and what is actually *in memory* when the program runs.
+
+- **\`main\`** is a *name* you are defining. A name is just a label you stick on something so you can refer to it later. Its job: \`main\` is the one special name the program looks for and runs when it starts — the **entry point**. If you remove it (or misspell it), there is nothing to run and the program won't build. At runtime, \`main\` *is* the whole printing action below; the running program "is" \`main\` being carried out.
+- **\`::\`** reads aloud as "**has the type**". Its only job is to introduce a *type signature* — it separates a name on the left from a description of what kind of thing it is on the right. Remove the \`::\` and the line becomes nonsense to the compiler. It holds no value in memory at all; it is punctuation that talks *about* \`main\` rather than being part of what runs.
+- **\`IO ()\`** is that type — the description sitting to the right of \`::\`. \`IO\` stands for **I**nput/**O**utput: talking to the outside world (screen, keyboard, files). The \`()\` (pronounced "**unit**") means "nothing useful is handed back". Together \`IO ()\` means "an action that does some input/output and returns no meaningful value" — exactly what printing is (it changes the screen but hands nothing back). Its job is to *describe* \`main\`, not to do anything. If you delete the entire \`main :: IO ()\` line, the program still runs, because the compiler can figure the type out on its own — but writing it down documents your intent and is considered good style. At runtime there is no separate "\`IO ()\` value" in memory; it is a label the compiler checked before the program ever started.
+- **\`=\`** means **definition** — "the name on the left IS the thing on the right." This is *not* assignment and *not* "becomes equal to": once \`main\` is defined it never changes, because Haskell has no re-assigning. Remove the \`=\` and the compiler cannot tell what \`main\` is defined as. In memory, the \`=\` ties the name \`main\` permanently to the action that follows.
+- **\`do\`** introduces a *block* of actions to perform one after another, top to bottom. Its job is to let you list several steps; with only one step we could technically drop \`do\`, but it is the normal shape and we will add more lines soon. If you remove it while there are multiple lines, they no longer sequence correctly. At runtime, \`do\` bundles the lines beneath it into a single combined action — here, just the one \`putStrLn\` action.
+- **\`putStrLn\`** is a built-in *function* — a named action. Its job: take a piece of text and print it to the screen, then move to a new line (\`Ln\` is short for "line"). Remove it and nothing is printed. At runtime, \`putStrLn\` is handed the text below and the value it produces is the act of writing those characters plus a newline to standard output. (There is also \`putStr\`, which prints *without* the newline.)
+- **\`"Hello, World!"\`** is a *string* — literally the characters between the double quotes. The quotes are not printed; they only mark where the text starts and ends. Its job is to be the value handed to \`putStrLn\` to display. Remove or empty it and a blank line (or an error) results. In memory at runtime, this is the actual sequence of characters \`H\`, \`e\`, \`l\`, \`l\`, \`o\`, ... that gets sent to the screen.
+
+Save the file, then run it one of two ways: \`runghc Main.hs\` interprets it on the spot, or \`ghc Main.hs && ./Main\` compiles a native program and runs it. Either way you will see \`Hello, World!\` printed.`,
     topics: [
       { label: 'GHCup — install GHC, cabal, stack', url: 'https://www.haskell.org/ghcup/', note: 'The recommended installer for the whole Haskell toolchain.' },
       { label: 'Haskell.org — Get Started', url: 'https://www.haskell.org/get-started/', note: 'Official quick-start: install, REPL, first program.' },
@@ -24,7 +42,7 @@ A Haskell "Hello, World!" is a single top-level binding named \`main\` whose typ
         prompt: 'Run the starter program to print `Hello, World!` to standard output.',
         boilerplate: 'main :: IO ()\nmain = do\n  putStrLn "Hello, World!"\n',
         expectedOutput: 'Hello, World!',
-        explanation: '`main` is the entry point; its type `IO ()` marks it as an I/O action. `putStrLn` writes a `String` plus a trailing newline. The `do` block sequences I/O actions top to bottom.',
+        explanation: 'Token by token: **`main`** is the name the program runs first — it is the entry point, and every Haskell program must define it. **`main :: IO ()`** is its type signature; `::` means "has the type", and `IO ()` means "an action that does input/output and returns nothing useful" (the `()` is the empty "unit" value). This line only DESCRIBES `main`; if you delete it the program still runs because GHC can infer the type, but writing it is good practice and documents intent. **`=`** means *definition* ("`main` IS this"), not assignment — Haskell names never change after they are defined. **`do`** starts a block of actions performed top to bottom. **`putStrLn`** is a function that prints a string and adds a newline (`Ln` = line); remove it and nothing is printed. **`"Hello, World!"`** is the string value — the characters inside the quotes (the quotes themselves are not printed). At runtime the value handed to `putStrLn` is the text `Hello, World!`, which then appears on standard output.',
       },
       {
         kind: 'mcq',
@@ -52,15 +70,13 @@ A Haskell "Hello, World!" is a single top-level binding named \`main\` whose typ
     level: 1,
     title: 'Expressions, Types & GHCi',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll read short Haskell expressions and predict both their *value* and their *type*. Haskell is expression-oriented: there are no statements, only expressions that evaluate to values. Everything has a static type, and you can ask GHCi for it with \`:t\` (e.g. \`:t True\` prints \`True :: Bool\`). Numeric literals are *polymorphic* — \`5\` can be an \`Int\`, \`Integer\`, \`Double\`, or any \`Num\` instance — which surprises newcomers when \`/\` (fractional division) and \`div\` (integer division) behave differently.
+    intro: `Before we go fast, let us pin down four words you will hear constantly. **(1) An expression** is any piece of code that has a *value* — something the computer can work out the answer to. \`5\` is an expression (its value is 5); so is \`2 + 3\` (value 5) and \`"hi"\` (value: the text "hi"). **(2) A statement**, by contrast, is an instruction that *does* something but has no value of its own (like "print this" in many languages). Here is the surprise for newcomers: Haskell is **expression-oriented** — it is built almost entirely out of expressions, not statements. Even an \`if\` in Haskell produces a value. So your main job, reading Haskell, is to ask "what value does this expression evaluate to?"
 
-To build intuition, open \`ghci\` and explore: type \`:t (+)\`, \`:t "hello"\`, \`5 / 2\`, \`5 \\\`div\\\` 2\`, and \`let x = 3 in x * x\`. Then write a \`Main.hs\` with a few top-level bindings like \`answer = 6 * 7\` and print them from \`main\`. Use \`:i\` to inspect a name and \`:r\` to reload after edits.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Hello World & Basics',
-      youtubeId: '02_H3LjqMr8',
-      channelName: 'Philipp Hagenlocher',
-      duration: '12 minutes',
-    },
+**(3) A function** is a named rule that turns input values into an output value, like a recipe: feed it ingredients, get back a dish. \`square x = x * x\` is a function; \`square 4\` is an expression whose value is \`16\`. In Haskell functions are **pure**: given the same input they always return the same output and they never secretly change anything elsewhere (no surprise side effects). That predictability is a core promise of the language. **(4) A type** is a label that says *what kind* of value something is — text, a whole number, a true/false flag, and so on. \`True\` has type \`Bool\` (the type of booleans, whose only values are \`True\` and \`False\`); \`"hello"\` has type \`String\` (text). Every value and every expression in Haskell has a type, fixed and checked *before* the program runs, so whole categories of mistakes are caught early.
+
+The fastest way to learn is the **REPL** — **R**ead, **E**valuate, **P**rint, **L**oop — a prompt where you type one expression and immediately see its value. Haskell's REPL is **GHCi**; start it by typing \`ghci\` in your terminal. Type an expression and press Enter to see its value (\`2 + 3\` gives \`5\`); type \`:t expr\` to ask for an expression's *type* instead of its value (\`:t True\` prints \`True :: Bool\`). One thing that catches beginners: numeric literals are *polymorphic* — \`5\` can be a whole number or a decimal depending on context — which is why \`/\` (decimal division) and \`div\` (whole-number division) behave differently. By the end of this phase you will read a short Haskell expression and predict both its value and its type.
+
+To build intuition, open \`ghci\` and explore: \`:t (+)\`, \`:t "hello"\`, \`5 / 2\`, \`5 \\\`div\\\` 2\`, and \`let x = 3 in x * x\`. Then write a \`Main.hs\` with a few top-level bindings like \`answer = 6 * 7\` and print them from \`main\`. Use \`:i\` to inspect a name and \`:r\` to reload after edits.`,
     topics: [
       { label: 'Learn You a Haskell — Starting Out', url: 'https://learnyouahaskell.github.io/starting-out', note: 'Arithmetic, booleans, and your first functions.' },
       { label: 'Haskell.org — Documentation', url: 'https://www.haskell.org/documentation/', note: 'Index of tutorials, the Report, and library docs.' },
@@ -148,12 +164,6 @@ main = do
     intro: `Functions are the heart of Haskell, and you define them by *equations*. The same function can have multiple equations that **pattern match** on the shape of arguments (\`fib 0 = 0\`, \`fib 1 = 1\`, \`fib n = ...\`), matched top to bottom. **Guards** (\`| cond = ...\`) let one equation branch on boolean conditions, and \`where\`/\`let\` introduce local helper bindings. Because there are no loops, **recursion** is how you iterate — and the base case must come first.
 
 In GHCi, define small functions and test them: \`let square x = x * x\`, then \`square 9\`. Write a \`Main.hs\` with a recursive \`factorial\` and a guard-based \`grade\` function, and call them from \`main\`. Watch for *non-exhaustive patterns* warnings (compile with \`-Wall\`) — they mean some input shape has no matching equation and will crash at runtime.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Functions',
-      youtubeId: 'seVSlKazsNk',
-      channelName: 'Philipp Hagenlocher',
-      duration: '14 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Syntax in Functions', url: 'https://learnyouahaskell.github.io/syntax-in-functions', note: 'Pattern matching, guards, where, case.' },
       { label: 'Learn You a Haskell — Recursion', url: 'https://learnyouahaskell.github.io/recursion', note: 'Thinking recursively with base and recursive cases.' },
@@ -246,12 +256,6 @@ safe (x:_) = x
     intro: `Lists are Haskell's workhorse data structure: singly-linked, homogeneous, and built from \`[]\` (empty) and \`(:)\` (cons). You'll meet **ranges** (\`[1..10]\`, \`[2,4..20]\`, \`['a'..'z']\`), **list comprehensions** (\`[x*x | x <- [1..5], even x]\`), and the standard toolkit (\`length\`, \`sum\`, \`take\`, \`drop\`, \`reverse\`, \`zip\`, \`++\`). Crucially, Haskell is **lazy**: \`[1..]\` is an infinite list that is fine to build, and \`take 5 [1..]\` only forces the first five elements.
 
 In GHCi, play with \`take 10 (cycle [1,2,3])\`, \`[ (x,y) | x <- [1..3], y <- "ab" ]\`, and \`sum [1..100]\`. Then write a \`Main.hs\` that builds a list with a comprehension and prints \`sum\`/\`length\`/\`take\` results. Remember strings *are* lists of \`Char\`, so all list functions work on them too.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Lists',
-      youtubeId: 'jQYbnydcMVU',
-      channelName: 'Philipp Hagenlocher',
-      duration: '15 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Starting Out (Lists & Ranges)', url: 'https://learnyouahaskell.github.io/starting-out', note: 'Lists, ranges, and list comprehensions.' },
       { label: 'Data.List — base', url: 'https://hackage.haskell.org/package/base/docs/Data-List.html', note: 'The full standard list API.' },
@@ -344,12 +348,6 @@ ghci> zip [1,2,3] "ab"
     intro: `Functions are first-class values: you pass them as arguments, return them, and store them. The classic trio is \`map f xs\` (transform each element), \`filter p xs\` (keep elements satisfying \`p\`), and \`foldr\`/\`foldl\` (collapse a list to a single value). Every Haskell function is **curried**: \`add :: Int -> Int -> Int\` is really \`Int -> (Int -> Int)\`, so applying one argument yields a function — this is **partial application** (\`add 5\` is a function awaiting one more \`Int\`). **Lambdas** (\`\\x -> x + 1\`), **sections** (\`(+1)\`, \`(*2)\`, \`(>0)\`), and **composition** (\`f . g\`) make point-free style natural.
 
 In GHCi, try \`map (*2) [1,2,3]\`, \`filter even [1..10]\`, \`foldr (+) 0 [1..5]\`, and \`(map (+10) . filter odd) [1..6]\`. Then write a \`Main.hs\` that pipelines a list through \`filter\` then \`map\` and prints the \`sum\`.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Higher Order Functions',
-      youtubeId: 'PgsDLUhwbMI',
-      channelName: 'Philipp Hagenlocher',
-      duration: '14 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Higher Order Functions', url: 'https://learnyouahaskell.github.io/higher-order-functions', note: 'Curried functions, lambdas, maps, filters, folds.' },
       { label: 'Wiki — Fold', url: 'https://wiki.haskell.org/Fold', note: 'foldr vs foldl and how folds generalise iteration.' },
@@ -441,12 +439,6 @@ ghci> (filter odd . map (+1)) [1,2,3,4]
     intro: `**Algebraic data types** (ADTs) are how you model your domain. \`data\` declares a new type with one or more **constructors**: \`data Shape = Circle Double | Rect Double Double\` is a *sum* of two *product* alternatives. You destructure them with pattern matching (often via \`case ... of\`). Record syntax (\`data Person = Person { name :: String, age :: Int }\`) auto-generates field accessors. The standard library leans on two ADTs everywhere: \`Maybe a\` (\`Nothing | Just a\`) for optional values, and \`Either e a\` (\`Left e | Right a\`) for computations that can fail with a reason — together they replace null and exceptions.
 
 In GHCi, explore \`:i Maybe\`, evaluate \`fromMaybe 0 (Just 7)\`, \`fromMaybe 0 Nothing\`, and \`map fst [(1,"a"),(2,"b")]\`. Then write a \`Main.hs\` with your own \`data\` type, a \`case\` that produces a string per constructor, and prints it.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Custom Types',
-      youtubeId: 'iaWLLzMfdY8',
-      channelName: 'Philipp Hagenlocher',
-      duration: '13 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Making Our Own Types', url: 'https://learnyouahaskell.github.io/making-our-own-types-and-typeclasses', note: 'data, constructors, records, and type synonyms.' },
       { label: 'Data.Maybe — base', url: 'https://hackage.haskell.org/package/base/docs/Data-Maybe.html', note: 'maybe, fromMaybe, mapMaybe, catMaybes.' },
@@ -535,12 +527,6 @@ describe (Right n) = "ok: " ++ show n
     intro: `**Typeclasses** are Haskell's mechanism for ad-hoc polymorphism — interfaces that types can *implement* (become *instances* of). \`Eq\` provides \`==\`/\`/=\`, \`Ord\` provides \`<\`, \`compare\`, \`max\`; \`Show\` provides \`show\` (value → String) and \`Read\` parses back; \`Num\` provides \`+\`, \`*\`, \`abs\`, \`fromInteger\`. A type signature like \`elem :: Eq a => a -> [a] -> Bool\` has a **class constraint** (\`Eq a =>\`) meaning "for any \`a\` that is comparable for equality". You can \`deriving (Eq, Ord, Show)\` to get sensible instances for free on your own \`data\` types.
 
 In GHCi, run \`:i Ord\`, \`compare 3 5\`, \`maximum "haskell"\`, \`show [1,2,3]\`, and \`sort [3,1,2]\` (after \`import Data.List\`). Then add \`deriving (Show, Eq)\` to a \`data\` type and \`print\` a value of it — \`deriving Show\` is what lets \`print\` work on custom types.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Type Classes',
-      youtubeId: 'EAjLSeSPv9w',
-      channelName: 'Philipp Hagenlocher',
-      duration: '15 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Typeclasses 101', url: 'https://learnyouahaskell.github.io/types-and-typeclasses', note: 'Eq, Ord, Show, Read, Enum, Bounded, Num.' },
       { label: 'Learn You a Haskell — Making typeclasses', url: 'https://learnyouahaskell.github.io/making-our-own-types-and-typeclasses', note: 'class/instance and deriving.' },
@@ -628,12 +614,6 @@ ghci> maximum [3, 1, 4, 1, 5, 9, 2, 6]
     intro: `This is the famous trio. **Functor** generalises "mapping over a structure": \`fmap :: (a -> b) -> f a -> f b\`, with \`<$>\` as its operator (\`(+1) <$> Just 4 == Just 5\`). **Applicative** lets you apply a *wrapped* function to *wrapped* arguments: \`pure\` lifts a value and \`<*>\` applies (\`Just (+3) <*> Just 4 == Just 7\`). **Monad** sequences computations where each step depends on the previous result: \`>>=\` ("bind", \`m a -> (a -> m b) -> m b\`) and \`return\`. \`Maybe\`, \`Either\`, lists, and \`IO\` are all monads, which is why the same \`do\` syntax works for all of them — short-circuiting on \`Nothing\`/\`Left\`, branching for lists.
 
 You won't run these in the sandbox, but predicting their results is the whole game. In GHCi, try \`(*2) <$> [1,2,3]\`, \`Just (+1) <*> Just 10\`, \`Just 3 >>= \\x -> Just (x + 1)\`, and \`Nothing >>= \\x -> Just (x + 1)\`. Notice how \`Nothing\` propagates automatically.`,
-    video: {
-      title: 'What is a Monad? — Computerphile',
-      youtubeId: 't1e8gqXLbsU',
-      channelName: 'Computerphile',
-      duration: '21 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Functors, Applicative Functors and Monoids', url: 'https://learnyouahaskell.github.io/functors-applicative-functors-and-monoids', note: 'fmap, <$>, pure, <*>.' },
       { label: 'Learn You a Haskell — A Fistful of Monads', url: 'https://learnyouahaskell.github.io/a-fistful-of-monads', note: 'The Monad class, >>=, and Maybe as a monad.' },
@@ -727,12 +707,6 @@ ghci> [1,2] >>= \\x -> [x, x * 10]
     intro: `Haskell is **pure**: a function given the same inputs always returns the same output, with no hidden side effects. So how do you print, read files, or get the time? Through the \`IO\` monad. A value of type \`IO a\` is a *description* of an effect that produces an \`a\` when run by the runtime — building it is pure, executing it is the runtime's job (\`main :: IO ()\`). **do-notation** sequences \`IO\` actions: \`<-\` binds an action's result (\`name <- getLine\`), and bare actions like \`putStrLn "hi"\` run for their effect. \`let\` (no \`<-\`) binds pure values inside \`do\`.
 
 In GHCi, run \`:t putStrLn\`, \`:t getLine\`, and a tiny interactive program. Then write a \`Main.hs\` that uses \`let\` bindings and several \`putStrLn\`/\`print\` lines — exactly the runnable subset here. Note: \`getLine\`-style input isn't available in this sandbox, so test those locally with \`runghc\`.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — IO',
-      youtubeId: 'ya3iWGc5h7c',
-      channelName: 'Philipp Hagenlocher',
-      duration: '15 minutes',
-    },
     topics: [
       { label: 'Learn You a Haskell — Input and Output', url: 'https://learnyouahaskell.github.io/input-and-output', note: 'main, do, getLine, return, putStr/putStrLn.' },
       { label: 'System.IO — base', url: 'https://hackage.haskell.org/package/base/docs/System-IO.html', note: 'Handles, files, buffering, hPutStrLn.' },
@@ -830,12 +804,6 @@ main = do
     intro: `Haskell evaluates **lazily** (non-strict, call-by-need): expressions become **thunks** (deferred computations) that are forced only when their value is demanded, and once forced, shared. This enables infinite data and elegant control flow, but it has a dark side: **space leaks**. A lazy \`foldl (+) 0 [1..10000000]\` builds a giant chain of unevaluated additions before collapsing it, blowing the stack/heap. The cures are **strictness**: \`foldl'\` (from \`Data.List\`) forces the accumulator each step, \`seq\` forces a value to **weak head normal form** (WHNF), and the \`BangPatterns\`/\`$!\` tools force arguments. \`undefined\`/\`error\` only blow up when *forced*, so \`fst (1, undefined)\` is perfectly fine.
 
 You'll reason about *when* things evaluate. In GHCi, try \`take 3 (repeat 7)\`, \`fst (1, undefined)\`, and contrast \`foldl (+) 0 [1..1000000]\` (slow, leaky) with \`foldl' (+) 0 [1..1000000]\` (constant space). Use \`:sprint\` to watch thunks force.`,
-    video: {
-      title: 'Haskell for Imperative Programmers — Laziness',
-      youtubeId: 'ZqH3aRBegc8',
-      channelName: 'Philipp Hagenlocher',
-      duration: '13 minutes',
-    },
     topics: [
       { label: 'Haskell Wikibook — Laziness', url: 'https://en.wikibooks.org/wiki/Haskell/Laziness', note: 'Thunks, WHNF, and call-by-need explained.' },
       { label: 'Wiki — Performance/Laziness', url: 'https://wiki.haskell.org/Performance/Laziness', note: 'Space leaks and how to fix them.' },

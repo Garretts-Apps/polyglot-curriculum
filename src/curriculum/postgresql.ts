@@ -8,9 +8,15 @@ export const postgresqlPhases: Phase[] = [
     level: 0,
     title: 'Setup & Your First SELECT',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to PostgreSQL — "the world's most advanced open-source relational database." In this level you'll install the server, connect with the \`psql\` command-line client (or pgAdmin if you prefer a GUI), and run your very first query. Unlike SQLite, Postgres is a *server*: a long-running process (\`postgres\`) that your client connects to over a socket or TCP. Absolute beginners start here.
+    intro: `Welcome to PostgreSQL — "the world's most advanced open-source relational database." If you have never written code before, start right here; we assume nothing.
 
-Locally: install via \`brew install postgresql@16\` (macOS), the EDB installer (Windows), or \`apt install postgresql\` (Linux), then start the service and run \`psql postgres\`. Try \`SELECT version();\` and \`SELECT 'Hello, World!' AS greeting;\`. The runnable checks here execute on an in-browser SQLite engine using portable SQL, but the concepts are pure Postgres.`,
+**What is a database?** A *database* is an organised store of information. PostgreSQL organises that information into **tables**. A table is just a grid, like a spreadsheet: it has named **columns** (the vertical headings, e.g. \`title\`, \`price\`) and **rows** (each horizontal record, e.g. one specific book). One little box where a row and column meet — say the price of one particular book — is a **cell** (also called a *field* or *value*). A whole database is a collection of such tables that can refer to each other. This is what "relational" means.
+
+**What is SQL, and what is a query?** You talk to the database in a language called **SQL** (Structured Query Language). A *query* is one instruction you send — most often a request to read some data back. The most important word in SQL is \`SELECT\`, which means "fetch and show me this." SQL is **declarative**: you describe *what* result you want, not the step-by-step *how*. You write "give me the in-print books cheaper than 20, sorted by price," and the database figures out the most efficient way to do it for you. Compare that to most programming languages, where you must spell out every loop and step.
+
+**Postgres is a server.** Unlike a file you open, Postgres is a long-running program (the \`postgres\` process) that waits for *clients* to connect over a network socket. You type queries into a client; the server runs them and sends back rows. The standard text client is \`psql\`.
+
+Locally: install via \`brew install postgresql@16\` (macOS), the EDB installer (Windows), or \`apt install postgresql\` (Linux), then start the service and run \`psql postgres\`. Try \`SELECT version();\` and the classic first query \`SELECT 'Hello, World!' AS greeting;\` — dissected token-by-token in the exercise below. The runnable checks here execute on an in-browser SQLite engine using portable SQL, but every concept is pure Postgres.`,
     topics: [
       { label: 'Download PostgreSQL', url: 'https://www.postgresql.org/download/', note: 'Official installers for every platform.' },
       { label: 'psql — the interactive terminal', url: 'https://www.postgresql.org/docs/current/app-psql.html', note: 'The canonical CLI client; learn its backslash meta-commands.' },
@@ -25,7 +31,23 @@ Locally: install via \`brew install postgresql@16\` (macOS), the EDB installer (
         prompt: 'Run this query to return a single row with a column aliased as `greeting`. The result table header should read `greeting`.',
         boilerplate: "SELECT 'Hello, World!' AS greeting;",
         expectedOutput: 'greeting',
-        explanation: 'A `SELECT` need not reference any table — it can simply project literals. The `AS` keyword renames the output column (an *alias*). In psql the result renders as a table with `greeting` as the header.'
+        explanation: `Let's read \`SELECT 'Hello, World!' AS greeting;\` left-to-right, one token at a time, like teaching a first program.
+
+\`\`\`
+SELECT   'Hello, World!'   AS   greeting   ;
+  │             │           │       │      │
+keyword      literal     keyword  alias  end of
+"fetch"    the text we   "rename  name   statement
+           want returned  it"
+\`\`\`
+
+- **\`SELECT\`** — a *keyword* (a reserved word the database understands). In plain English it means "fetch and show me." It is the verb of the sentence; it is the job-word that tells Postgres you want to *read* a result. Remove it and there is no command at all — the line is meaningless and errors. By itself \`SELECT\` produces no value; it just announces what comes next is a list of things to compute and return.
+- **\`'Hello, World!'\`** — a *string literal*. The single quotes \`'...'\` mean "this is a piece of literal text, exactly these characters, not the name of anything." (Single quotes are for text values; double quotes \`"..."\` mean something different — a column/table *name* — which is why we use single here.) At runtime the actual value living in memory for this is the 13-character text \`Hello, World!\`. Because we gave Postgres a literal instead of a column, the result is one row with one column. Remove it and \`SELECT AS greeting\` has nothing to return → error.
+- **\`AS\`** — a keyword meaning "rename the thing on my left to the name on my right." The new name is called an **alias**. Its job is purely cosmetic: it labels the output column. Remove \`AS greeting\` and the query still runs and still returns \`Hello, World!\`, but the column header would be an ugly auto-generated label like \`?column?\` instead of the tidy \`greeting\`.
+- **\`greeting\`** — the alias itself: the name we want the output column to have. It is just an identifier we chose; we could have written \`AS message\`. At runtime no separate value is stored for it — it is only the *label* printed atop the column of results.
+- **\`;\`** — the semicolon *terminates* the statement: it tells Postgres "this command is complete, run it now." In \`psql\` you can spread a query across many lines; nothing executes until the \`;\`. Remove it and \`psql\` keeps waiting for more input (you'll see a \`...\` continuation prompt).
+
+Key insight for beginners: a \`SELECT\` does **not** need a table. Here we select a constant, so it returns exactly one row containing the text we typed. The result renders as a one-row, one-column table whose header reads \`greeting\` — which is the substring the check looks for.`
       },
       {
         kind: 'mcq',
@@ -58,9 +80,26 @@ Locally: install via \`brew install postgresql@16\` (macOS), the EDB installer (
     level: 1,
     title: 'SELECT, WHERE, ORDER BY & Postgres Data Types',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll write the core read query — projecting columns, filtering rows with \`WHERE\`, and sorting with \`ORDER BY\` — and you'll know Postgres's rich built-in type catalogue. Postgres has *strict, static* typing: a column declared \`integer\` will reject \`'abc'\`, and \`text\` vs \`varchar(n)\` vs \`char(n)\` are real distinctions. You'll also meet the boolean type (Postgres has a true native \`boolean\`, unlike some databases) and the unlimited-precision \`numeric\`.
+    intro: `By the end of this phase you'll write the core read query — choosing columns, filtering rows with \`WHERE\`, and sorting with \`ORDER BY\` — and you'll understand Postgres's built-in **types**.
 
-Locally: create a table \`book(id int, title text, pages int, price numeric(6,2), in_print boolean)\`, \`INSERT\` a few rows, and practise \`SELECT title, price FROM book WHERE in_print ORDER BY price DESC\`. Note that Postgres folds unquoted identifiers to *lowercase* (the opposite of the SQL standard's uppercase), so \`Title\` and \`title\` refer to the same column unless you double-quote them.`,
+**First, the bedrock vocabulary (assuming you have never coded).** A **table** is a grid of data with a name (e.g. \`book\`). Each **column** is a named, typed slot that every row fills in — like the headings \`title\` and \`price\`. Each **row** is one complete record — one specific book and all its column values. A **query** is one instruction you send to the database; a \`SELECT\` query asks it to read rows back and hand them to you. So "table = the grid, row = one line in it, column = one labelled field, query = a question you ask of the grid."
+
+**What is a type?** Every column declares what *kind* of value it may hold — its **data type**. This is a promise the database enforces. A column declared \`integer\` (whole numbers like \`42\`) will *reject* the text \`'abc'\`; you cannot accidentally store a word where a number belongs. Postgres is *strictly, statically typed*, so these rules are checked up front. The types you'll use constantly:
+- **\`integer\`** (also \`int\`) — whole numbers, e.g. \`-3\`, \`0\`, \`2024\`.
+- **\`numeric(6,2)\`** — exact decimal numbers, e.g. money like \`18.50\` (here, up to 6 digits with 2 after the point). Exact = no rounding surprises.
+- **\`text\`** — variable-length words/sentences, e.g. \`'Postgres Up & Running'\`. Always written in single quotes.
+- **\`boolean\`** — a true/false flag. Postgres has a real native \`boolean\` (values \`true\`/\`false\`), unlike some databases that fake it with 0/1. (Note: the in-browser engine these exercises run on *does* store booleans as \`1\`/\`0\`, which is why the code check compares \`in_print = 1\`.)
+
+**The shape of a read query.** Almost every read you write follows this skeleton, in this order:
+\`\`\`
+SELECT   title, price      -- WHICH columns to show (or * for all)
+FROM     book              -- WHICH table to read from
+WHERE    price < 20        -- keep only rows matching this test (filter)
+ORDER BY price DESC;       -- sort the surviving rows (DESC = high→low, ASC = low→high)
+\`\`\`
+\`SELECT\` lists the columns; \`FROM\` names the table; \`WHERE\` throws away rows that fail its test; \`ORDER BY\` sorts what's left; \`;\` ends the statement. SQL is *declarative* — you state the result you want and Postgres decides how to fetch it efficiently.
+
+Locally: create \`book(id int, title text, price numeric(6,2), in_print boolean)\`, \`INSERT\` a few rows, then run \`SELECT title, price FROM book WHERE in_print ORDER BY price DESC\`. One Postgres quirk to internalise early: it folds *unquoted* identifiers to **lowercase** (the opposite of the SQL standard's uppercase), so \`Title\` and \`title\` name the same column — unless you wrap a name in double quotes \`"Title"\`, which forces exact case.`,
     video: {
       title: 'Learn PostgreSQL Tutorial - Full Course for Beginners',
       youtubeId: 'qw--VYLpxG4',
@@ -143,12 +182,6 @@ SELECT title, price FROM book WHERE in_print = 1 AND price < 20 ORDER BY price A
     intro: `This phase is about the subtleties that separate working queries from *correct* ones: three-valued logic. In SQL, \`NULL\` means "unknown," so \`NULL = NULL\` is not true — it's \`NULL\`. You'll master \`IS NULL\`, \`IS DISTINCT FROM\`, \`COALESCE\`, and \`NULLIF\`, plus Postgres's signature cast operator \`::\` (e.g. \`'42'::int\`, \`now()::date\`). You'll also meet \`ILIKE\` for case-insensitive pattern matching — a Postgres extension you won't find in the SQL standard.
 
 Locally: build a \`contact(id, name, email, phone)\` table where some \`phone\` values are \`NULL\`, then write \`SELECT name, COALESCE(phone, 'no phone') FROM contact\` and observe how \`WHERE phone = NULL\` returns *nothing* (you must use \`IS NULL\`). Experiment with \`SELECT '3.14'::numeric * 2;\` to feel how \`::\` differs from a function call.`,
-    video: {
-      title: 'PostgreSQL Tutorial for Beginners',
-      youtubeId: 'SpfIwlAYaKk',
-      channelName: 'Amigoscode',
-      duration: '4 hours',
-    },
     topics: [
       { label: 'Comparison Functions & Operators', url: 'https://www.postgresql.org/docs/current/functions-comparison.html', note: 'IS NULL, IS DISTINCT FROM, BETWEEN, IN.' },
       { label: 'COALESCE / NULLIF / GREATEST', url: 'https://www.postgresql.org/docs/current/functions-conditional.html', note: 'Conditional expressions and NULL handling.' },
@@ -224,12 +257,6 @@ SELECT name, COALESCE(phone, 'no phone') AS phone FROM contact ORDER BY name;`,
     intro: `Relational power comes from *joining* normalised tables back together. This phase covers \`INNER JOIN\`, \`LEFT\`/\`RIGHT\`/\`FULL OUTER JOIN\`, \`CROSS JOIN\`, and self-joins, plus the difference between the \`ON\` and \`USING\` clauses. You'll learn how outer joins introduce NULLs for non-matching rows and how to filter them. Postgres also supports \`NATURAL JOIN\` (discouraged) and lateral joins (covered later).
 
 Locally: model \`author(id, name)\` and \`book(id, author_id, title)\`, then list every author *and* their books with a \`LEFT JOIN\` so authors with no books still appear (with NULL titles). Predict what a \`FULL OUTER JOIN\` adds. Aliasing tables (\`FROM author a JOIN book b ON b.author_id = a.id\`) keeps queries readable.`,
-    video: {
-      title: 'SQL Joins Explained',
-      youtubeId: '9yeOJ0ZMUYw',
-      channelName: 'Socratica',
-      duration: '8 minutes',
-    },
     topics: [
       { label: 'Table Joins (Tutorial)', url: 'https://www.postgresql.org/docs/current/tutorial-join.html', note: 'The official walkthrough of join types.' },
       { label: 'FROM clause & JOIN syntax', url: 'https://www.postgresql.org/docs/current/sql-select.html#SQL-FROM', note: 'INNER/LEFT/RIGHT/FULL, ON vs USING, NATURAL.' },
@@ -308,12 +335,6 @@ ORDER BY a.name;`,
     intro: `Aggregation collapses many rows into summary values. This phase covers \`count\`, \`sum\`, \`avg\`, \`min\`, \`max\`, the \`GROUP BY\` clause, and the \`HAVING\` clause that filters *groups* (versus \`WHERE\`, which filters rows before grouping). You'll meet two PostgreSQL-flavoured tools: the SQL-standard \`FILTER (WHERE ...)\` clause for conditional aggregation, and \`string_agg\`/\`array_agg\` for stitching grouped values together.
 
 Locally: build a \`sale(id, region, amount)\` table and compute \`SELECT region, sum(amount) FROM sale GROUP BY region HAVING sum(amount) > 100\`. Then rewrite a "count only big sales per region" query using \`count(*) FILTER (WHERE amount > 50)\` — far cleaner than \`sum(CASE WHEN ...)\`.`,
-    video: {
-      title: 'SQL GROUP BY and Aggregate Functions',
-      youtubeId: 'nNrgygH6IFU',
-      channelName: 'Socratica',
-      duration: '7 minutes',
-    },
     topics: [
       { label: 'Aggregate Functions', url: 'https://www.postgresql.org/docs/current/functions-aggregate.html', note: 'count, sum, avg, array_agg, string_agg, and FILTER.' },
       { label: 'GROUP BY and HAVING', url: 'https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP', note: 'How grouping reshapes the result set.' },
@@ -365,15 +386,15 @@ ORDER BY total DESC;`,
       {
         kind: 'mcq',
         id: 'postgresql-4-mcq-3',
-        prompt: 'Why does `SELECT region, title, sum(amount) FROM sale GROUP BY region;` raise an error in PostgreSQL?',
+        prompt: 'Why does `SELECT region, amount, sum(amount) FROM sale GROUP BY region;` raise an error in PostgreSQL?',
         options: [
-          '`title` is neither in `GROUP BY` nor wrapped in an aggregate.',
+          'The bare `amount` is neither in `GROUP BY` nor wrapped in an aggregate.',
           '`sum` cannot be combined with `GROUP BY`.',
           '`region` must be aliased.',
           'You cannot select more than one column with `GROUP BY`.',
         ],
         correctIndex: 0,
-        explanation: 'Every selected column must either appear in `GROUP BY` or be inside an aggregate function. `title` is neither, so Postgres cannot decide which `title` to show per region and rejects the query. (Postgres is stricter here than MySQL\'s legacy behaviour.)'
+        explanation: 'Every selected column must either appear in `GROUP BY` or be inside an aggregate function. The bare `amount` is neither (only `sum(amount)` is aggregated), so Postgres cannot decide which `amount` to show per region and rejects the query. (Postgres is stricter here than MySQL\'s legacy behaviour.)'
       },
       {
         kind: 'mcq',
@@ -396,12 +417,6 @@ ORDER BY total DESC;`,
     intro: `This phase teaches you to compose queries: scalar subqueries, \`IN\`/\`EXISTS\`/\`ANY\`/\`ALL\` predicate subqueries, and Common Table Expressions (\`WITH\`) that name a subquery for readability and reuse. The headline PostgreSQL feature is the **recursive CTE** (\`WITH RECURSIVE\`), which walks hierarchies (org charts, category trees, graph paths) and generates sequences. You'll also meet \`generate_series\`, Postgres's set-returning workhorse.
 
 Locally: write a \`WITH RECURSIVE nums AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM nums WHERE n < 5) SELECT * FROM nums;\` to produce 1–5. Then model an \`employee(id, manager_id, name)\` table and recurse from the CEO down to print each person's depth in the hierarchy.`,
-    video: {
-      title: 'Recursive Common Table Expressions',
-      youtubeId: 'PHRD2D5gP_c',
-      channelName: 'CockroachDB',
-      duration: '11 minutes',
-    },
     topics: [
       { label: 'WITH Queries (CTEs)', url: 'https://www.postgresql.org/docs/current/queries-with.html', note: 'Including WITH RECURSIVE and the MATERIALIZED keyword.' },
       { label: 'Subquery Expressions', url: 'https://www.postgresql.org/docs/current/functions-subquery.html', note: 'EXISTS, IN, ANY/SOME, ALL.' },
@@ -488,12 +503,6 @@ SELECT name FROM emp, avg_sal WHERE salary > a ORDER BY name;`,
     intro: `Now you mutate data. This phase covers \`INSERT\` (including multi-row), \`UPDATE ... SET\`, \`DELETE\`, and three PostgreSQL hallmarks: the \`RETURNING\` clause (get the affected rows back in the *same* statement — no second round-trip), \`INSERT ... ON CONFLICT\` (the "UPSERT" for idempotent writes), and explicit transactions (\`BEGIN\`/\`COMMIT\`/\`ROLLBACK\`, plus \`SAVEPOINT\`). Postgres is fully ACID and uses MVCC so readers never block writers (explored in L10).
 
 Locally: \`INSERT INTO account(id, balance) VALUES (1, 100) RETURNING *;\`, then run a transfer inside \`BEGIN; UPDATE ...; UPDATE ...; COMMIT;\` and practise \`ROLLBACK\`. Try \`INSERT ... ON CONFLICT (id) DO UPDATE SET balance = EXCLUDED.balance\` to make a write idempotent.`,
-    video: {
-      title: 'Insert, Update, Delete Data in PostgreSQL',
-      youtubeId: 'jjL9Wn5sZh0',
-      channelName: 'Database Star',
-      duration: '20 minutes',
-    },
     topics: [
       { label: 'INSERT (incl. ON CONFLICT)', url: 'https://www.postgresql.org/docs/current/sql-insert.html', note: 'Multi-row inserts, RETURNING, and ON CONFLICT upserts.' },
       { label: 'UPDATE', url: 'https://www.postgresql.org/docs/current/sql-update.html', note: 'SET, FROM (update-from-join), and RETURNING.' },
@@ -575,12 +584,6 @@ SELECT id, balance FROM account ORDER BY id;`,
     intro: `This phase is where PostgreSQL pulls away from a plain SQL engine. You'll learn auto-incrementing keys via legacy \`SERIAL\` and the modern SQL-standard \`GENERATED ... AS IDENTITY\`; native **array** columns (\`integer[]\`, with \`ANY\`, \`@>\`, \`unnest\`); the **\`jsonb\`** type with its operator arsenal (\`->\`, \`->>\`, \`@>\`, \`?\`, \`jsonb_set\`); and user-defined **enum** types. These let Postgres model semi-structured and set-valued data without leaving the relational world.
 
 Locally: \`CREATE TABLE post(id int GENERATED ALWAYS AS IDENTITY, tags text[], body jsonb);\` then insert \`ARRAY['sql','pg']\` and \`'{"views": 10}'::jsonb\`. Query \`WHERE 'pg' = ANY(tags)\` and \`WHERE body->>'views' = '10'\`. Create \`CREATE TYPE mood AS ENUM ('sad','ok','happy');\` and use it as a column type.`,
-    video: {
-      title: 'Working with JSON in PostgreSQL',
-      youtubeId: 'OZHwq8De63E',
-      channelName: 'Hussein Nasser',
-      duration: '30 minutes',
-    },
     topics: [
       { label: 'JSON Types (json / jsonb)', url: 'https://www.postgresql.org/docs/current/datatype-json.html', note: 'jsonb vs json and when to use each.' },
       { label: 'JSON Functions & Operators', url: 'https://www.postgresql.org/docs/current/functions-json.html', note: '->, ->>, @>, ?, jsonb_set, jsonb_path_query.' },
@@ -666,12 +669,6 @@ SELECT count(*) AS total FROM tag;`,
     intro: `Window functions compute across a set of rows *related to the current row* while still returning every row — unlike \`GROUP BY\`, which collapses them. This phase covers the \`OVER (PARTITION BY ... ORDER BY ...)\` clause, ranking functions (\`row_number\`, \`rank\`, \`dense_rank\`, \`ntile\`), offset functions (\`lag\`, \`lead\`), running aggregates (\`sum() OVER\`), and frame clauses (\`ROWS BETWEEN ...\`). PostgreSQL also offers \`DISTINCT ON\`, a Postgres-only shortcut for "first row per group."
 
 Locally: build \`sale(region, day, amount)\` and compute a running total per region with \`sum(amount) OVER (PARTITION BY region ORDER BY day)\`, then rank salespeople with \`rank() OVER (ORDER BY amount DESC)\`. Compare \`rank\` vs \`dense_rank\` on ties, and use \`lag(amount) OVER (ORDER BY day)\` to compute day-over-day deltas.`,
-    video: {
-      title: 'Advanced SQL — Window Functions',
-      youtubeId: 'Ww71knvhQ-s',
-      channelName: 'Alex The Analyst',
-      duration: '17 minutes',
-    },
     topics: [
       { label: 'Window Functions (Tutorial)', url: 'https://www.postgresql.org/docs/current/tutorial-window.html', note: 'The official introduction with worked examples.' },
       { label: 'Window Function Calls', url: 'https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS', note: 'OVER, PARTITION BY, ORDER BY, frame clauses.' },
@@ -757,12 +754,6 @@ FROM score;`,
     intro: `Performance is where database expertise shows. This phase covers PostgreSQL's index types — the default **B-tree** (equality and range), **GIN** (jsonb, arrays, full-text), **GiST** (geometric, ranges, nearest-neighbour), plus BRIN and Hash — and how to read the query planner with \`EXPLAIN\` and \`EXPLAIN ANALYZE\`. You'll learn why a sequential scan can beat an index scan on small tables, what partial and expression indexes are, and why \`ANALYZE\` (statistics) matters.
 
 Locally: on a large table run \`EXPLAIN ANALYZE SELECT * FROM big WHERE email = 'x';\`, observe the *Seq Scan*, add \`CREATE INDEX ON big (email);\`, and re-run to watch it become an *Index Scan* with a far lower cost. For a \`jsonb\` or array column, reach for \`CREATE INDEX ... USING GIN\`.`,
-    video: {
-      title: 'Database Indexing Explained',
-      youtubeId: 'clrtT_4WBAw',
-      channelName: 'Hussein Nasser',
-      duration: '20 minutes',
-    },
     topics: [
       { label: 'Indexes (overview)', url: 'https://www.postgresql.org/docs/current/indexes.html', note: 'The full chapter: when and how indexes help.' },
       { label: 'Index Types', url: 'https://www.postgresql.org/docs/current/indexes-types.html', note: 'B-tree, Hash, GiST, SP-GiST, GIN, BRIN.' },
@@ -837,12 +828,6 @@ SELECT name FROM users WHERE email = 'b@x.com';`,
     intro: `The capstone: server-side programming and concurrency. You'll write functions in **PL/pgSQL** (\`CREATE FUNCTION ... LANGUAGE plpgsql\` with \`DECLARE\`/\`BEGIN\`/\`RETURN\`), attach **triggers** that fire on \`INSERT\`/\`UPDATE\`/\`DELETE\`, load **extensions** (\`CREATE EXTENSION\` — e.g. \`pg_trgm\`, \`postgis\`, \`uuid-ossp\`), and understand **MVCC** (Multi-Version Concurrency Control): how Postgres gives each transaction a consistent snapshot so readers never block writers, the cost of dead tuples, and why \`VACUUM\`/autovacuum exist. You'll also meet isolation levels and \`SELECT ... FOR UPDATE\` row locking.
 
 Locally: write a \`plpgsql\` function \`add(a int, b int) RETURNS int\`, a \`BEFORE INSERT\` trigger that stamps \`created_at\`, and \`CREATE EXTENSION pg_trgm;\` for fuzzy text search. Open two \`psql\` sessions to watch MVCC: an uncommitted \`UPDATE\` in one is invisible to the other until \`COMMIT\`.`,
-    video: {
-      title: 'Postgres MVCC — Multi-Version Concurrency Control',
-      youtubeId: 'Sm9L540iubw',
-      channelName: 'Hussein Nasser',
-      duration: '23 minutes',
-    },
     topics: [
       { label: 'PL/pgSQL', url: 'https://www.postgresql.org/docs/current/plpgsql.html', note: 'The procedural language: variables, control flow, functions.' },
       { label: 'CREATE FUNCTION', url: 'https://www.postgresql.org/docs/current/sql-createfunction.html', note: 'Defining functions in plpgsql, sql, and other languages.' },

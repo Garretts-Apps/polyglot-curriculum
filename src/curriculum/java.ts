@@ -8,9 +8,41 @@ export const javaPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to Java! In this level you'll install a JDK (the Java Development Kit), confirm it works, and run your first program. Java compiles your source to platform-independent **bytecode** that runs on the **JVM** (Java Virtual Machine) — the "write once, run anywhere" promise.
+    intro: `Welcome to Java — and, if this is your very first program ever, welcome to programming! A program is just a list of instructions you write in a text file; a tool then turns those instructions into something the computer can carry out. Java does this in two steps: you write **source code** (human-readable text), the \`javac\` **compiler** turns it into **bytecode** (a compact set of instructions), and the **JVM** (Java Virtual Machine — a program that pretends to be a computer) runs that bytecode. Because every operating system ships its own JVM, the same bytecode runs unchanged on Windows, macOS, and Linux — the famous "write once, run anywhere" promise.
 
-Locally: install a modern LTS JDK (21 is the current long-term-support release), then run \`java --version\` and \`javac --version\` to confirm both the runtime and the compiler are on your \`PATH\`. Save a file \`Main.java\`, compile with \`javac Main.java\`, and run with \`java Main\`. (Since JDK 11 you can also run a single file directly with \`java Main.java\`, skipping the explicit compile step.)`,
+Here is the entire first program. Every Java program is built from these pieces, so it is worth meeting each one slowly:
+
+\`\`\`java
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+\`\`\`
+
+Read left to right, this says: *make a public thing called \`Main\`; inside it put an action called \`main\`; when that action runs, print the text \`Hello, World!\`.* Now the token-by-token tour. (A **token** is just one indivisible "word" or symbol of code.)
+
+**\`class\`** — A class is a **container** that holds your code. In Java *all* code must live inside a class; you cannot have a loose instruction floating in a file. Think of it as a labelled box. For now it is just scaffolding. *If you remove it:* the program will not compile — there is nowhere for the code to live.
+
+**\`Main\`** — This is the **name** you gave the box. You chose it; it is not a special Java word. The one rule for the file you save: the file name must match the public class name, so this class must be saved as \`Main.java\`. *If you rename it* to \`Hello\`, you must also save the file as \`Hello.java\`.
+
+**\`public\`** — An **access keyword** meaning "anyone is allowed to use this." The JVM lives "outside" your class, so it needs public permission to reach in and start the program. *If you remove it:* the JVM may not be allowed to find your starting point.
+
+**\`{ ... }\`** — A pair of **curly braces** marks the **start and end of a block** — everything that belongs to the class (or, further in, to the method). Braces always come in matched pairs, like opening and closing a container. The outer pair holds the class body; the inner pair holds the method body.
+
+**\`main\`** — This is a **method**: a named action, a reusable chunk of instructions. (Other languages call this a "function.") \`main\` is special: it is the **entry point**, the one method the JVM looks for and runs first when you launch the program. *If you misspell it* (e.g. \`mian\`) the JVM cannot find where to begin and refuses to start. The parentheses \`( )\` right after \`main\` are where information can be *handed in* to the action.
+
+**\`static\`** — Means this method belongs to the **class itself**, not to any particular object made from the class. The JVM has to call \`main\` before it has created a single object, so \`main\` must be \`static\` — callable directly on the class. *If you remove it:* the JVM would need an object to call \`main\` on, but none exists yet, so it errors.
+
+**\`void\`** — The method's **return type**: the kind of answer it hands back when it finishes. \`void\` means **"nothing"** — \`main\` does its work (printing) but returns no value. (A method that added two numbers might instead say \`int\` here, meaning "I hand back a whole number.")
+
+**\`String[] args\`** — This sits inside \`main\`'s parentheses and *describes* the information handed in. Break it down: **\`String\`** means **text**, like \`"Hello"\`. The **\`[]\`** means an **array** — an ordered list of several values. So \`String[]\` is "a list of text values" such as \`["apple", "banana"]\`. **\`args\`** is just the **variable name** holding that list (short for "arguments" — extra pieces of info passed in from the command line). Key insight: \`String[] args\` is not *doing* anything — it *describes* a slot. At runtime, launching \`java Main apple banana\` makes \`args\` hold \`["apple", "banana"]\` before \`main\` starts; launching plain \`java Main\` makes \`args\` an empty list. This program ignores \`args\`, but the slot must still be declared because that is the exact shape the JVM expects \`main\` to have.
+
+**\`System.out.println("Hello, World!")\`** — The one line that actually *does* something visible. Read it right to left for meaning: \`"Hello, World!"\` is a **string literal** — the exact text to show, with the double quotes marking where the text begins and ends (the quotes are not printed). \`System\` is a built-in class Java provides; \`System.out\` is its connection to **standard output** (your terminal/console); \`println\` is a method on it that **prints** its argument and then moves to a new line (the "ln" = "line"). \`System.out.print\` (no \`ln\`) would print without the newline. The semicolon \`;\` ends the **statement** — like a full stop ending a sentence; every Java statement needs one.
+
+What is in memory when this runs: the JVM loads the \`Main\` class, sees \`main\`, sets up \`args\` (an empty list here), then executes the one statement inside — sending the characters \`Hello, World!\` to standard output, followed by a newline.
+
+Locally: install a modern LTS JDK (21 is the current long-term-support release), then run \`java --version\` and \`javac --version\` to confirm both the runtime and the compiler are on your \`PATH\`. Save the program above as \`Main.java\`, compile with \`javac Main.java\` (producing \`Main.class\`), and run with \`java Main\`. (Since JDK 11 you can also run a single file directly with \`java Main.java\`, skipping the explicit compile step.)`,
     topics: [
       {
         label: 'Download the JDK',
@@ -38,7 +70,7 @@ Locally: install a modern LTS JDK (21 is the current long-term-support release),
           'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n',
         expectedOutput: 'Hello, World!',
         explanation:
-          'Every Java application needs a class and a `public static void main(String[] args)` entry point. `System.out.println` writes a line to standard output. The file name (`Main.java`) must match the public class name.',
+          'Read this program token by token. **`class Main`** — a *class* is a labelled box that holds code; in Java every instruction must live inside one. `Main` is the name you chose (not a keyword); the file must be saved as `Main.java` to match it. **`public`** — an access keyword meaning "anyone may use this"; the JVM lives outside your class and needs that permission to reach the start point. **`static`** — this method belongs to the *class itself*, not to an object made from it; the JVM calls `main` before any object exists, so it must be static. **`void`** — the *return type*, the kind of answer the method hands back; `void` means "nothing" (it prints, it does not return a value). **`main`** — a *method* (a named, reusable action); `main` is special — it is the *entry point* the JVM runs first. **`String[] args`** — describes the information handed in: `String` means text, `[]` means an *array* (an ordered list), `args` is just the variable name holding the command-line arguments. Running `java Main apple banana` makes `args` hold `["apple","banana"]`; plain `java Main` makes it an empty list. **`System.out.println("Hello, World!")`** — `System.out` is the connection to standard output (your console); `println` prints its argument and then a newline; `"Hello, World!"` is the literal text (the quotes mark where it begins and ends and are not printed). The **`;`** ends the statement, like a full stop. At runtime the JVM loads `Main`, finds `main`, sets up `args`, then runs the one statement, sending `Hello, World!` to the console.',
       },
       {
         kind: 'mcq',
@@ -78,9 +110,19 @@ Locally: install a modern LTS JDK (21 is the current long-term-support release),
     level: 1,
     title: 'Java Basics — Types, Variables, Operators & Output',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll read short Java programs and predict their output, with a firm grasp of Java's **statically typed**, primitive-vs-reference world. You'll learn the eight primitive types (\`int\`, \`long\`, \`double\`, \`boolean\`, \`char\`, \`byte\`, \`short\`, \`float\`), the difference between a primitive \`int\` and the boxed \`Integer\` object, integer vs floating-point division, and how \`+\` is overloaded for both arithmetic and string concatenation.
+    intro: `Before any of the Java-specific details, four bedrock ideas — if you have never programmed, read these slowly.
 
-Locally: write a small \`Temperature\` program that declares a \`double celsius\`, converts it to Fahrenheit with \`c * 9 / 5 + 32\`, and prints both with \`System.out.printf\`. Experiment with what happens when you divide two \`int\`s versus an \`int\` and a \`double\` — the surprising results teach you Java's numeric promotion rules.`,
+A **statement** is one complete instruction, like one sentence. In Java every statement ends with a semicolon \`;\`. The program runs statements one after another, top to bottom.
+
+A **variable** is a *named box that holds a value*. \`int score = 10;\` makes a box called \`score\`, puts the number \`10\` in it, and you can read or change it later by name. The \`=\` is **assignment** — "put the value on the right into the box on the left" — not the "equals" of mathematics. Writing \`score = score + 1;\` means "take what's in \`score\`, add one, put the result back," so \`score\` becomes \`11\`.
+
+A **type** is *what kind of value a box may hold*. Java is **statically typed**: every box's type is fixed when you create it and checked by the compiler before the program runs. \`int score\` may hold only whole numbers; you cannot later put text in it. This catches whole categories of mistakes early. The word right before the variable name (\`int\`, \`double\`, \`String\`, \`boolean\`) *is* the type.
+
+A **method** is a *named, reusable action* (other languages say "function"). You met \`main\` in Level 0. A method can take inputs (in its parentheses) and hand back one answer (its **return type** — \`void\` means it returns nothing). You "call" a method by writing its name and parentheses, e.g. \`System.out.println("hi")\`.
+
+With those in hand: by the end of this phase you'll read short Java programs and predict their output, with a firm grasp of Java's **primitive-vs-reference** world. You'll learn the eight **primitive types** — \`int\` (whole numbers), \`long\` (bigger whole numbers), \`double\` (numbers with a fractional part like \`3.14\`), \`boolean\` (\`true\`/\`false\`), \`char\` (a single character), and the rarer \`byte\`, \`short\`, \`float\` — which hold their value *directly* in the box. You'll meet \`String\` (text), which is a *reference* type: the box holds a pointer to text stored elsewhere. You'll see the difference between a primitive \`int\` and the object wrapper \`Integer\` (which can also be \`null\`, meaning "no value at all"), the surprise of integer vs floating-point division, and how \`+\` does double duty — arithmetic on numbers, but *concatenation* (gluing text together) the moment a \`String\` is involved.
+
+Locally: write a small \`Temperature\` program that declares a \`double celsius\`, converts it to Fahrenheit with \`celsius * 9 / 5 + 32\`, and prints both with \`System.out.printf\`. Experiment with what happens when you divide two \`int\`s versus an \`int\` and a \`double\` — the surprising results teach you Java's numeric promotion rules.`,
     video: {
       title: 'Java Full Course for free',
       youtubeId: 'xk4_1vDrzzo',
@@ -169,7 +211,7 @@ Locally: write a small \`Temperature\` program that declares a \`double celsius\
 
 Locally: build a tiny \`FizzBuzz\` and a recursive \`factorial(int n)\` method. Then extract a \`boolean isPrime(int n)\` helper and loop from 2 to 50 printing the primes. Practise reading method signatures aloud — "static, returns int, takes two ints" — until the type-first declaration order feels natural.`,
     video: {
-      title: 'Java Tutorial for Beginners',
+      title: 'Java Full Course for Beginners',
       youtubeId: 'eIrMbAQSU34',
       channelName: 'Programming with Mosh',
       duration: '2.5 hours',
@@ -254,12 +296,6 @@ Locally: build a tiny \`FizzBuzz\` and a recursive \`factorial(int n)\` method. 
     intro: `Java is fundamentally object-oriented. This phase introduces **classes** as blueprints, **objects** as instances, constructors, instance fields, and the \`this\` reference. You'll learn **encapsulation**: making fields \`private\` and exposing controlled access through getters/setters, plus the role of \`static\` members shared across all instances versus per-instance state.
 
 Locally: model a \`BankAccount\` with a private \`balance\`, a constructor, and \`deposit\`/\`withdraw\` methods that validate input. Add a \`static int accountCount\` that increments in the constructor. Override \`toString()\` so printing an account shows its balance. These exercises run best in a real JDK; here we reinforce the *behaviour* through "what does this print?" MCQs since the in-browser runner does not model object instances.`,
-    video: {
-      title: 'Object Oriented Programming (OOP) in Java',
-      youtubeId: 'TBWX97e1E9g',
-      channelName: 'Coding with John',
-      duration: '30 minutes',
-    },
     topics: [
       { label: 'Classes and Objects', url: 'https://docs.oracle.com/javase/tutorial/java/javaOO/index.html', note: 'The core OOP tutorial trail.' },
       { label: 'Providing Constructors for Your Classes', url: 'https://docs.oracle.com/javase/tutorial/java/javaOO/constructors.html', note: 'Initialising new objects.' },
@@ -344,12 +380,6 @@ Locally: model a \`BankAccount\` with a private \`balance\`, a constructor, and 
     intro: `This phase covers Java's inheritance model: \`extends\` for single class inheritance, \`implements\` for multiple interfaces, \`@Override\`, abstract classes, and **dynamic dispatch** — the runtime selection of an overridden method based on the object's actual type. You'll learn why Java allows only single class inheritance but many interfaces, how \`default\` methods let interfaces carry behaviour, and the difference between **overriding** (runtime) and **overloading** (compile time).
 
 Locally: define an abstract \`Shape\` with an abstract \`double area()\`, then \`Circle\` and \`Rectangle\` subclasses. Put them in a \`Shape[]\` and loop calling \`area()\` — watch polymorphism pick the right implementation per element. Add a \`Comparable<Shape>\` implementation and sort the array.`,
-    video: {
-      title: 'Java Interfaces Explained',
-      youtubeId: 'kkc4xpb_adA',
-      channelName: 'Coding with John',
-      duration: '15 minutes',
-    },
     topics: [
       { label: 'Inheritance', url: 'https://docs.oracle.com/javase/tutorial/java/IandI/subclasses.html', note: 'extends, super, and the Object root class.' },
       { label: 'Interfaces', url: 'https://docs.oracle.com/javase/tutorial/java/IandI/createinterface.html', note: 'Defining and implementing interfaces.' },
@@ -434,12 +464,6 @@ Locally: define an abstract \`Shape\` with an abstract \`double area()\`, then \
     intro: `This phase introduces **generics** — type parameters like \`List<String>\` that give you compile-time type safety without casts — and the **Java Collections Framework**: \`List\` (\`ArrayList\`, \`LinkedList\`), \`Set\` (\`HashSet\`, \`TreeSet\`), \`Map\` (\`HashMap\`, \`TreeMap\`), and the \`Iterator\`/enhanced-for protocol. You'll learn the difference between an interface (\`List\`) and an implementation (\`ArrayList\`), Big-O trade-offs, and **type erasure** (generics exist at compile time, not in the bytecode).
 
 Locally: build a word-frequency counter — read a sentence, split on spaces, and use a \`Map<String, Integer>\` with \`getOrDefault\` to tally counts, then print the entries. Because the in-browser runner does not model \`ArrayList\`/\`HashMap\`, the runnable check here uses an \`int[]\` array; everything generic is taught via "what does this print?" MCQs.`,
-    video: {
-      title: 'Java Collections Framework Explained',
-      youtubeId: 'viTHc_4XfCA',
-      channelName: 'Coding with John',
-      duration: '20 minutes',
-    },
     topics: [
       { label: 'Generics (The Java Tutorials)', url: 'https://docs.oracle.com/javase/tutorial/java/generics/index.html', note: 'Type parameters, bounded types, wildcards.' },
       { label: 'Collections Framework Overview', url: 'https://docs.oracle.com/javase/tutorial/collections/index.html', note: 'List, Set, Map, Queue and their implementations.' },
@@ -520,7 +544,7 @@ Locally: build a word-frequency counter — read a sentence, split on spaces, an
 
 Locally: write a \`parsePositive(String s)\` that throws \`IllegalArgumentException\` for non-positive numbers and lets \`NumberFormatException\` propagate. Wrap a file read in try-with-resources (\`try (var r = Files.newBufferedReader(path))\`) and observe that the reader closes automatically even on exception. Here we model control flow with print-based code and reserve the exception machinery for MCQs.`,
     video: {
-      title: 'Java Exceptions Explained',
+      title: 'Exception Handling in Java Tutorial',
       youtubeId: '1XAfapkBQjk',
       channelName: 'Coding with John',
       duration: '18 minutes',
@@ -689,7 +713,7 @@ Locally: take a \`List<String>\` of names and build a stream pipeline that filte
 
 Locally: model a small expression evaluator with a sealed \`interface Expr permits Num, Add\`, implement \`Num\` and \`Add\` as records, and write a \`switch\` with pattern matching that recursively evaluates an \`Expr\` — the compiler enforces exhaustiveness because the hierarchy is sealed. Here we teach these features through "what does this print?" MCQs, since the runner does not model records or pattern matching.`,
     video: {
-      title: 'Java Records Explained',
+      title: 'Records In Java - Full Tutorial',
       youtubeId: 'gJ9DYC-jswo',
       channelName: 'Coding with John',
       duration: '16 minutes',

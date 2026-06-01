@@ -8,9 +8,20 @@ export const typescriptJsPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World — "JS Is Already Valid TS"',
     timeEstimate: '0.5-1 hours',
-    intro: `You already write JavaScript. TypeScript is that same language plus a *compile-time* type checker that erases entirely before the code runs. In this level you'll install the compiler, learn that almost any \`.js\` file is already a valid \`.ts\` file, and run your first typed program. The mental shift: \`tsc\` never changes runtime behaviour — it only *refuses to emit* (or warns) when the types don't add up.
+    intro: `You already write JavaScript, so the first thing to internalise is the most reassuring fact about TypeScript: **every \`.js\` file is already a valid \`.ts\` file.** Rename \`app.js\` to \`app.ts\` and it still works — TypeScript is JavaScript *plus* an optional layer of **types** that the compiler checks and then throws away. Nothing you already know stops being true; you're only adding a checker on top.
 
-Locally: \`npm i -D typescript\`, then \`npx tsc --init\` to generate a \`tsconfig.json\`, write a \`hello.ts\`, and run \`npx tsc hello.ts && node hello.js\`. Try \`npx tsc --noEmit\` to type-check without producing output. Everything in this course transpiles in the browser, so you can also just hit Run.`,
+**What is a type annotation?** It's a *compile-time contract* you attach to a value with a colon, e.g. \`const greeting: string = "Hello, World!"\`. Read it left to right:
+- \`const greeting\` — ordinary JS: declare a constant named \`greeting\` (you've done this a thousand times).
+- \`: string\` — this is the *annotation*. The colon means "and its type is", and \`string\` means "text". So you're promising: *greeting will always be text*.
+- \`= "Hello, World!"\` — the value, exactly as in JS.
+
+The annotation is **optional**. Write \`const greeting = "Hello, World!"\` with no \`: string\` and TypeScript *infers* the type \`string\` for you from the value — you get the same checking with less typing. You annotate only where inference can't help (more on that next level).
+
+**Types vanish at runtime — the crucial mental model.** A type is not a value. It exists *only while the compiler is looking*. \`tsc\` (the TypeScript compiler) reads your \`.ts\`, checks every annotation, and **emits plain \`.js\` with all the types deleted**. The line above compiles to exactly \`const greeting = "Hello, World!";\` — the \`: string\` is gone. There is no \`.ts\` runtime, no type information in the running program; Node and browsers run the same JavaScript they always did. Types have **zero runtime cost** and **zero runtime effect**.
+
+**So what do types actually buy you?** They turn a class of bugs into *compile errors* you see before you ship. If you write \`const greeting: string = 42\`, that is **not** a runtime crash — the program would happily run \`const greeting = 42\` in plain JS. Instead \`tsc\` *refuses*: it reports \`Type 'number' is not assignable to type 'string'\` and (by default) won't emit clean output. That's the whole deal — \`tsc\` never changes what your code *does*; it only warns/refuses when the annotations don't add up.
+
+**Try it locally.** \`npm i -D typescript\`, then \`npx tsc --init\` to generate a \`tsconfig.json\` (the project's compiler settings file). Write \`hello.ts\`, run \`npx tsc hello.ts\` to produce \`hello.js\`, then \`node hello.js\`. Run \`npx tsc --noEmit\` to *type-check only* — it reports errors but writes no \`.js\` (this is how CI guards correctness when a separate bundler does the actual transpiling). Everything in this course transpiles in the browser too, so you can just hit Run.`,
     topics: [
       { label: 'TypeScript — Get Started', url: 'https://www.typescriptlang.org/download/', note: 'Install via npm and run tsc' },
       { label: 'TS for JS Programmers', url: 'https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html', note: 'The canonical "you already know most of this" intro' },
@@ -25,7 +36,7 @@ Locally: \`npm i -D typescript\`, then \`npx tsc --init\` to generate a \`tsconf
         prompt: 'Run this program. It declares a `string`-typed variable and prints a greeting. Note that the `: string` annotation disappears entirely once transpiled to JavaScript.',
         boilerplate: 'const message: string = "Hello, TypeScript!";\nconsole.log(message);\n',
         expectedOutput: 'Hello, TypeScript!',
-        explanation: 'The `: string` is a *type annotation*. `tsc` checks it at compile time, then erases it — the emitted JS is just `const message = "Hello, TypeScript!";`. Types have zero runtime cost.',
+        explanation: 'Read `const message: string = "Hello, TypeScript!"` token by token. `const message` is plain JS — declare a constant. `:` means "and its type is". `string` is the type "text". `= "..."` is the value. So the `: string` is a *type annotation*: a compile-time promise that `message` holds text. `tsc` checks that promise, then **erases it** — the emitted JS is exactly `const message = "Hello, TypeScript!";` with no `: string` left. At runtime there is just a string in memory; the type carried zero cost. The annotation here is even optional: with `const message = "..."`, TypeScript would *infer* `string` and check it identically.',
       },
       {
         kind: 'mcq',
@@ -76,15 +87,20 @@ Locally: \`npm i -D typescript\`, then \`npx tsc --init\` to generate a \`tsconf
     level: 1,
     title: 'Annotations & Inference — Let It Infer',
     timeEstimate: '4-6 hours',
-    intro: `As a JS dev your instinct may be to annotate everything; the *first* TS lesson is the opposite — **let inference do the work**. \`const x = 5\` already has type \`5\`; \`let x = 5\` has type \`number\`. You only annotate where inference can't help: empty containers, function parameters, and public API boundaries. By the end of this phase you'll predict what type TS infers for any expression, know the difference between \`any\`, \`unknown\`, and a concrete type, and understand why a "no-op" annotation is noise.
+    intro: `Coming from dynamic JavaScript, a "type" can feel abstract, so pin it down: **a type is the set of values a binding is allowed to hold, plus the operations that are legal on it.** \`number\` is "any numeric value, and you may do \`+ - * /\` on it"; \`string\` is "any text, and you may call \`.toUpperCase()\` on it". In JS a variable can hold *anything* and you find out about mismatches when the program crashes; in TS the type pins down what's allowed and the compiler tells you *before* you run.
 
-Locally, hover any variable in VS Code (or use the Playground) to see the inferred type. Try writing \`const config = { retries: 3, url: "x" }\` and hovering — TS infers the whole object shape. Then add \`config.retries = "oops"\` and watch the squiggle appear.`,
-    video: {
-      title: 'TypeScript - The Basics',
-      youtubeId: 'ahCwqrYpIuM',
-      channelName: 'Fireship',
-      duration: '12 minutes',
-    },
+**Inference vs. annotation — let it infer.** Your JS instinct may be to label everything, but TypeScript usually already knows. From the *value* you assign, it works out the type automatically:
+- \`const x = 5\` → type \`5\` (a \`const\` primitive can never change, so TS keeps the exact *literal* type).
+- \`let x = 5\` → type \`number\` (a \`let\` is reassignable, so TS *widens* to the general type so you can later write \`x = 6\`).
+- \`const name = "Ada"\` → type \`"Ada"\`; \`let name = "Ada"\` → type \`string\`.
+
+So most of the time you write the same code you'd write in JS and get checking for free. You only *annotate* where inference can't see the value: **function parameters** (TS can't guess what callers will pass — \`function f(x) {}\` would make \`x\` an untyped \`any\`), **empty containers** (\`const items = []\` infers the useless \`any[]\`; write \`const items: string[] = []\`), and **public API boundaries** where you want to lock the contract. A redundant annotation on something already inferred — \`const id: number = 42\` — is just noise (it even *widens* away the precise \`42\`).
+
+**The structural-typing mindset.** This is the deepest shift for a dynamic-JS brain. TypeScript doesn't care what a type is *named* or whether you ever declared a value to "be" a certain type — it only cares about the *shape*. If a value has at least the properties some function needs, it's accepted ("if it walks like a duck, it's a duck"). This mirrors how you already think in JS — you pass any object that "has the right fields" — except now the compiler verifies the shape matches up front. (You'll see this in full next level.)
+
+**\`any\` vs \`unknown\`.** When a value's type truly isn't known (e.g. \`JSON.parse\`), you'll meet two top types. \`any\` switches the checker *off* for that value — anything goes, bugs slip through; it's an escape hatch, not a goal. \`unknown\` is the safe version: you can store anything in it, but TS won't let you *use* it until you prove what it is (by narrowing). Prefer \`unknown\` at untyped boundaries.
+
+Locally, hover any variable in VS Code (or the Playground) to see the inferred type. Write \`const config = { retries: 3, url: "x" }\` and hover — TS infers the whole object shape \`{ retries: number; url: string }\`. Then write \`config.retries = "oops"\` and watch the squiggle: a *compile* error, not a runtime one.`,
     topics: [
       { label: 'Everyday Types', url: 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html', note: 'string, number, boolean, arrays, any' },
       { label: 'Type Inference', url: 'https://www.typescriptlang.org/docs/handbook/type-inference.html', note: 'When TS infers types for you' },
@@ -139,7 +155,7 @@ Locally, hover any variable in VS Code (or use the Playground) to see the inferr
           'No — `let` bindings cannot be reassigned at all.',
         ],
         correctIndex: 1,
-        explanation: 'Even without an explicit annotation, `let count = 0` infers `count: number`. Assigning a `string` produces `Type \'string\' is not assignable to type \'number\'`. This is *contextual inference*: an initialized binding locks in its type even though you never typed `: number`. See [Type Inference](https://www.typescriptlang.org/docs/handbook/type-inference.html).',
+        explanation: 'Even without an explicit annotation, `let count = 0` infers `count: number` from its initializer. Assigning a `string` then produces `Type \'string\' is not assignable to type \'number\'`. The inferred type locks in the moment the binding is initialized — you never typed `: number`, but the check is identical to having done so. See [Type Inference](https://www.typescriptlang.org/docs/handbook/type-inference.html).',
       },
       {
         kind: 'mcq',
@@ -180,12 +196,6 @@ Locally, hover any variable in VS Code (or use the Playground) to see the inferr
     intro: `In JS an object is just a bag of properties; in TS you describe its *shape*. You'll learn the two tools for this — \`interface\` and \`type\` — when they're interchangeable (most of the time) and where they differ (declaration merging, extends vs intersection). Crucially you'll meet **structural typing**: TS doesn't care what you *named* a type, only whether the shape matches ("if it walks like a duck"). You'll also handle optional (\`?\`) and \`readonly\` properties and learn why **excess property checks** reject stray keys on object literals.
 
 Locally, model a \`User\` with \`interface\`, then re-express it as a \`type\`, and try passing an object with an extra property directly versus through a variable — observe that only the literal is rejected.`,
-    video: {
-      title: 'Type vs Interface in TypeScript',
-      youtubeId: 'zM9UPcIyyhQ',
-      channelName: 'Web Dev Simplified',
-      duration: '8 minutes',
-    },
     topics: [
       { label: 'Object Types', url: 'https://www.typescriptlang.org/docs/handbook/2/objects.html', note: 'Optional, readonly, index signatures' },
       { label: 'Interfaces vs Type Aliases', url: 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces', note: 'The official side-by-side comparison' },
@@ -268,12 +278,6 @@ Locally, model a \`User\` with \`interface\`, then re-express it as a \`type\`, 
     intro: `This is the phase that converts JS skeptics. Union types (\`A | B\`) let you say "a value is one of these", and **narrowing** is how TS follows your control flow to figure out which one it is *right here*. The runtime checks you already write — \`typeof x === "string"\`, \`if (user)\`, \`Array.isArray(x)\`, \`"prop" in obj\` — all double as *type narrowers*. You'll also meet literal types (\`type Dir = "n" | "s" | "e" | "w"\`) that turn magic strings into a closed set, and write your own **user-defined type guard** (\`x is Foo\`).
 
 Locally, write a function that takes \`string | number\` and branches on \`typeof\`; hover inside each branch to watch the type narrow. Then build a \`Dir\` union and watch TS reject \`"north"\`.`,
-    video: {
-      title: 'TypeScript Narrowing',
-      youtubeId: 'pfA-3da6_Wc',
-      channelName: 'Matt Pocock',
-      duration: '10 minutes',
-    },
     topics: [
       { label: 'Narrowing', url: 'https://www.typescriptlang.org/docs/handbook/2/narrowing.html', note: 'typeof, truthiness, in, instanceof, type guards' },
       { label: 'Union Types', url: 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types', note: 'A | B values' },
@@ -359,12 +363,6 @@ Locally, write a function that takes \`string | number\` and branches on \`typeo
     intro: `Functions are where types pay off daily. You'll annotate parameters and returns, type *function values* themselves (\`(a: number) => number\`), handle optional and default and rest parameters, and learn why \`void\` return types are deliberately loose. You'll meet **call signatures** and **overloads** for APIs whose return type depends on their arguments, the \`this\` parameter for callbacks, and contextual typing (TS infers a callback's parameter types from the function you pass it to).
 
 Locally, type a \`map\`-style helper and watch TS infer the callback's element type. Then write two overload signatures for a \`reverse\` that returns a \`string\` for strings and an array for arrays.`,
-    video: {
-      title: 'TypeScript Functions',
-      youtubeId: 'mePT5UmlNGY',
-      channelName: 'Codevolution',
-      duration: '15 minutes',
-    },
     topics: [
       { label: 'More on Functions', url: 'https://www.typescriptlang.org/docs/handbook/2/functions.html', note: 'Call signatures, overloads, this, rest params' },
       { label: 'Function Type Expressions', url: 'https://www.typescriptlang.org/docs/handbook/2/functions.html#function-type-expressions', note: 'The (a: T) => U syntax' },
@@ -447,12 +445,6 @@ Locally, type a \`map\`-style helper and watch TS infer the callback's element t
     intro: `Generics let you write code that works over *any* type while preserving the relationship between inputs and outputs. The JS dev's identity helper \`(x) => x\` becomes \`<T>(x: T) => T\` — call it with a \`string\` and you get a \`string\` back, not \`any\`. You'll learn type parameters, how TS *infers* them from arguments (you rarely pass them explicitly), constraints (\`<T extends { id: number }>\`), default type params, and generic interfaces/classes. The mantra: a generic with only one use of its parameter is usually a mistake.
 
 Locally, write \`first<T>(arr: T[]): T | undefined\` and call it on \`number[]\` and \`string[]\` — hover the result and watch the type change. Then add an \`extends\` constraint and feel the editor reject bad arguments.`,
-    video: {
-      title: 'TypeScript Generics',
-      youtubeId: 'EcCTIExsqmI',
-      channelName: 'Matt Pocock',
-      duration: '12 minutes',
-    },
     topics: [
       { label: 'Generics', url: 'https://www.typescriptlang.org/docs/handbook/2/generics.html', note: 'Type parameters, inference, constraints' },
       { label: 'Generic Constraints', url: 'https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints', note: '<T extends ...>' },
@@ -535,12 +527,6 @@ Locally, write \`first<T>(arr: T[]): T | undefined\` and call it on \`number[]\`
     intro: `JS has one list type; TS distinguishes the homogeneous **array** (\`number[]\`) from the fixed-length, position-typed **tuple** (\`[string, number]\`) — exactly what \`useState\` returns. You'll learn tuple labels, optional and rest elements in tuples, \`readonly\` arrays/tuples (and why they're not assignable to mutable ones), and the game-changer **\`as const\`**, which freezes a literal into its narrowest readonly form. \`as const\` is how you derive a union type from a runtime array of values without writing the union twice.
 
 Locally, type a \`[name, age]\` tuple, then build \`const ROLES = ["admin", "user"] as const\` and derive \`type Role = typeof ROLES[number]\` — you now have a single source of truth for both the runtime list and the type.`,
-    video: {
-      title: 'as const in TypeScript',
-      youtubeId: '6L6Eos1Nm54',
-      channelName: 'Matt Pocock',
-      duration: '6 minutes',
-    },
     topics: [
       { label: 'Tuple Types', url: 'https://www.typescriptlang.org/docs/handbook/2/objects.html#tuple-types', note: 'Fixed-length, position-typed lists' },
       { label: 'readonly Tuple Types', url: 'https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-tuple-types', note: 'ReadonlyArray<T> and readonly tuples' },
@@ -623,12 +609,6 @@ Locally, type a \`[name, age]\` tuple, then build \`const ROLES = ["admin", "use
     intro: `Just as you DRY up JS code, TS lets you DRY up *types*. The built-in utility types transform existing types so you never restate a shape: \`Partial<T>\` makes everything optional (perfect for update payloads), \`Pick<T, K>\` / \`Omit<T, K>\` slice a shape, \`Record<K, V>\` builds a dictionary type, \`Readonly<T>\` freezes it, and \`ReturnType<F>\` / \`Parameters<F>\` extract a function's types. The glue is the **type-query** operators: \`keyof T\` (the union of keys) and the *type-level* \`typeof value\` (the type of a runtime binding).
 
 Locally, define one \`User\` interface and derive \`Partial<User>\`, \`Pick<User, "id" | "name">\`, and \`Record<Role, User[]>\` from it. Add a field to \`User\` and watch every derived type update.`,
-    video: {
-      title: 'TypeScript Utility Types',
-      youtubeId: 'EU0TB_8KHpY',
-      channelName: 'Web Dev Simplified',
-      duration: '9 minutes',
-    },
     topics: [
       { label: 'Utility Types', url: 'https://www.typescriptlang.org/docs/handbook/utility-types.html', note: 'Partial, Pick, Omit, Record, ReturnType, etc.' },
       { label: 'keyof Type Operator', url: 'https://www.typescriptlang.org/docs/handbook/2/keyof-types.html', note: 'Union of a type\'s property names' },
@@ -710,12 +690,6 @@ Locally, define one \`User\` interface and derive \`Partial<User>\`, \`Pick<User
     intro: `Now you go under the hood. **Mapped types** iterate over keys to transform a shape (\`{ [K in keyof T]: ... }\`) — that's literally how \`Partial\`, \`Readonly\`, and \`Record\` are defined. **Conditional types** branch at the type level (\`T extends U ? X : Y\`), and with the \`infer\` keyword you can *extract* pieces of a type (that's how \`ReturnType\` works). You'll also meet key remapping (\`as\`), template-literal types, and how conditional types *distribute* over unions. This is the deep end — most checks here are "what does this resolve to?".
 
 Locally, re-implement \`MyPartial<T>\` and \`MyReturnType<F>\` from scratch in the Playground and confirm they match the built-ins. Then write a mapped type that prefixes every key with \`get\`.`,
-    video: {
-      title: 'TypeScript Mapped Types',
-      youtubeId: 'fAPu0vWMHbk',
-      channelName: 'Matt Pocock',
-      duration: '11 minutes',
-    },
     topics: [
       { label: 'Mapped Types', url: 'https://www.typescriptlang.org/docs/handbook/2/mapped-types.html', note: '{ [K in keyof T]: ... } and modifiers' },
       { label: 'Conditional Types', url: 'https://www.typescriptlang.org/docs/handbook/2/conditional-types.html', note: 'T extends U ? X : Y and infer' },
@@ -798,12 +772,6 @@ Locally, re-implement \`MyPartial<T>\` and \`MyReturnType<F>\` from scratch in t
     intro: `This is the pattern that makes TS feel like a different language from JS: the **discriminated (tagged) union**. Give each member of a union a common literal field (\`kind\`/\`type\`/\`status\`) and a \`switch\` on it narrows perfectly in each branch — no casts. Pair it with the **\`never\`** type in a \`default\` to get compile-time **exhaustiveness**: add a new variant and TS *forces* you to handle it. You'll also learn **assertion functions** (\`asserts x is T\`) for validation boundaries, and why \`as\` casts and the non-null \`!\` are sharp tools you should reach for last.
 
 Locally, model a \`Shape = Circle | Square | Triangle\` tagged union, write an \`area\` switch with a \`never\` default, then add \`Triangle\` and watch the compiler point at the unhandled case.`,
-    video: {
-      title: 'Discriminated Unions in TypeScript',
-      youtubeId: 'NIrEqI-jLas',
-      channelName: 'Matt Pocock',
-      duration: '10 minutes',
-    },
     topics: [
       { label: 'Discriminated Unions', url: 'https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions', note: 'Tagged unions and switch narrowing' },
       { label: 'The never type', url: 'https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-never-type', note: 'Exhaustiveness checking' },
@@ -886,12 +854,6 @@ Locally, model a \`Shape = Circle | Square | Triangle\` tagged union, write an \
     intro: `The capstone: shipping TS in the real world. You'll learn **declaration files** (\`.d.ts\`) — how types are distributed for libraries, what \`@types/*\` packages and DefinitelyTyped are, and how \`declare\` describes ambient JS. You'll nail down **module resolution** (ESM vs CommonJS, \`import type\`, \`moduleResolution\`), the **strictness flags** that actually matter (\`strict\`, \`strictNullChecks\`, \`noUncheckedIndexedAccess\`, \`noImplicitAny\`), and a pragmatic **JS→TS migration** path (rename, \`allowJs\`, \`// @ts-check\` in JSDoc, fix the loose types incrementally). End state: you can adopt TS in an existing JS codebase without a big-bang rewrite.
 
 Locally, take a small JS file, add \`// @ts-check\` at the top, and watch TS find bugs *without renaming*. Then flip on \`strictNullChecks\` and triage the new errors one by one.`,
-    video: {
-      title: 'TypeScript Config Deep Dive (tsconfig)',
-      youtubeId: 'eGZN4Zmgs74',
-      channelName: 'Matt Pocock',
-      duration: '13 minutes',
-    },
     topics: [
       { label: 'Declaration Files Intro', url: 'https://www.typescriptlang.org/docs/handbook/declaration-files/introduction.html', note: 'What .d.ts files are and how to consume them' },
       { label: 'tsconfig Reference', url: 'https://www.typescriptlang.org/tsconfig', note: 'Every compiler option, including strict flags' },

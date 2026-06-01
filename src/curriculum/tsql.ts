@@ -8,9 +8,26 @@ export const tsqlPhases: Phase[] = [
     level: 0,
     title: 'Setup & Your First SELECT',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to **T-SQL** — Microsoft's procedural dialect of SQL that powers SQL Server and Azure SQL. In this level you'll install a way to talk to a server (SQL Server Express + SQL Server Management Studio, or the cross-platform Azure Data Studio, or the \`sqlcmd\` command-line tool) and run your very first query. Absolute beginners start here.
+    intro: `Welcome to **T-SQL** — Microsoft's dialect of SQL that powers SQL Server and Azure SQL. If you have never touched a database before, start right here; we assume nothing.
 
-The runnable checks in this course execute against a portable SQLite engine in your browser, so they use the standard \`CREATE TABLE\` / \`INSERT\` / \`SELECT\` subset that every SQL dialect shares. The MCQs, by contrast, teach the genuinely *SQL-Server-flavored* syntax — \`DECLARE @v\`, \`PRINT\`, \`TOP\`, \`GO\` batches, \`ISNULL\`, \`TRY...CATCH\`, window functions, stored procedures — so you learn real T-SQL as you go.`,
+**What is a database, in plain terms?** A *relational database* stores information in **tables**. A table is just a grid, like a spreadsheet. Each **row** is one record (one customer, one order, one product). Each **column** is one piece of information that every row has (a name, a price, a date). Where a row and a column meet sits a single **value** (a *cell*) — e.g. the row for "Pen" might hold the value \`1.75\` in its \`price\` column. That is the entire mental model: tables made of rows, rows made of columns, columns holding values.
+
+**What is SQL?** SQL (Structured Query Language) is the language you use to ask a database questions and to add/change data. A *query* is one such question. SQL is **declarative**: you describe **what** result you want, not **how** the computer should fetch it. You say "give me the products cheaper than 20, sorted by price" — the database engine figures out the *how* (which files to read, in what order) for you. This is the opposite of step-by-step languages like Python or C.
+
+**Your first query, token by token.** The first check below runs this single line:
+
+\`\`\`sql
+SELECT 'Hello, T-SQL!' AS greeting;
+\`\`\`
+
+- \`SELECT\` — the keyword that means "return some data to me." It is the most common word in SQL. Its job here is to ask the database to evaluate whatever follows and hand back the answer as a result table. Remove it and there is no command at all — the database would reject the line.
+- \`'Hello, T-SQL!'\` — a **string literal**: a fixed piece of text. The **single quotes** \`'...'\` tell SQL "this is text, not a column name or a keyword." (In T-SQL, single quotes are for text; double quotes mean something else.) The actual *value* that exists when the query runs is the 13-character text \`Hello, T-SQL!\`. Change the text inside the quotes and the output changes to match.
+- \`AS greeting\` — \`AS\` gives the output column a **name** (an *alias*). Without it, the engine would invent an ugly auto-name for the column; with it, the result's column header reads \`greeting\`. \`AS\` is optional sugar — it doesn't change the value, only the label on top of it.
+- \`;\` — the **semicolon** ends the statement. It marks where one command stops. With a single statement it is optional in most tools, but it is good habit and required when you run several statements in a row.
+
+Notice there is **no table** in this query: a \`SELECT\` with no \`FROM\` clause just evaluates the expression and returns one row. You'll add real tables in Level 1.
+
+**About this course.** Runnable checks here execute against a portable SQLite engine in your browser, so they use the standard \`CREATE TABLE\` / \`INSERT\` / \`SELECT\` subset every SQL dialect shares. The multiple-choice questions teach the genuinely *SQL-Server-flavored* syntax — \`DECLARE @v\`, \`PRINT\`, \`TOP\`, \`GO\` batches, \`ISNULL\`, \`TRY...CATCH\`, window functions, stored procedures — so you learn real T-SQL as you go. To follow along outside the browser, install a way to talk to a server (SQL Server Express + SQL Server Management Studio, the cross-platform Azure Data Studio, or the \`sqlcmd\` command-line tool).`,
     topics: [
       { label: 'Install SQL Server (Developer/Express)', url: 'https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server', note: 'Official install guide; Developer and Express editions are free.' },
       { label: 'Download Azure Data Studio', url: 'https://learn.microsoft.com/en-us/azure-data-studio/download-azure-data-studio', note: 'Cross-platform (Windows/macOS/Linux) query tool for SQL Server.' },
@@ -25,7 +42,24 @@ The runnable checks in this course execute against a portable SQLite engine in y
         prompt: 'Run this query. It selects a single literal value and gives it a column alias of `greeting`. The result table should contain the text `Hello, T-SQL!`.',
         boilerplate: "SELECT 'Hello, T-SQL!' AS greeting;",
         expectedOutput: 'Hello, T-SQL!',
-        explanation: 'A `SELECT` with no `FROM` clause simply evaluates expressions and returns one row. `AS greeting` renames the output column — an *alias*. In SSMS this appears in the Results grid; here it renders as a text table.',
+        explanation: `Let's dissect every token of \`SELECT 'Hello, T-SQL!' AS greeting;\`, asking of each: what does it mean, why is it here, what breaks if you remove it, and what value exists at runtime?
+
+\`\`\`
+SELECT   'Hello, T-SQL!'   AS   greeting   ;
+  │             │           │       │       │
+  │             │           │       │       └─ ends the statement
+  │             │           │       └───────── the output column's name
+  │             │           └───────────────── "name the thing on my left"
+  │             └───────────────────────────── the literal text value
+  └─────────────────────────────────────────── "return data to me"
+\`\`\`
+
+- \`SELECT\` — **Meaning:** the verb "return data to me." **Job:** it tells the engine to evaluate what follows and hand back a result table. **Remove it:** there is no command at all; the database rejects the line. **At runtime:** it produces a one-row, one-column result.
+- \`'Hello, T-SQL!'\` — **Meaning:** a **string literal**, a fixed piece of text. **Job:** it is the actual data you are asking for. The **single quotes** \`'...'\` say "this is text, not a column name or keyword." **Remove the quotes** and SQL reads \`Hello\` as a column name and errors (no such column). **At runtime:** the value in memory is the 13-character text \`Hello, T-SQL!\`.
+- \`AS greeting\` — **Meaning:** \`AS\` assigns an **alias** (a name). **Job:** it labels the output column \`greeting\`. **Remove it** and the column still appears, just with an auto-generated header. **At runtime:** it changes only the label on the column, never the value beneath it.
+- \`;\` — **Meaning:** the **semicolon**, an end-of-statement marker. **Job:** it says "this command is finished." **Remove it:** harmless for a single statement, but required to separate multiple statements. **At runtime:** purely punctuation; it holds no value.
+
+There is no \`FROM\` clause, so the \`SELECT\` just evaluates the expression and returns one row. Try editing the text inside the quotes and re-running — the result follows whatever you type. In SSMS this appears in the Results grid; here it renders as a text table.`,
       },
       {
         kind: 'mcq',
@@ -63,9 +97,13 @@ The runnable checks in this course execute against a portable SQLite engine in y
     level: 1,
     title: 'T-SQL Basics — SELECT, WHERE, ORDER BY & Data Types',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase you'll comfortably read rows out of a table: projecting columns, filtering with \`WHERE\`, sorting with \`ORDER BY\`, and limiting rows with SQL Server's \`SELECT TOP (n)\`. You'll also know the workhorse data types — \`INT\`, \`DECIMAL(p,s)\`, \`VARCHAR(n)\` vs \`NVARCHAR(n)\`, \`BIT\`, and the \`DATE\`/\`DATETIME2\` family — and why string length and collation matter.
+    intro: `**Start with the vocabulary.** A **table** is a grid of data — think of one spreadsheet tab, like \`Products\`. Each **row** is one thing the table is about (one product); each **column** is one attribute every row shares (its \`name\`, its \`price\`). Where a row meets a column is a single **value** (a cell). A **query** is a question you ask of a table; the answer comes back as its own little table of rows and columns. That is the whole game: store data in tables, then run queries to pull pieces back out.
 
-To practise locally, create a \`Products\` table in your own database, insert a dozen rows, and write queries that answer real questions: "the five most expensive products," "everything cheaper than 20," "names sorted Z→A." Use \`SELECT TOP (5) ... ORDER BY price DESC\` — remember T-SQL puts \`TOP\` at the *front*, not a trailing \`LIMIT\`.`,
+**Every column has a data type** — a promise about what kind of value it holds. A type stops you from, say, storing the word "blue" where a price should be. The workhorses you'll meet are \`INT\` (whole numbers like \`42\`), \`DECIMAL(p,s)\` (exact decimals like \`19.99\` — \`p\` total digits, \`s\` after the point), \`VARCHAR(n)\` and \`NVARCHAR(n)\` (text up to \`n\` characters; \`NVARCHAR\` stores any-language Unicode), \`BIT\` (a 0/1 flag standing in for true/false), and the \`DATE\`/\`DATETIME2\` family (calendar dates and timestamps). Picking the right type keeps data correct and queries fast.
+
+**The shape of a query.** Almost every read you write has three parts, in this order: \`SELECT\` *which columns you want*, \`FROM\` *which table*, and an optional \`WHERE\` *which rows to keep*. For example \`SELECT name, price FROM Products WHERE price < 20;\` means "show me the name and price columns, from the Products table, but only rows whose price is under 20." \`SELECT\` chooses columns (left-to-right slices), \`WHERE\` chooses rows (top-to-bottom filter), and you can bolt on \`ORDER BY\` to sort the result or \`SELECT TOP (n)\` to cap how many rows come back.
+
+**By the end of this phase** you'll comfortably read rows out of a table: projecting columns, filtering with \`WHERE\`, sorting with \`ORDER BY\`, and limiting rows with SQL Server's \`SELECT TOP (n)\` (note T-SQL puts \`TOP\` at the *front*, not a trailing \`LIMIT\`). To practise locally, create a \`Products\` table in your own database, insert a dozen rows, and write queries that answer real questions: "the five most expensive products" (\`SELECT TOP (5) ... ORDER BY price DESC\`), "everything cheaper than 20," and "names sorted Z→A."`,
     topics: [
       { label: 'SELECT (Transact-SQL)', url: 'https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql', note: 'The full anatomy of a SELECT statement.' },
       { label: 'WHERE clause', url: 'https://learn.microsoft.com/en-us/sql/t-sql/queries/where-transact-sql', note: 'Row filtering predicates.' },
@@ -292,12 +330,6 @@ Locally, model \`Customers\` and \`Orders\` with a foreign key, deliberately lea
       { label: 'Outer joins', url: 'https://learn.microsoft.com/en-us/sql/relational-databases/performance/outer-join', note: 'LEFT/RIGHT/FULL and NULL-filling.' },
       { label: 'Cross joins', url: 'https://learn.microsoft.com/en-us/sql/relational-databases/performance/cross-join', note: 'Cartesian product of two tables.' },
     ],
-    video: {
-      title: 'SQL Joins Explained',
-      youtubeId: '9yeOJ0ZMUYw',
-      channelName: 'Socratica',
-      duration: '11 minutes',
-    },
     deliverable: 'Model Customers and Orders with a foreign key; write INNER, LEFT, and anti-join queries plus a CROSS JOIN demo.',
     checks: [
       {
