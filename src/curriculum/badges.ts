@@ -1,9 +1,14 @@
+import { badgesExtra1 } from './badges-extra-1';
+import { badgesExtra2 } from './badges-extra-2';
+import { badgesExtra3 } from './badges-extra-3';
+import { badgesExtra4 } from './badges-extra-4';
+
 export interface BadgeData {
   title: string;
   skills: string[];
 }
 
-export const PHASE_BADGES: Record<string, BadgeData> = {
+const OWN_BADGES: Record<string, BadgeData> = {
   // ── Python ────────────────────────────────────────────────────────────────
   'python-0': {
     title: 'Python: Setup & Hello World',
@@ -535,4 +540,16 @@ export const PHASE_BADGES: Record<string, BadgeData> = {
       'Implemented graceful HTTP server shutdown with os/signal handling',
     ],
   },
+};
+
+/**
+ * All phase badges: the original languages above, merged with the newer
+ * language courses (kept in separate files to keep this module manageable).
+ */
+export const PHASE_BADGES: Record<string, BadgeData> = {
+  ...OWN_BADGES,
+  ...badgesExtra1,
+  ...badgesExtra2,
+  ...badgesExtra3,
+  ...badgesExtra4,
 };
