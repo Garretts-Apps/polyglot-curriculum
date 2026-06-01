@@ -189,3 +189,43 @@ handles SIMPLE print-based programs only. Stay inside the supported subset.
   `jsonb`, `ILIKE`, `DISTINCT ON`, `generate_series`, CTEs, window functions,
   `plpgsql` functions, `EXPLAIN ANALYZE`) via MCQ. Runnable checks use portable
   SELECT/CREATE/INSERT that SQLite accepts.
+
+## ★ BEGINNER FUNDAMENTALS WALKTHROUGH — required for Level 0 and Level 1 ★
+
+Level 0 and Level 1 must teach a TRUE BEGINNER who has never programmed. Do NOT
+rely on the video to teach fundamentals. The phase `intro` (and the L0 hello-world
+code check `explanation`) must walk through the boilerplate **token-by-token,
+left-to-right, in plain language**, exactly like teaching someone their first
+program.
+
+For the hello-world / first-program boilerplate, break down its signature line(s)
+piece by piece. For EACH token answer these four questions:
+  1. What does this word mean (in plain English)?
+  2. Why is it on this line / what job does it do?
+  3. What changes if I remove it?
+  4. What actual value exists in memory when the program runs?
+
+Worked example of the DEPTH expected (C#, dissecting `static void Main(string[] args)`):
+  - `Main(...)` is a **function** — a named action. This one is called `Main`.
+  - The parentheses are where information is handed in.
+  - `string` means **text** like `"Hello"`. `string[]` — the `[]` means an
+    **array** (a list) — so a list of text values like `["apple","banana"]`.
+  - `args` is just the **variable name** (short for "arguments" — pieces of info
+    passed in). So `string[] args` = "make a variable named args holding a list
+    of strings, and give Main access to it."
+  - Key insight: `string[] args` is not DOING anything — it DESCRIBES something.
+  - Show what's in memory at runtime: running `dotnet run apple banana orange`
+    makes `args = ["apple","banana","orange"]` before `Main` starts.
+
+Apply this same beginner-grade, token-by-token treatment to YOUR language's first
+program (e.g. Ruby `puts`, C `#include <stdio.h>` + `int main(void)` +
+`printf(...)`, Java `public static void main(String[] args)`, the SQL `SELECT`,
+the assembly `mov`/`print`, Lisp's parenthesised `(format t ...)`, etc.). Define
+every keyword, symbol, and bit of punctuation a newcomer would not recognise.
+Use simple analogies and short concrete examples. A markdown ASCII annotation
+(label lines pointing at tokens) is welcome where it clarifies.
+
+Level 1 must, in addition, gently introduce the bedrock concepts the language
+needs (what a variable is, what a function is, what a type is, what a statement
+is) before using them — assume zero prior programming knowledge. Higher levels
+(2+) may assume the reader has internalised Levels 0–1 and move faster.

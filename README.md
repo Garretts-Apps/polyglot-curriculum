@@ -1,10 +1,10 @@
 # Polyglot Curriculum
 
-A personalized self-study tracker for six programming languages — Python, C#, TypeScript, Rust, F#, and Go — with real in-browser code sandboxes for every knowledge check.
+A personalized self-study tracker for 19 programming languages — Python, C#, TypeScript, Rust, F#, Go, Ruby, JavaScript, TypeScript for JS Devs, Java, Zig, Lisp, Lua, C, C++, T-SQL, PostgreSQL, Haskell, and Assembly — with real in-browser code sandboxes for every knowledge check.
 
 ## What it is
 
-This is a single-user, password-protected web application deployed to Vercel that helps you systematically learn six programming languages side-by-side. Each language has 10 phases (levels 1-10), and each phase contains knowledge checks: multiple-choice questions and hands-on code tasks that run in real, language-specific sandboxes.
+This is a single-user, password-protected web application deployed to Vercel that helps you systematically learn many programming languages side-by-side. Each language has 11 phases (levels 0-10), and each phase contains knowledge checks: multiple-choice questions and hands-on code tasks that run in real, language-specific sandboxes. Levels 0–1 of every course walk a true beginner through the first program token-by-token.
 
 Your progress is saved automatically and persists across browser sessions. All learning happens locally or through public, untrusted code execution sandboxes — there are no AI/LLM API calls in the deployed app, and no analytics tracking.
 
@@ -15,13 +15,14 @@ Your progress is saved automatically and persists across browser sessions. All l
 - **TypeScript** (strict mode)
 - **Tailwind CSS v4**
 - **CodeMirror 6** — code editor with syntax highlighting and linting
-- **Sandbox runtimes:**
+- **Sandbox runtimes:** all code checks execute inside a sandboxed iframe (`public/sandbox.html`):
   - **Python:** Pyodide (WASM-based CPython in browser)
-  - **TypeScript/JavaScript:** esbuild-wasm transpiler + `Function()` VM
-  - **Rust:** play.rust-lang.org proxy
-  - **Go:** go.dev playground proxy
-  - **F#:** fable.io REPL iframe
-  - **C#:** dotnetfiddle.net iframe
+  - **TypeScript / TypeScript for JS Devs / JavaScript:** in-browser TypeScript compiler → `Function()` VM
+  - **Go, Rust, C#, F#, Ruby, Java, Zig, Lua, Lisp, C, C++, Haskell:** lightweight regex transpilers to JavaScript (`src/lib/runner.ts`), run in the `Function()` VM — code tasks are print-based; advanced topics are taught via multiple-choice
+  - **T-SQL & PostgreSQL:** sql.js (SQLite compiled to WASM); runnable checks use portable SQL, dialect-specific features taught via multiple-choice
+  - **Assembly (x86-64):** a small educational register-VM interpreter
+
+> Each language's display symbol, editor filename, shields.io badge, and accent colour are defined once in `LanguageMeta` (`src/curriculum/types.ts`). Code checks are mechanically validated by `scripts/validate-checks.mjs`, which runs every boilerplate through the real transpilers and asserts its expected output.
 - **Storage:** Vercel KV (optional; falls back to localStorage)
 
 ## Running locally
