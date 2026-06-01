@@ -409,8 +409,12 @@ function transpileZigToJS(code: string): string {
 function transpileLuaToJS(code: string): string {
   let js = code;
 
-  // print(...) is native-compatible; string concat .. → +
+  // string concat .. → +   ;   print(...) → console.log(...)
   js = js.replace(/\.\./g, '+');
+  js = js.replace(/\bprint\s*\(/g, 'console.log(');
+
+  // `local function name(...)` → `function name(...)` (before the bare `local`)
+  js = js.replace(/\blocal\s+function\b/g, 'function');
 
   // local x = v  →  let x = v
   js = js.replace(/\blocal\s+/g, 'let ');
