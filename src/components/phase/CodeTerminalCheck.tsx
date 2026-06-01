@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { CodeTaskCheck, Language, TestCase } from '@/curriculum/types';
+import { getLanguageMeta } from '@/curriculum/types';
 import { transpileCode } from '@/lib/runner';
 import { Markdown } from '@/components/ui/Markdown';
 import { Button } from '@/components/ui/Button';
 import { Confetti } from '@/components/ui/Confetti';
+import { TerminalCursor } from '@/components/ui/TerminalCursor';
 
 interface CodeTerminalCheckProps {
   check: CodeTaskCheck;
@@ -73,13 +75,21 @@ export function CodeTerminalCheck({
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
+  // Map a language's declared sandbox runtime to the sandbox iframe's
+  // execution channel. 'js' is the default for the regex-transpiled languages.
+  const runtime = getLanguageMeta(language)?.runtime ?? 'js';
+
   const executeInSandbox = (
-    transpiledCode: string,
-    lang: string
+    transpiledCode: string
   ): Promise<{ output: string; error?: string }> => {
     return new Promise((resolve) => {
       resolverRef.current = resolve;
-      const targetLang = lang === 'python' ? 'python' : 'javascript';
+      const targetLang =
+        runtime === 'python'
+          ? 'python'
+          : runtime === 'sql'
+            ? 'sql'
+            : 'javascript';
       iframeRef.current?.contentWindow?.postMessage(
         {
           action: 'run',
@@ -91,25 +101,8 @@ export function CodeTerminalCheck({
     });
   };
 
-  // Derive file extension name
-  const getFileName = () => {
-    switch (language) {
-      case 'python':
-        return 'main.py';
-      case 'typescript':
-        return 'solution.ts';
-      case 'go':
-        return 'main.go';
-      case 'rust':
-        return 'main.rs';
-      case 'csharp':
-        return 'Program.cs';
-      case 'fsharp':
-        return 'Program.fs';
-      default:
-        return 'main.code';
-    }
-  };
+  // File name shown in the editor toolbar.
+  const getFileName = () => getLanguageMeta(language)?.fileName ?? 'main.code';
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
@@ -147,7 +140,7 @@ export function CodeTerminalCheck({
     }
 
     // 2. Run in sandboxed iframe
-    const res = await executeInSandbox(transpileRes.transpiledCode, language);
+    const res = await executeInSandbox(transpileRes.transpiledCode);
 
     setIsRunning(false);
     if (res.error) {
@@ -195,7 +188,7 @@ export function CodeTerminalCheck({
       }
 
       // 3. Run in Sandbox
-      const res = await executeInSandbox(transpileRes.transpiledCode, language);
+      const res = await executeInSandbox(transpileRes.transpiledCode);
       
       if (res.error) {
         allPassed = false;
@@ -259,7 +252,7 @@ export function CodeTerminalCheck({
     >
       <Confetti active={showConfetti} />
 
-      {/* Sandbox Iframe (strict sandboxing: no allow-same-origin) */}
+      {/* Sandbox Iframe — strict: scripts only, no same-origin access to /api or storage */}
       <iframe
         ref={iframeRef}
         src="/sandbox.html"
@@ -432,10 +425,13 @@ export function CodeTerminalCheck({
         >
           {error ? (
             <div className="text-[var(--accent-error)] select-text whitespace-pre-wrap">
-              {error}
+              {error}{isRunning && <TerminalCursor />}
             </div>
           ) : (
-            <div className="select-text whitespace-pre-wrap">{output || '(Terminal is idle)'}</div>
+            <div className="select-text whitespace-pre-wrap">
+              {output || (isRunning ? '' : '(Terminal is idle)')}
+              {isRunning && <TerminalCursor />}
+            </div>
           )}
         </div>
       </div>

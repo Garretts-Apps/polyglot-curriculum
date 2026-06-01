@@ -34,6 +34,19 @@
   --accent-rust:       #de935f;  /* orange */
   --accent-fsharp:     #8abeb7;  /* cyan-pastel */
   --accent-go:         #5fb3b3;  /* teal */
+  --accent-ruby:          #cc6b78;  /* muted ruby-red */
+  --accent-javascript:    #e0c46c;  /* js yellow */
+  --accent-typescript-js: #6cb0e0;  /* brighter ts blue */
+  --accent-java:          #d99e63;  /* terracotta */
+  --accent-zig:           #e8a849;  /* zig amber */
+  --accent-lisp:          #b59ad6;  /* lilac */
+  --accent-lua:           #7f9fd6;  /* moon blue */
+  --accent-c:             #8fb3d9;  /* steel blue */
+  --accent-cpp:           #95b8e0;  /* lighter steel blue */
+  --accent-tsql:          #d4a85a;  /* sql-server gold */
+  --accent-postgresql:    #6c9bd0;  /* postgres blue */
+  --accent-haskell:       #c79ad6;  /* haskell purple */
+  --accent-assembly:      #b0b6bd;  /* machine grey */
 
   /* Font stack — mono everywhere */
   --font-mono:

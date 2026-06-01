@@ -55,6 +55,7 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
   const segments = buildSegments(pathname);
   const onSettings = pathname.startsWith('/settings');
   const onIntake = pathname.startsWith('/intake');
+  const onCreds = pathname.startsWith('/credentials');
 
   const { state, hydrated } = useProgress();
   const stats = calculateGamification(state);
@@ -78,17 +79,13 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 font-mono text-xs leading-none flex-shrink-0 -mx-2 px-2 h-11 sm:h-9"
-              aria-label="polyglot home"
+              aria-label="know your language home"
             >
               <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft font-semibold">
-                polyglot
+                know your language
               </span>
-              <span style={{ color: 'var(--fg-muted)' }}>@</span>
               <span style={{ color: 'var(--accent-info)' }} className="hidden sm:inline">
-                terminal
-              </span>
-              <span style={{ color: 'var(--fg-muted)' }} className="hidden sm:inline">
-                :
+                ™
               </span>
             </Link>
 
@@ -121,6 +118,24 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
 
           {/* Right actions */}
           <nav className="flex items-center gap-1 flex-shrink-0" aria-label="App navigation">
+            <Link
+              href="/credentials"
+              className={[
+                'inline-flex items-center justify-center font-mono text-xs leading-none',
+                'h-11 sm:h-8 px-2 border transition-colors duration-100',
+                'focus-visible:outline-1 focus-visible:outline-offset-2',
+                'active:bg-[color-mix(in_srgb,var(--accent-info)_14%,transparent)]',
+                onCreds
+                  ? 'border-[var(--accent-prompt)] text-[var(--accent-prompt)]'
+                  : 'border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--accent-info)] hover:text-[var(--accent-info)]',
+              ].join(' ')}
+              aria-label="Credentials"
+              aria-current={onCreds ? 'page' : undefined}
+            >
+              <span aria-hidden="true" className="opacity-60">[</span>
+              <span className="px-1">creds</span>
+              <span aria-hidden="true" className="opacity-60">]</span>
+            </Link>
             <Link
               href="/settings"
               className={[
@@ -196,7 +211,7 @@ export function AppShell({ children, showNav = false, navSlot }: AppShellProps) 
       >
         <span className="inline-flex items-center gap-2 truncate">
           <span style={{ color: 'var(--accent-prompt)' }}>●</span>
-          <span className="hidden xs:inline sm:inline">polyglot-curriculum v1.0.0</span>
+          <span className="hidden xs:inline sm:inline">know your language™ v1.0.0</span>
           <span className="sm:hidden">v1.0.0</span>
         </span>
         <span className="inline-flex items-center gap-2 truncate">

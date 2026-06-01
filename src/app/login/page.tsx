@@ -44,11 +44,10 @@ export default async function LoginPage() {
               }}
             >
               <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft">
-                polyglot
+                know your language
               </span>
-              <span style={{ color: 'var(--fg-muted)' }}>@</span>
               <span style={{ color: 'var(--accent-info)' }} className="glow-soft">
-                terminal
+                ™
               </span>
               <TerminalCursor />
             </h1>
@@ -81,7 +80,7 @@ export default async function LoginPage() {
       >
         <span className="inline-flex items-center gap-3 truncate">
           <span style={{ color: 'var(--accent-prompt)' }}>●</span>
-          <span>polyglot-curriculum v1.0.0</span>
+          <span>know your language™ v1.0.0</span>
           <span style={{ color: 'var(--border)' }}>|</span>
           <Link href="/privacy" className="hover:text-[var(--accent-info)] transition-colors underline decoration-dotted">privacy</Link>
           <Link href="/terms" className="hover:text-[var(--accent-info)] transition-colors">terms</Link>

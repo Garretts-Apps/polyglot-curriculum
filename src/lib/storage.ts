@@ -16,11 +16,13 @@ export type PhaseProgress = {
   level: number;
   completed: boolean;
   completedAt?: string;
+  credentialId?: string;
   notes: string; // markdown notes from user
   checkResults: Record<string, CheckResult>;
 };
 
 export type IntakeAnswers = {
+  fullName?: string;
   startLevels: Record<Language, number>; // 0..10
   targetLevels: Record<Language, number>; // 1..10
   weeklyHours: number;
@@ -49,7 +51,7 @@ export function loadLocal(): ProgressState {
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as ProgressState;
     if (parsed.version !== STORAGE_VERSION) {
-      console.warn('Polyglot Curriculum: stored version mismatch, resetting to defaults');
+      console.warn('know your language™: stored version mismatch, resetting to defaults');
       return DEFAULT_STATE;
     }
     return parsed;

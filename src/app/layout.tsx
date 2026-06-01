@@ -12,7 +12,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'polyglot@terminal:~$',
+  title: 'know your language™ :~$',
   description:
     'A six-language self-study tracker rendered like a developer terminal — phases, knowledge checks, sandboxes.',
   manifest: '/manifest.webmanifest',

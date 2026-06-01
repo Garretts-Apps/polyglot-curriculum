@@ -79,7 +79,7 @@ export function NotesEditor({ value, onChange, hydrated = true }: NotesEditorPro
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', 'polyglot-curriculum-notes.md');
+            link.setAttribute('download', 'knowyourlanguage-notes.md');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

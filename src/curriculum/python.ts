@@ -8,7 +8,28 @@ export const pythonPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: "Welcome to Python! In this level, you'll verify your local Python setup and run your first print command in the browser. Absolute beginners start here.",
+    intro:
+      "Welcome to Python! If you have never written a line of code before, you are in exactly the right place. By the end of this level you'll have run your very first program and you'll understand every single piece of it. We'll also verify your local Python setup. Nothing here is assumed — we'll explain every word and symbol.\n\n" +
+      "Your first program is one line:\n\n" +
+      "```python\nprint(\"Hello, World!\")\n```\n\n" +
+      "When you run it, the computer displays the text `Hello, World!` on the screen. That's it. Now let's slow all the way down and read it the way the computer does: left to right, one token at a time. (A \"token\" is just one meaningful chunk of the line.)\n\n" +
+      "```\nprint ( \"Hello, World!\" )\n^^^^^ ^ ^^^^^^^^^^^^^^^ ^\n  |   |        |        |\n  |   |        |        +-- closing parenthesis: end of the information\n  |   |        +----------- the string: the text to display\n  |   +-------------------- opening parenthesis: start of the information\n  +------------------------ print: the named action that displays text\n```\n\n" +
+      "**Token 1 — `print`**\n" +
+      "1. *What it means:* `print` is the name of a built-in *function*. A function is a named action — a ready-made command that does one job. \"Built-in\" means it comes with Python; you don't have to create it. The job of `print` is to display text on the screen.\n" +
+      "2. *Why it's here:* it's the verb of the sentence. Without a verb, nothing happens. `print` is what makes text actually appear.\n" +
+      "3. *What changes if removed:* if you delete `print` and just write `(\"Hello, World!\")`, Python evaluates the text but never shows it — you'd see nothing. The word `print` is what turns a value into something visible.\n" +
+      "4. *What's in memory at runtime:* `print` refers to a function object that Python loaded before your program started. The name `print` points at that action, ready to be triggered.\n\n" +
+      "**Tokens 2 & 4 — the parentheses `(` and `)`**\n" +
+      "1. *What they mean:* parentheses are how you *hand information to a function* — they are the function's \"inbox.\" `print( ... )` says \"run print, and here is what to print.\"\n" +
+      "2. *Why they're here:* writing the name `print` by itself only *refers* to the action; it doesn't *do* it. The parentheses are the trigger that says \"go — call this function now.\" Whatever sits between `(` and `)` is the information (called an *argument*) passed in.\n" +
+      "3. *What changes if removed:* without parentheses, `print \"Hello, World!\"` is a syntax error — Python can't tell you're trying to call the function. With empty parentheses, `print()` runs but prints a blank line because you handed it nothing.\n" +
+      "4. *What's in memory at runtime:* the parentheses aren't a value themselves — they're punctuation that tells Python \"take the value inside and feed it to print.\" At runtime the value `\"Hello, World!\"` flows through them into the function.\n\n" +
+      "**Token 3 — `\"Hello, World!\"` (and the quotes around it)**\n" +
+      "1. *What it means:* the double quotes `\"` mark the start and end of a *string*. A string is simply a piece of text — a sequence of characters like letters, spaces, and punctuation. Everything between the quotes (`Hello, World!`) is the text itself; the quotes are not part of the text, they're the fences that say \"text starts here\" and \"text ends here.\"\n" +
+      "2. *Why it's here:* this is the actual information you're handing to `print` — the message you want shown.\n" +
+      "3. *What changes if removed:* remove the quotes and write `print(Hello, World!)` and Python thinks `Hello` and `World` are names of things (variables) it should look up, finds nothing, and errors. The quotes are what tell Python \"treat this literally as text, don't try to interpret it.\" You can change the text to anything — `print(\"Bonjour!\")` prints `Bonjour!`. Single quotes work too: `'Hello, World!'` means the same thing.\n" +
+      "4. *What's in memory at runtime:* Python builds a string value in memory holding the 13 characters `H e l l o ,  W o r l d !`. That value is passed to `print`, which writes it to the screen.\n\n" +
+      "Put together: \"call the built-in `print` function (parentheses), handing it the text string `Hello, World!` (quotes), and it displays that text.\" Run it in the box below to see it work.",
     topics: [
       {
         label: 'Python Installation Guide',
@@ -27,9 +48,10 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-0-code-1',
         prompt: 'Use the `print()` function to output `Hello, World!` to the console.',
-        boilerplate: '# Output: Hello, World!\nprint("")\n',
+        boilerplate: '# Output: Hello, World!\n',
         expectedOutput: 'Hello, World!',
-        explanation: 'The `print()` function outputs text to the standard output console. Single or double quotes are both valid string delimiters in Python.'
+        explanation:
+          "Reading `print(\"Hello, World!\")` token by token: `print` is a built-in function — a named, ready-made action whose job is to display text on the screen. The parentheses `( )` are how you hand information to that function; they trigger the action and carry the argument inside. The double quotes `\" \"` mark a string — a piece of text — and `Hello, World!` is the text itself (the quotes are fences, not part of the text). So the whole line means: \"call print, hand it the text string Hello, World!, and display it.\" Single quotes (`'Hello, World!'`) are equally valid string delimiters in Python. Remove the quotes and Python would try to look up `Hello` and `World` as variable names and fail; remove `print` and the text would be evaluated but never shown."
       },
       {
         kind: 'mcq',
@@ -57,7 +79,18 @@ export const pythonPhases: Phase[] = [
     title: 'Foundations: Syntax, Types, and Control Flow',
     timeEstimate: '6-10 hours',
     intro:
-      "By the end of this phase, you'll read short Python programs — if/elif chains, for/while loops, simple functions — and predict their output before running them. You'll know how indentation drives block structure, what counts as truthy, and how default arguments behave. To build the muscle, you'll write a `greet.py` CLI locally that takes a name and prints a personalised greeting with the current time — writing is how reading sticks.",
+      "Before we read real programs, let's build up four bedrock ideas from absolute zero. Every program is made of these, so we'll define each one before using it.\n\n" +
+      "**1. A value (and its type).** A *value* is a single piece of data — a specific thing the program works with. The number `7`, the text `\"cat\"`, the answer `True` are all values. Every value has a *type*, which is the *kind* of thing it is. The types you'll meet first:\n" +
+      "- `int` — a whole number, like `7` or `-3` (\"int\" is short for *integer*).\n" +
+      "- `float` — a number with a decimal point, like `3.14` or `0.5` (\"float\" refers to *floating-point*, the way computers store decimals).\n" +
+      "- `str` — a *string*, meaning text, like `\"hello\"` (you met strings in Level 0). It's always written inside quotes.\n\n" +
+      "Type matters because it decides what an operation *does*. The same `+` symbol behaves differently depending on the types around it. With two numbers, `+` adds: `2 + 2` gives `4`. With two strings, `+` *joins them end to end* (this is called *concatenation*): `\"2\" + \"2\"` gives `\"22\"` — Python glues the two text characters together, it does not do math, because `\"2\"` is text, not a number. The quotes are the whole difference: `2` is the number two; `\"2\"` is the character two. Mixing them, like `2 + \"2\"`, is an error, because Python won't guess whether you meant math or text.\n\n" +
+      "**2. A variable.** A *variable* is a named box that stores a value so you can use it later by name. You create one with `=`:\n\n" +
+      "```python\nage = 30\n```\n\n" +
+      "Here is the single most important thing for a beginner: in programming, `=` does **not** mean \"equals\" the way it does in math. It means **\"store\"** (or \"assign\"). Read `age = 30` as a command, left to right reversed: *\"take the value 30 and store it in a box named `age`.\"* After that line runs, the name `age` points at the value `30` in memory; anywhere you later write `age`, Python swaps in `30`. You can re-store at any time: `age = 31` throws away the old value and puts `31` in the box. The name on the left is *not* a fact being declared true — it's a label being attached to a value.\n\n" +
+      "**3. A function.** A *function* is a named, reusable action — a mini-program you can run by name. You already used the built-in function `print` in Level 0: writing `print(\"hi\")` *calls* (runs) it and hands it the value `\"hi\"`. The parentheses are how you trigger the action and pass information in. In this phase you'll also *define your own* functions with `def`, so you can give a name to a chunk of work and reuse it instead of repeating yourself.\n\n" +
+      "**4. A statement.** A *statement* is one complete instruction — one step the program performs, like one sentence in a recipe. `age = 30` is a statement (store a value). `print(age)` is a statement (do an action). A program is just a list of statements that Python runs top to bottom, one after another. In Python, you normally write one statement per line, and there's no semicolon needed at the end.\n\n" +
+      "With those four ideas in hand: by the end of this phase, you'll read short Python programs — if/elif chains, for/while loops, simple functions — and predict their output before running them. You'll know how indentation (the spaces at the start of a line) drives block structure, what counts as truthy, and how default arguments behave. To build the muscle, you'll write a `greet.py` CLI locally that takes a name and prints a personalised greeting with the current time — writing is how reading sticks.",
     video: {
       title: 'Python for Beginners - Full Course',
       youtubeId: '_uQrJ0TkZlc',
@@ -416,7 +449,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-2-code-1',
         prompt: 'Modify the list comprehension to square only the odd numbers from `1` to `5` (inclusive), then print the resulting list.',
-        boilerplate: '# Modify the list comprehension to square only odd numbers from 1 to 5 (inclusive)\nresult = [x for x in range(1, 6) if x % 2 == 0]\nprint(result)\n',
+        boilerplate: '# Modify the list comprehension to square only odd numbers from 1 to 5 (inclusive)\nresult = [x for x in range(1, 6) if x % 2 == 0]\n',
         expectedOutput: '[1, 9, 25]',
         explanation: 'A list comprehension follows the format `[expression for item in iterable if condition]`. To get the squares of odd numbers, we square `x` (`x**2`) and check if `x % 2 != 0`.'
       }
@@ -1011,7 +1044,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-5-code-1',
         prompt: 'Write a function `process_command(cmd: tuple[str, int]) -> str` that uses structural pattern matching (`match`/`case`) to handle commands: `"up"` and `"down"` with their associated values. Any other command should return `"Unknown command"`.',
-        boilerplate: 'def process_command(cmd: tuple[str, int]) -> str:\n    # Use match/case to handle ("up", value) and ("down", value)\n    match cmd:\n        case _:\n            return "Unknown command"\n\nprint(process_command(("up", 10)))\nprint(process_command(("down", 5)))\nprint(process_command(("left", 2)))\n',
+        boilerplate: 'def process_command(cmd: tuple[str, int]) -> str:\n    # Use match/case to handle ("up", value) and ("down", value)\n    match cmd:\n        case _:\n            return "Unknown command"\n\nif __name__ == "__main__":\n    process_command(("up", 10))\n    process_command(("down", 5))\n    process_command(("left", 2))\n',
         expectedOutput: 'Moving up by 10\nMoving down by 5\nUnknown command',
         explanation: 'Structural pattern matching (introduced in Python 3.10) using `match` and `case` allows matching the structure of sequences and binding matched values directly to local variables.'
       }
@@ -1378,7 +1411,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-7-code-1',
         prompt: 'Optimise string construction: modify the `build_string` function to construct a string containing the string representation of all numbers from `0` to `n-1` joined by commas, using the efficient `\',\'.join()` method with a generator expression.',
-        boilerplate: 'def build_string(n: int) -> str:\n    # Use \',\'.join() to join stringified numbers\n    return "".join(str(i) for i in range(n))\n\nif __name__ == "__main__":\n    print(build_string(5))\n',
+        boilerplate: 'def build_string(n: int) -> str:\n    # Use \',\'.join() to join stringified numbers\n    return "".join(str(i) for i in range(n))\n\nif __name__ == "__main__":\n    build_string(5)\n',
         expectedOutput: '0,1,2,3,4',
         explanation: 'Using `\',\'.join(...)` is much more efficient than using `+=` inside a loop because it calculates the total size of the final string and makes a single allocation, whereas `+=` triggers multiple copies and allocations.'
       }
@@ -1566,7 +1599,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-8-code-1',
         prompt: 'Define a Pydantic model named `Item` with `id` (int), `name` (str), and `price` (float, default 0.0) fields. Modify the `parse_item` function to correctly instantiate the `Item` model using dict unpacking.',
-        boilerplate: 'from pydantic import BaseModel\n\n# Define a Pydantic model named Item with id (int), name (str), and price (float, default 0.0)\nclass Item(BaseModel):\n    id: int\n    name: str\n    price: float = 0.0\n\ndef parse_item(data: dict) -> Item:\n    # Use dict unpacking to instantiate the Item model\n    return Item(data)\n\nif __name__ == "__main__":\n    item = parse_item({"id": 101, "name": "Laptop"})\n    print(f"{item.name}: {item.price}")\n',
+        boilerplate: 'from pydantic import BaseModel\n\n# Define a Pydantic model named Item with id (int), name (str), and price (float, default 0.0)\nclass Item(BaseModel):\n    id: int\n    name: str\n    price: float = 0.0\n\ndef parse_item(data: dict) -> Item:\n    # Use dict unpacking to instantiate the Item model\n    return Item(data)\n\nif __name__ == "__main__":\n    item = parse_item({"id": 101, "name": "Laptop"})\n',
         expectedOutput: 'Laptop: 0.0',
         explanation: 'Pydantic models inherit from `BaseModel`. You can instantiate them using keyword arguments, or by unpacking a dictionary with the `**` operator.'
       }
@@ -1942,7 +1975,7 @@ export const pythonPhases: Phase[] = [
         kind: 'code',
         id: 'python-10-code-1',
         prompt: 'Use the standard library `tomllib` module to parse a TOML-formatted configuration string and retrieve the project version from the `[project]` table.',
-        boilerplate: 'import tomllib\n\ndef parse_version(toml_str: str) -> str:\n    # Parse the TOML string and return the project version\n    data = tomllib.loads(toml_str)\n    return ""\n\nif __name__ == "__main__":\n    toml_config = \'[project]\\nname = "fastcount"\\nversion = "0.1.1"\'\n    print(parse_version(toml_config))\n',
+        boilerplate: 'import tomllib\n\ndef parse_version(toml_str: str) -> str:\n    # Parse the TOML string and return the project version\n    data = tomllib.loads(toml_str)\n    return ""\n\nif __name__ == "__main__":\n    toml_config = \'[project]\\nname = "fastcount"\\nversion = "0.1.1"\'\n    parse_version(toml_config)\n',
         expectedOutput: '0.1.1',
         explanation: 'The `tomllib` module (available in Python 3.11+) provides the `loads` function to parse TOML-formatted strings into standard Python dictionaries.'
       }

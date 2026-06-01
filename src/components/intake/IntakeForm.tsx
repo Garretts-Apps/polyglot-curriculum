@@ -16,46 +16,48 @@ type LevelMap = Record<Language, number>;
 const ALL_LANGS = LANGUAGES.map((l) => l.id);
 const RANK_OPTIONS = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
-export function IntakeForm() {
+interface IntakeFormProps {
+  existing?: IntakeAnswers;
+}
+
+export function IntakeForm({ existing }: IntakeFormProps) {
   const router = useRouter();
   const { setIntake } = useProgress();
 
   const defaultStart = Object.fromEntries(
-    LANGUAGES.map((l) => [l.id, l.defaultStartLevel]),
+    LANGUAGES.map((l) => [l.id, existing?.startLevels[l.id] ?? l.defaultStartLevel]),
   ) as LevelMap;
 
   const defaultTarget = Object.fromEntries(
-    LANGUAGES.map((l) => [l.id, Math.max(l.defaultStartLevel + 1, 4)]),
+    LANGUAGES.map((l) => [l.id, existing?.targetLevels[l.id] ?? Math.max(l.defaultStartLevel + 1, 4)]),
   ) as LevelMap;
 
+  const [fullName, setFullName] = useState(existing?.fullName ?? '');
   const [startLevels, setStartLevels] = useState<LevelMap>(defaultStart);
   const [targetLevels, setTargetLevels] = useState<LevelMap>(defaultTarget);
-  const [weeklyHours, setWeeklyHours] = useState(8);
-  const [priorities, setPriorities] = useState<Language[]>(ALL_LANGS);
-  const [errors, setErrors] = useState<Record<Language, string | undefined>>(
-    {} as Record<Language, string | undefined>,
+  const [weeklyHours, setWeeklyHours] = useState(existing?.weeklyHours ?? 8);
+  const [priorities, setPriorities] = useState<Language[]>(
+    existing?.priorities ?? ALL_LANGS,
   );
 
   function validateAndSubmit() {
-    const newErrors = {} as Record<Language, string | undefined>;
-    let hasError = false;
-    for (const lang of ALL_LANGS) {
-      if ((targetLevels[lang] ?? 0) <= (startLevels[lang] ?? 0)) {
-        newErrors[lang] = 'target must be > current';
-        hasError = true;
-      }
-    }
-    setErrors(newErrors);
-    if (hasError) return;
-
     const intake: IntakeAnswers = {
+      fullName: fullName.trim() || undefined,
       startLevels,
       targetLevels,
       weeklyHours,
       priorities,
-      completedAt: new Date().toISOString(),
+      completedAt: existing?.completedAt ?? new Date().toISOString(),
     };
     setIntake(intake);
+    // If a name is set, sync it to all existing credentials
+    if (intake.fullName) {
+      void fetch('/api/credentials', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ earnerName: intake.fullName }),
+      });
+    }
     router.push('/');
   }
 
@@ -72,6 +74,33 @@ export function IntakeForm() {
 
   return (
     <div className="space-y-10 font-mono">
+      {/* Full name */}
+      <section>
+        <h2 className="text-sm font-semibold mb-3">
+          <ShellPrompt minimal command=" set --name" />
+        </h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label htmlFor="full-name" className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+            full_name =
+          </label>
+          <input
+            id="full-name"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="e.g. Jane Smith"
+            className="border px-3 py-1.5 text-sm bg-transparent font-mono flex-1 max-w-xs"
+            style={{
+              borderColor: 'var(--border-active)',
+              color: 'var(--accent-prompt)',
+            }}
+          />
+          <span className="text-xs" style={{ color: 'var(--fg-dim)' }}>
+            {'// appears on your credentials'}
+          </span>
+        </div>
+      </section>
+
       {/* Language levels */}
       <section>
         <h2 className="text-sm font-semibold mb-4">
@@ -128,7 +157,6 @@ export function IntakeForm() {
                       if (targetLevels[lang.id] <= val) {
                         setTargetLevels((prev) => ({ ...prev, [lang.id]: val + 1 }));
                       }
-                      setErrors((prev) => ({ ...prev, [lang.id]: undefined }));
                     }}
                     className="w-full"
                   />
@@ -162,7 +190,6 @@ export function IntakeForm() {
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setTargetLevels((prev) => ({ ...prev, [lang.id]: val }));
-                      setErrors((prev) => ({ ...prev, [lang.id]: undefined }));
                     }}
                     style={{ accentColor: `var(${lang.accentVar})` }}
                     className="w-full"
@@ -178,15 +205,6 @@ export function IntakeForm() {
                 </div>
               </div>
 
-              {errors[lang.id] && (
-                <p
-                  className="mt-3 text-xs"
-                  style={{ color: 'var(--accent-error)' }}
-                  role="alert"
-                >
-                  <span className="font-semibold">error:</span> {errors[lang.id]}
-                </p>
-              )}
             </div>
           ))}
         </div>
@@ -281,10 +299,10 @@ export function IntakeForm() {
         style={{ borderColor: 'var(--border)' }}
       >
         <p className="text-xs" style={{ color: 'var(--fg-dim)' }}>
-          {'// hit '}<span style={{ color: 'var(--accent-prompt)' }}>[ continue ]</span>{' to write /progress'}
+          {'// hit '}<span style={{ color: 'var(--accent-prompt)' }}>[ {existing ? 'save changes' : 'continue'} ]</span>{existing ? ' to update goals · progress preserved' : ' to write /progress'}
         </p>
         <Button onClick={validateAndSubmit} variant="primary" size="lg">
-          continue →
+          {existing ? 'save changes →' : 'continue →'}
         </Button>
       </div>
     </div>

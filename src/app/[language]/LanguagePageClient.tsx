@@ -31,24 +31,24 @@ function parseHoursLower(estimate: string): number {
 }
 
 /**
- * Tokenise a language id into a "command-like" identifier suitable to render
- * as a hero word, e.g.:
- *   python    → python      (we add a trailing `_` cursor)
- *   csharp    → c#          (real symbol — looks great)
- *   fsharp    → f#
- *   typescript→ typescript
- *   go        → go
- *   rust      → rust
+ * Tokenise a language's display symbol into a hero "stem" + "tail" so the tail
+ * (a trailing symbol such as `#`, `+`, or `>`) can be tinted in the accent
+ * colour while the stem stays bold, e.g.:
+ *   c#    → stem 'c',   tail '#'
+ *   c++   → stem 'c',   tail '++'
+ *   f#    → stem 'f',   tail '#'
+ *   λ>    → stem 'λ',   tail '>'
+ *   py    → stem 'py',  tail '_'  (plain symbols get a dim underscore cursor)
  *
- * The `tail` field is what gets rendered AFTER the name and before the
- * blinking cursor — usually a dim underscore for "shell variable" feel,
- * but for languages that already end in a symbol (`#`), we drop the
- * underscore.
+ * The `tail` is rendered AFTER the stem and before the blinking cursor. For a
+ * plain alphanumeric symbol it is a dim underscore for "shell variable" feel;
+ * for symbols ending in punctuation we lift that punctuation into an
+ * accent-tinted tail.
  */
-function tokeniseHero(id: string): { stem: string; tail: string } {
-  if (id === 'csharp') return { stem: 'c', tail: '#' };
-  if (id === 'fsharp') return { stem: 'f', tail: '#' };
-  return { stem: id, tail: '_' };
+function tokeniseHero(symbol: string): { stem: string; tail: string } {
+  const m = symbol.match(/^(.*?)([#+>*!?]+)$/);
+  if (m && m[1]) return { stem: m[1], tail: m[2] ?? '_' };
+  return { stem: symbol, tail: '_' };
 }
 
 export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
@@ -71,10 +71,10 @@ export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
   const phasesComplete = visiblePhases.filter((p) => state.phases[p.id]?.completed).length;
 
   const accent = `var(${langMeta.accentVar})`;
-  const hero = tokeniseHero(langMeta.id);
+  const hero = tokeniseHero(langMeta.symbol);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
+    <div className="w-full px-4 sm:px-8 py-6 sm:py-10 font-mono">
       {/* ── Pre-hero command line ─────────────────────────────────────────── */}
       <p
         className="text-[11px] uppercase tracking-widest mb-3"
@@ -98,8 +98,8 @@ export function LanguagePageClient({ langMeta }: LanguagePageClientProps) {
           <span>{hero.stem}</span>
           <span
             style={{
-              color: hero.tail === '#' ? accent : 'var(--fg-dim)',
-              opacity: hero.tail === '#' ? 1 : 0.55,
+              color: hero.tail === '_' ? 'var(--fg-dim)' : accent,
+              opacity: hero.tail === '_' ? 0.55 : 1,
             }}
           >
             {hero.tail}

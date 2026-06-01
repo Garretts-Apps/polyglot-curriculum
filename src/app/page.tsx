@@ -150,13 +150,13 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-5xl px-3 sm:px-6 py-5 sm:py-8 pb-16">
+      <div className="w-full px-4 sm:px-8 py-5 sm:py-8 pb-16">
         {/* ───────── BOOT SEQUENCE ───────── */}
         {!bootDone && (
           <section className="mb-10" aria-label="System boot">
             <BootSequence
               lines={[
-                { text: 'boot polyglot-curriculum v1.0.0', pause: 60 },
+                { text: 'boot know your language™ v1.0.0', pause: 60 },
                 { text: 'loading curriculum modules...', pause: 50 },
                 {
                   text: `linked ${LANGUAGES.length} language runtimes`,
@@ -211,11 +211,10 @@ export default function HomePage() {
             }}
           >
             <span style={{ color: 'var(--accent-prompt)' }} className="glow-soft">
-              polyglot
+              know your language
             </span>
-            <span style={{ color: 'var(--fg-muted)' }}>@</span>
             <span style={{ color: 'var(--accent-info)' }} className="glow-soft">
-              curriculum
+              ™
             </span>
             <TerminalCursor />
           </h1>

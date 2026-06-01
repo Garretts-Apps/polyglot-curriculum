@@ -8,7 +8,50 @@ export const typescriptPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: "Welcome to TypeScript! In this level, you'll verify your local Node.js environment and compile a basic script. Absolute beginners start here.",
+    intro: `Welcome to TypeScript! If you have never written a line of code before, you are in exactly the right place — we will not assume you know anything yet. In this level you will install the tools your computer needs, then write and run your very first program: one that prints a message.
+
+Your first program is a single line:
+
+\`\`\`typescript
+console.log("Hello, World!");
+\`\`\`
+
+That line looks like gibberish the first time you see it. So let's read it slowly, left to right, one piece ("token") at a time. For each piece we ask four things: (1) what does the word mean in plain English, (2) why is it here, (3) what breaks if we delete it, and (4) what actually exists in the computer's memory when the program runs.
+
+\`\`\`
+console . log ( "Hello, World!" ) ;
+   |     |  |  |       |        |  |
+   |     |  |  |       |        |  end-of-instruction
+   |     |  |  |       |        close the handed-in info
+   |     |  |  the text we hand in
+   |     |  open: "here comes the info"
+   |     the action: "print this"
+   |     a dot: "reach inside console for…"
+   the toolbox named console
+\`\`\`
+
+- **\`console\`** — A *toolbox* (programmers call it an "object") that your environment hands you for free. It groups together tools for talking to the text screen ("the console"). It is not a word you invented; it already exists. *Why here:* it's where the printing tool lives. *If removed:* the computer has no idea where to find \`log\`, and the program won't run. *In memory:* \`console\` is a real object sitting in memory with several tools attached to it.
+
+- **\`.\`** (the dot) — Means "reach inside." \`console.log\` means "the \`log\` tool that belongs to \`console\`," the way "kitchen.oven" means "the oven in the kitchen." *If removed:* \`consolelog\` would be read as one unknown name and fail.
+
+- **\`log\`** — The name of a *function*: a named, reusable action. This particular action means "print whatever I give you onto the screen." *Why here:* printing is the whole point of this program. *If removed:* there is no action to perform. *In memory:* \`log\` is itself a chunk of code (a set of instructions) attached to \`console\`, waiting to be run.
+
+- **\`( )\`** (parentheses) — Writing the parentheses is how you *call* (run) a function. They also form the slot where you hand information in. \`console.log(...)\` means "run the log action, and here is what to print." *Why here:* without calling it, you'd only be *pointing at* the action, never doing it. *If removed:* nothing runs.
+
+- **\`"Hello, World!"\`** — A *string*: a piece of text. The double quotes are not part of the message; they are fences that mark where the text starts and ends, so the computer knows \`Hello, World!\` is data and not more code. *Why here:* it's the message we want printed. *If you delete the quotes* (\`Hello, World!\`) the computer tries to read those words as commands and errors. *In memory:* the characters H-e-l-l-o-,-space-W-o-r-l-d-! are stored as text, and that text is handed to \`log\`.
+
+- **\`;\`** (semicolon) — Marks the end of one complete instruction (a "statement"), like a period ends a sentence. *Why here:* it tells the computer "this instruction is finished." *If removed:* it usually still works here, but adding it is a clean habit that avoids surprises later.
+
+**One word about the "TypeScript" part.** TypeScript lets you attach *type labels* to your data. For example you could instead write:
+
+\`\`\`typescript
+const message: string = "Hello, World!";
+console.log(message);
+\`\`\`
+
+Reading that first line token by token: \`const\` means "create a named, fixed value"; \`message\` is the name *you* choose for it; \`: string\` is a **type annotation** — a label that says "this name will always hold text"; \`=\` means "set it to"; and \`"Hello, World!"\` is the text it holds. The key beginner insight: \`: string\` does not *do* anything when the program runs — it is a note for the TypeScript checker, which reads your code *before* it runs and complains if you ever try to put, say, a number where text was promised. Once checked, those labels are *erased*: the program that actually runs is plain JavaScript with no \`: string\` in it. So at runtime, memory holds the text \`"Hello, World!"\` under the name \`message\` — the type label is gone.
+
+By the end of this level you'll run that one-liner yourself and watch \`Hello, World!\` appear.`,
     topics: [
       {
         label: 'Node.js Installation',
@@ -29,7 +72,7 @@ export const typescriptPhases: Phase[] = [
         prompt: 'Use the `console.log()` function to output `Hello, World!` to the console.',
         boilerplate: '// Output: Hello, World!\nconsole.log("");\n',
         expectedOutput: 'Hello, World!',
-        explanation: 'In JavaScript/TypeScript, `console.log()` is used to print output to the console.'
+        explanation: 'Read `console.log("Hello, World!");` left to right: `console` is a toolbox (an object) your environment gives you; the `.` means "reach inside it"; `log` is a function (a named action) that prints text to the screen; the parentheses `()` actually *run* that action and hold the info you hand in; `"Hello, World!"` is a string (text) — the quotes are fences marking where the text starts and ends, and are not printed themselves; the `;` ends the instruction. Put your message *between the quotes* in the boilerplate: `console.log("Hello, World!");`. The text you type between the quotes is exactly what gets printed.'
       },
       {
         kind: 'mcq',
@@ -56,7 +99,19 @@ export const typescriptPhases: Phase[] = [
     level: 1,
     title: 'JS Fundamentals, TypeScript Style',
     timeEstimate: '4–6 hours',
-    intro: `By the end of this phase, you'll read everyday TypeScript with confidence — primitive types, \`const\`/\`let\`, control flow, function annotations, and the Node CLI shape that wraps it all. You'll also recognise the difference between \`any\`, \`unknown\`, and an inferred type at a glance. To build the muscle, you'll write \`cli/greet.ts\` locally: a \`tsx\`-runnable Node CLI that reads \`process.argv\`, validates the input, and prints a greeting plus ISO timestamp, with zero \`any\` and a green \`tsc --noEmit --strict\`.`,
+    intro: `Before we go fast, let's lock down four words that the rest of programming is built on. If you've never coded, read this slowly — everything later assumes it.
+
+**A value** is a single piece of data: the text \`"Ada"\`, the number \`30\`, the yes/no answer \`true\`. Values are the "stuff" your program works with.
+
+**A variable** is a labelled box that holds a value so you can refer to it by name later. \`const name = "Ada";\` means "make a box labelled \`name\` and put the text \`"Ada"\` inside it." After that, writing \`name\` anywhere means "whatever is in that box." \`const\` makes a box you won't reassign; \`let\` makes one you can put a new value into later. (We'll drill the \`const\` vs \`let\` difference below.)
+
+**A type** is the *kind* of a value — its category. \`"Ada"\` is of type \`string\` (text). \`30\` is a \`number\`. \`true\` is a \`boolean\` (a yes/no value). Types matter because actions that make sense for one kind are nonsense for another: adding two numbers is fine, but "subtracting" two pieces of text is meaningless. This is exactly the problem TypeScript exists to catch. You can write a *type annotation* — a label like \`const age: number = 30;\` — that promises "this box only ever holds a number." TypeScript then reads your whole program *before it runs* and complains if you ever break that promise (for example, trying to store \`"thirty"\` in \`age\`). That's the big idea: plain JavaScript would only blow up later, while the program is running and a user is watching; TypeScript moves the error to *before* you ship, while you're still typing. Those type labels are checking-time only — once verified they're erased, and the program that actually runs has no types in it.
+
+**A function** is a named, reusable action — a recipe. You define it once and "call" it (run it) as many times as you like, optionally handing it information (called *arguments* or *parameters*). \`function double(n: number): number { return n + n; }\` defines a recipe named \`double\` that takes one number \`n\` and gives back \`n + n\`. Here \`: number\` after \`n\` annotates the input's type, and the \`: number\` before \`{\` annotates the type of the value it hands back (the "return type"). Calling \`double(4)\` runs the recipe with \`n\` set to \`4\` and produces \`8\`.
+
+**A statement** is one complete instruction, like one sentence. \`console.log("hi");\` is a statement; so is \`const x = 5;\`. A program is a list of statements run top to bottom, and a \`;\` marks where each one ends.
+
+With those in hand: by the end of this phase, you'll read everyday TypeScript with confidence — primitive types, \`const\`/\`let\`, control flow, function annotations, and the Node CLI shape that wraps it all. You'll also recognise the difference between \`any\`, \`unknown\`, and an inferred type at a glance. To build the muscle, you'll write \`cli/greet.ts\` locally: a \`tsx\`-runnable Node CLI that reads \`process.argv\`, validates the input, and prints a greeting plus ISO timestamp, with zero \`any\` and a green \`tsc --noEmit --strict\`.`,
     video: {
       title: 'TypeScript Tutorial for Beginners',
       youtubeId: 'd56mG7DezGs',

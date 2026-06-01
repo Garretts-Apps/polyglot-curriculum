@@ -118,17 +118,38 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
     [phase.id, phase.language, phase.level, updatePhase],
   );
 
-  const handleMarkComplete = useCallback(() => {
+  const handleMarkComplete = useCallback(async () => {
+    let credentialId: string | undefined;
+    // Only issue credentials for phases the user actually earned — not self-attested levels
+    const isEarned = phase.level > startLevel;
+    if (isEarned) {
+      try {
+        const earnerName = state.intake?.fullName;
+        const res = await fetch('/api/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: phase.language, phaseLevel: phase.level, earnerName }),
+        });
+        if (res.ok) {
+          const json = await res.json() as { id?: string };
+          credentialId = json.id;
+        }
+      } catch {
+        // credential issuance is best-effort — don't block completion
+      }
+    }
+
     updatePhase(phase.id, (prev) => ({
       phaseId: phase.id,
       language: phase.language,
       level: phase.level,
       completed: true,
       completedAt: new Date().toISOString(),
+      credentialId,
       notes: prev?.notes ?? '',
       checkResults: prev?.checkResults ?? {},
     }));
-  }, [phase.id, phase.language, phase.level, updatePhase]);
+  }, [phase.id, phase.language, phase.level, startLevel, state.intake?.fullName, updatePhase]);
 
   const accentVar = langMeta.accentVar;
   const accentColor = `var(${accentVar})`;
@@ -137,7 +158,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
 
   if (isLocked) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-20 text-center font-mono">
+      <div className="w-full px-4 sm:px-8 py-20 text-center font-mono">
         <p className="text-sm text-[var(--accent-error)] mb-4">
           [ ERROR: LEVEL LOCKED ]
         </p>
@@ -154,7 +175,7 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 sm:px-6 py-6 sm:py-10 font-mono">
+    <div className="w-full px-4 sm:px-8 py-6 sm:py-10 font-mono">
       {/* ─── Phase header ─────────────────────────────────────────────────── */}
       <header className="mb-10">
         {/* Path breadcrumb — `~/curriculum/python/03_modules-pip.phase` */}
@@ -483,6 +504,19 @@ export function PhaseView({ phase, langMeta }: PhaseViewProps) {
                 </span>
               )}
             </p>
+            {phaseProgress.credentialId && (
+              <a
+                href={`/cert/${phaseProgress.credentialId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono inline-flex items-center gap-1 hover:underline"
+                style={{ color: accentColor }}
+              >
+                <span aria-hidden="true">[⬡</span>
+                <span>view credential</span>
+                <span aria-hidden="true">]</span>
+              </a>
+            )}
           </div>
         ) : thresholdMet ? (
           <button

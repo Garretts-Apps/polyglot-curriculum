@@ -8,7 +8,47 @@ export const goPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: "Welcome to Go! In this level, you'll verify your local Go environment and run your first Go script. Absolute beginners start here.",
+    intro: `Welcome to Go! If you have never written a line of code before, you are in exactly the right place. In this level you'll set up Go on your machine and run your very first program. Then we'll read that program one word at a time so nothing feels like magic.
+
+Here is the whole program. Don't worry that you can't read it yet — that's what the rest of this page is for:
+
+\`\`\`go
+package main
+import "fmt"
+func main() {
+    fmt.Println("Hello, World!")
+}
+\`\`\`
+
+A program is just a list of written instructions for the computer to follow, top to bottom. Each "word" or symbol below is called a TOKEN — the smallest meaningful piece of text. Let's walk through every token, left to right.
+
+**\`package\`** — a keyword (a word Go reserves for itself). It means "the file you are reading is part of a named group of files." Every Go file must start by saying which package it belongs to. Why here? Go refuses to compile a file that doesn't declare its package, so this is line one. Remove it and you get a compile error before anything runs. At runtime nothing "is" the word \`package\` — it's an instruction to the compiler, not a value sitting in memory.
+
+**\`main\`** (right after \`package\`) — the NAME of this package. The name \`main\` is special: it tells Go "this group of files should be built into a program you can actually run" (as opposed to a library that other programs borrow from). Why here? Because we want a runnable program. If you renamed it to, say, \`package hello\`, Go would build a library instead and refuse to run it — you'd see "go run: cannot run non-main package." In memory at runtime there's no value called \`main\` from this line; it just decided what kind of thing got built.
+
+**\`import "fmt"\`** — \`import\` is a keyword meaning "bring in code that someone else already wrote so we can use it." \`"fmt"\` (say it "fumt", short for "format") is the name of a built-in toolbox for formatting and printing text. So this line means "give me access to the fmt toolbox." Why here? Our program prints text, and the printing tools live in \`fmt\`; imports go near the top so the rest of the file can use them. Remove this line and the \`fmt.Println(...)\` below becomes an error: "undefined: fmt." (Go also errors if you import something and then never use it.) At runtime, importing makes the fmt package's functions available to call.
+
+**\`func\`** — a keyword, short for "function." A function is a named, reusable action — a recipe of steps you give a name so you can run them later. \`func\` says "I'm about to define one." Remove it and Go won't know the next lines are a function; it's a syntax error. \`func\` itself isn't a value in memory; it introduces the definition that follows.
+
+**\`main\`** (after \`func\`) — the NAME of this function. \`main\` is another special name: it's the ENTRY POINT — the one function Go automatically runs first when the program starts. Everything your program does begins here. Why here? You must have a function literally named \`main\` in package \`main\`, or there's nothing to start; Go reports "function main is undeclared." (This \`main\` is a different thing from the package \`main\` above — same word, two separate jobs.)
+
+**\`()\`** — the parentheses right after \`main\`. They are where information would be handed IN to the function (the "inputs"). They're empty here because \`main\` takes no inputs. Why here? Every function definition needs them, even when empty — they're how Go knows \`main\` is a function and not a variable. Remove them and it's a syntax error. Nothing is stored in memory for empty \`()\`; they just mark "no inputs."
+
+**\`{\`** and **\`}\`** — the curly braces. \`{\` opens the function's BODY and \`}\` closes it. Everything between them is the list of steps the function runs. Think of them as the bread of a sandwich wrapping the filling. Why here? They group the steps that belong to \`main\`. Remove either one and Go can't tell where the function starts or ends — syntax error.
+
+**\`fmt.Println("Hello, World!")\`** — this is the one step inside \`main\`, and it's where the work happens. Reading it piece by piece: \`fmt\` is the toolbox we imported; the dot \`.\` means "reach inside fmt and use one of its tools"; \`Println\` is the tool's name (it means "print a line" — show some text, then move to a new line). The \`()\` after \`Println\` hands it the information to print. \`"Hello, World!"\` is that information: text wrapped in double quotes is called a STRING — the quotes tell Go "treat these characters literally as text," not as code. So the whole line means: "Use the Println tool from the fmt toolbox to print the text Hello, World! followed by a new line." Remove this line and the program still runs but prints nothing. At runtime, the characters \`Hello, World!\` exist in memory as a string value, and Println sends them to your screen (technically, to "standard output," the default place a program's text appears — your terminal).
+
+Here is the same code with labels pointing at each part:
+
+\`\`\`text
+package main            <- this file is in the runnable "main" package
+import "fmt"            <- borrow the "fmt" printing toolbox
+func main() {           <- define the entry-point action named main, taking no inputs
+    fmt.Println("...")  <- use fmt's Println tool to print a line of text
+}                       <- end of main
+\`\`\`
+
+That's the entire program. Set up Go using the links below, then run it and watch \`Hello, World!\` appear.`,
     topics: [
       {
         label: 'Installing Go',
@@ -29,7 +69,7 @@ export const goPhases: Phase[] = [
         prompt: 'Verify the starter code: run this program to print `Hello, World!` to standard output.',
         boilerplate: 'package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, World!")\n}\n',
         expectedOutput: 'Hello, World!',
-        explanation: 'Every runnable Go program must start with `package main` and have a `main()` function. We use `fmt.Println` to output text to standard output.'
+        explanation: 'Reading it token by token: `package main` puts this file in the special `main` package, which tells Go to build a runnable program (not a library); without it, Go errors before running. `import "fmt"` borrows the `fmt` toolbox where the printing tools live — if you drop it, `fmt.Println` becomes "undefined." `func` declares a function (a named action); `main` is the entry point Go runs first; the `()` is for inputs (empty here, since `main` takes none); the `{ }` wrap the steps that belong to `main`. Inside, `fmt.Println("Hello, World!")` reaches into the `fmt` toolbox (the `.`), uses its `Println` tool ("print a line"), and hands it the string `"Hello, World!"` — text in double quotes — which it sends to standard output (your terminal) followed by a newline. At runtime the characters `Hello, World!` live in memory as a string and get written to the screen.'
       },
       {
         kind: 'mcq',
@@ -55,7 +95,26 @@ export const goPhases: Phase[] = [
     level: 1,
     title: 'Go Basics — Packages, Zero Values, and Error Returns',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase, you'll read short Go programs and predict their runtime output — focusing on the things that bite newcomers: unused imports/variables as hard compile errors, zero values, and the \`if err != nil\` return pattern that pervades every API. You'll learn the package system, the basic types, and how \`go run\`/\`go build\`/\`go fmt\`/\`go vet\` fit together.
+    intro: `Before we write more code, let's slow down and define four words you'll see constantly. Assume you've never heard them before.
+
+**Value.** A value is a single piece of information the computer can hold: the number \`42\`, the text \`"Ada"\`, the answer \`true\`. That's it — a value is just "a thing."
+
+**Type.** Every value has a TYPE, which says what KIND of thing it is and what you can do with it. \`42\` is an \`int\` (a whole number). \`"Ada"\` is a \`string\` (text). \`true\` is a \`bool\` (a yes/no answer). \`3.5\` is a \`float64\` (a number with a decimal point). The type matters because Go is strict: you can add two \`int\`s, but Go will refuse to add an \`int\` to a \`string\` — that's like asking "what is 5 plus banana?" If you ever want to confirm a value's type, print it with \`fmt.Printf("%T\\n", x)\`.
+
+**Variable.** A variable is a NAMED box that stores a value so you can use it later by name. You put a value in the box once and can read it (or replace it) as many times as you like. In Go there are two ways to make one:
+
+\`\`\`go
+var age int = 30   // the long form: "make a variable named age, of type int, holding 30"
+name := "Ada"      // the short form: := means "make a new variable and figure out its type from the value"
+\`\`\`
+
+\`:=\` (read it "colon-equals") is shorthand you can use inside functions: it creates the variable AND fills it in one step, and Go infers the type from the value on the right (\`"Ada"\` is text, so \`name\` is a \`string\`). \`var\` is the longer form that also works outside functions and lets you spell out the type. A crucial Go detail: if you write \`var\` WITHOUT giving a value, the box isn't empty — it gets a ZERO VALUE, a safe default for its type. The zero value is \`0\` for numbers, \`""\` (empty text) for strings, and \`false\` for bools. So \`var count int\` leaves \`count\` holding \`0\`, not garbage.
+
+**Statement.** A statement is one complete instruction — one step in your recipe. \`name := "Ada"\` is a statement. \`fmt.Println(name)\` is a statement. A function's body is just a list of statements that run top to bottom, in order.
+
+**Function (recap from Level 0).** A function is a named action. \`main\` was the one that runs first. You can define your own and "call" (run) them by name. We'll do that here.
+
+With those words in hand: by the end of this phase, you'll read short Go programs and predict their runtime output — focusing on the things that bite newcomers: unused imports/variables as hard compile errors, zero values, and the \`if err != nil\` return pattern that pervades every API. You'll learn the package system, the basic types, and how \`go run\`/\`go build\`/\`go fmt\`/\`go vet\` fit together.
 
 To build the muscle, you'll write locally: a \`greet\` CLI that parses a \`-name\` flag with \`flag.String\` and prints a greeting alongside \`time.Now()\`. Bootstrap with \`go mod init example.com/greet\`, then \`go run main.go -name=Ada\`. Use \`fmt.Printf("%T\\n", x)\` whenever you want to confirm a value's type — no IDE required.`,
     video: {

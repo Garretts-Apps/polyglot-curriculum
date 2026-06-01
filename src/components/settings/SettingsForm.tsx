@@ -27,7 +27,7 @@ export function SettingsForm() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `polyglot-curriculum-progress-${date}.json`;
+    a.download = `knowyourlanguage-progress-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -71,8 +71,6 @@ export function SettingsForm() {
 
   function handleTargetChange(lang: Language, val: number) {
     if (!intake) return;
-    const startLevel = intake.startLevels[lang] ?? 0;
-    if (val <= startLevel) return;
     const newIntake = {
       ...intake,
       targetLevels: { ...intake.targetLevels, [lang]: val },
@@ -132,7 +130,7 @@ export function SettingsForm() {
                     id={`tgt-${lang.id}`}
                     aria-label={`target level for ${lang.name}`}
                     type="range"
-                    min={startLevel + 1}
+                    min={1}
                     max={10}
                     value={targetLevel}
                     onChange={(e) => handleTargetChange(lang.id, Number(e.target.value))}
@@ -257,7 +255,7 @@ export function SettingsForm() {
       {/* GitHub Progress Badges */}
       <section>
         <h2 className="text-sm font-semibold mb-3">
-          <ShellPrompt minimal command=" polyglot --badges --github" />
+          <ShellPrompt minimal command=" kyl --badges --github" />
         </h2>
         <p className="text-xs mb-3" style={{ color: 'var(--fg-muted)' }}>
           {'// copy markdown codes to show your skillset levels on your GitHub profile'}
@@ -275,23 +273,21 @@ export function SettingsForm() {
               0
             );
             
-            const badgeColorHex = lang.id === 'python' ? 'f0c674'
-              : lang.id === 'csharp' ? 'b294bb'
-              : lang.id === 'typescript' ? '81a2be'
-              : lang.id === 'rust' ? 'de935f'
-              : lang.id === 'fsharp' ? '8abeb7'
-              : '5fb3b3';
+            const badgeColorHex = lang.hexColor;
 
-            const logoName = lang.id === 'csharp' ? 'c-sharp'
-              : lang.id === 'fsharp' ? 'fsharp'
-              : lang.id;
+            // simple-icons slug for the shields.io badge; omit the logo param
+            // entirely when the language has no recognised icon.
+            const logoParam = lang.shieldsLogo
+              ? `&logo=${lang.shieldsLogo}&logoColor=white`
+              : '';
 
-            const badgeUrl = `https://img.shields.io/badge/${lang.name}-Level%20${highestLevel}-%23${badgeColorHex}?style=flat-square&logo=${logoName}&logoColor=white`;
+            const badgeLabel = encodeURIComponent(lang.name);
+            const badgeUrl = `https://img.shields.io/badge/${badgeLabel}-Level%20${highestLevel}-%23${badgeColorHex}?style=flat-square${logoParam}`;
             
             // Link to the user's progress path page or homepage
             const targetUrl = typeof window !== 'undefined' 
               ? `${window.location.origin}/${lang.id}`
-              : `https://polyglot-curriculum.vercel.app/${lang.id}`;
+              : `https://knowyourlanguage.dev/${lang.id}`;
 
             const markdownString = `[![${lang.name} Skill Level](${badgeUrl})](${targetUrl})`;
 
@@ -353,7 +349,7 @@ export function SettingsForm() {
         style={{ borderColor: 'var(--border)' }}
       >
         <p className="text-[11px]" style={{ color: 'var(--fg-dim)' }}>
-          $ polyglot-curriculum --version
+          $ kyl --version
         </p>
         <p className="text-[11px]" style={{ color: 'var(--accent-prompt)' }}>
           v{APP_VERSION}

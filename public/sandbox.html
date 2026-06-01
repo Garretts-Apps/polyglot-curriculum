@@ -6,24 +6,86 @@
 </head>
 <body style="background: transparent; margin: 0; padding: 0;">
   <script>
+    // Shim Web Storage so Pyodide can initialise inside a sandboxed iframe.
+    // Without allow-same-origin, reading window.sessionStorage / localStorage
+    // throws SecurityError. We expose in-memory replacements so Pyodide's
+    // internal cache lookups become no-ops instead of crashing.
+    (function shimStorage() {
+      const createMemoryStorage = () => {
+        const data = new Map();
+        return {
+          getItem: (k) => (data.has(String(k)) ? data.get(String(k)) : null),
+          setItem: (k, v) => { data.set(String(k), String(v)); },
+          removeItem: (k) => { data.delete(String(k)); },
+          clear: () => { data.clear(); },
+          key: (i) => Array.from(data.keys())[i] ?? null,
+          get length() { return data.size; },
+        };
+      };
+      for (const name of ['sessionStorage', 'localStorage']) {
+        try {
+          Object.defineProperty(window, name, {
+            value: createMemoryStorage(),
+            configurable: true,
+            writable: false,
+          });
+        } catch { /* non-configurable in this browser; nothing we can do */ }
+      }
+    })();
+
     let pyodide = null;
     let pyodideLoadingPromise = null;
 
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load ' + src));
-        document.head.appendChild(script);
+    // sql.js (SQLite compiled to WASM) — used by the SQL dialect courses.
+    let sqlDbFactory = null;
+    let sqlLoadingPromise = null;
+
+    function loadSqlJs() {
+      if (sqlLoadingPromise) return sqlLoadingPromise;
+      sqlLoadingPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js';
+        s.onload = async () => {
+          try {
+            // eslint-disable-next-line no-undef
+            sqlDbFactory = await initSqlJs({
+              locateFile: (f) => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/' + f,
+            });
+            resolve(sqlDbFactory);
+          } catch (e) { reject(e); }
+        };
+        s.onerror = () => reject(new Error('Failed to load sql.js'));
+        document.head.appendChild(s);
       });
+      return sqlLoadingPromise;
+    }
+
+    // Render sql.js result set(s) as an aligned text table, similar to a
+    // psql / sqlcmd console so expectedOutput substring matching is intuitive.
+    function formatSqlResults(results) {
+      if (!results || results.length === 0) return '';
+      return results.map((res) => {
+        const cols = res.columns;
+        const rows = res.values;
+        const widths = cols.map((c, i) =>
+          Math.max(String(c).length, ...rows.map((r) => String(r[i] === null ? 'NULL' : r[i]).length))
+        );
+        const fmtRow = (cells) =>
+          cells.map((c, i) => String(c === null ? 'NULL' : c).padEnd(widths[i])).join(' | ');
+        const header = fmtRow(cols);
+        const sep = widths.map((w) => '-'.repeat(w)).join('-+-');
+        const body = rows.map((r) => fmtRow(r)).join('\n');
+        return [header, sep, body].filter(Boolean).join('\n');
+      }).join('\n\n');
     }
 
     async function getPyodide() {
       if (pyodideLoadingPromise) return pyodideLoadingPromise;
       pyodideLoadingPromise = (async () => {
-        await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js');
-        pyodide = await window.loadPyodide();
+        const { loadPyodide } = await import('https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.mjs');
+        pyodide = await loadPyodide({
+          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.0/full/'
+        });
         return pyodide;
       })();
       return pyodideLoadingPromise;
@@ -77,12 +139,25 @@
         } else if (language === 'javascript') {
           const fn = new Function(code);
           fn();
-          
+
           event.source.postMessage({
             action: 'result',
             output: logs.join('\n'),
             error: ''
           }, event.origin || '*');
+        } else if (language === 'sql') {
+          const SQL = await loadSqlJs();
+          const db = new SQL.Database();
+          try {
+            const results = db.exec(code);
+            event.source.postMessage({
+              action: 'result',
+              output: formatSqlResults(results),
+              error: ''
+            }, event.origin || '*');
+          } finally {
+            db.close();
+          }
         } else {
           event.source.postMessage({
             action: 'result',

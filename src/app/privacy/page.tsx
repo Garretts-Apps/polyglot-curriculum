@@ -1,19 +1,19 @@
 import { Button } from '@/components/ui/Button';
 
 export const metadata = {
-  title: 'Privacy Policy - Polyglot Curriculum',
-  description: 'Privacy policy for Polyglot Curriculum tracker, presented as a terminal man-page.',
+  title: 'Privacy Policy - know your language™',
+  description: 'Privacy policy for know your language™ tracker, presented as a terminal man-page.',
 };
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-dvh flex flex-col font-mono text-sm leading-relaxed" style={{ backgroundColor: 'var(--bg)', color: 'var(--fg)' }}>
-      <main className="flex-1 max-w-3xl mx-auto w-full px-3 sm:px-6 py-10 flex flex-col justify-between">
+      <main className="flex-1 w-full px-4 sm:px-8 py-10 flex flex-col justify-between">
         <div>
           {/* Man Header */}
           <div className="flex justify-between border-b pb-2 mb-8 uppercase text-[11px]" style={{ borderColor: 'var(--border)', color: 'var(--fg-dim)' }}>
             <span>PRIVACY(7)</span>
-            <span>Polyglot Curriculum Manual</span>
+            <span>know your language™ Manual</span>
             <span>PRIVACY(7)</span>
           </div>
 
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Name</h2>
             <p className="pl-4">
-              <strong className="text-[var(--fg)]">privacy</strong> - Privacy Policy and data protection manifest for the Polyglot Curriculum tracker.
+              <strong className="text-[var(--fg)]">privacy</strong> - Privacy Policy and data protection manifest for the know your language™ tracker.
             </p>
           </section>
 
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Synopsis</h2>
             <p className="pl-4 font-semibold text-[var(--accent-info)]">
-              polyglot-curriculum --show-policy=privacy
+              kyl --show-policy=privacy
             </p>
           </section>
 
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
           <section className="mb-6">
             <h2 className="font-bold text-[var(--accent-prompt)] uppercase mb-2">Description</h2>
             <p className="pl-4 text-[var(--fg-muted)] mb-3">
-              Polyglot Curriculum is a self-study tracking platform designed to help developers learn programming languages. This document outlines how user data is collected, stored, and protected.
+              know your language™ is a self-study tracking platform designed to help developers learn programming languages. This document outlines how user data is collected, stored, and protected.
             </p>
             <p className="pl-4 text-[var(--fg-muted)]">
               We believe in minimal data footprint. We do not track you across the web, we do not sell your data, and we do not utilize any advertising or analytics trackers.

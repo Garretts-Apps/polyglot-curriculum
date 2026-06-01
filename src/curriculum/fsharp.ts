@@ -7,9 +7,47 @@ export const fsharpPhases: Phase[] = [
     level: 0,
     title: 'Setup & Hello World',
     timeEstimate: '0.5-1 hours',
-    intro: `Welcome to F#! In this phase you'll verify your local .NET SDK installation and run your first F# script. If you've never written a line of F# before, this is the place to start.
+    intro: `Welcome to F#! If you have never written a single line of code in any language before, you are in exactly the right place. We are going to start from absolute zero. In this phase you'll set up the .NET SDK (the program that turns F# text into something the computer can run) and write your very first F# program. By the end you'll have a working environment and you'll understand every character of that first program.
 
-By the end you'll have a working development environment and the confidence that your toolchain is ready for the phases ahead.`,
+Here is the whole program. It is one line:
+
+\`\`\`fsharp
+printfn "Hello, World!"
+\`\`\`
+
+When you run it, the computer prints the words \`Hello, World!\` onto your screen. That's it. Now let's slow all the way down and read it the way you'd read a sentence — left to right, one piece ("token") at a time. A *token* is just a chunk of text the language treats as a single unit, like a word in English.
+
+**Token 1: \`printfn\`**
+- *What it means in plain English:* \`printfn\` is the name of a **function**. A function is a pre-built action you can ask the computer to perform — think of it as a verb, a command. This particular function's job is to display ("print") a line of text and then move the cursor to a fresh new line (the "n" at the end stands for "new line").
+- *Why it's on this line:* it is the action of the program. Without an action, nothing would happen. \`printfn\` is doing the actual work of showing text to you.
+- *What changes if you remove it:* you'd be left with just \`"Hello, World!"\` — a piece of text floating with nobody told to do anything with it. The program would no longer print anything to the screen.
+- *What's in memory when it runs:* \`printfn\` refers to a ready-made routine that F# already knows about. When the line runs, the computer looks up that routine and executes it, sending the text to your screen (the "standard output").
+
+**Token 2: the space between \`printfn\` and \`"Hello, World!"\`**
+- *What it means:* in F#, a space is how you **hand information to a function**. You write the function's name, then a space, then the thing you want to give it. There are no parentheses needed here.
+- *Why it's there:* it separates the verb (\`printfn\`) from the thing the verb acts on (the text). \`printfn "Hello, World!"\` reads as "print this text."
+- *What changes if removed:* \`printfn"Hello, World!"\` (no space) makes the two tokens run together and F# can't tell where the function name ends. The space is the glue, and also the gap.
+- *In memory:* nothing — a space is purely how the text is read, not a value.
+
+**Token 3: \`"Hello, World!"\` (including the quotation marks)**
+- *What it means:* the double-quote characters \`"\` ... \`"\` mark off a **string** — that's the technical word for "a piece of text." Everything between the opening \`"\` and the closing \`"\` is the literal text \`Hello, World!\`. The quotes themselves are not part of the text; they are fences that say "the text starts here" and "the text ends here."
+- *Why it's on this line:* this is the actual message you want shown. It is the *information* you hand to \`printfn\` so it knows what to print.
+- *What changes if removed:* without the text, \`printfn\` has nothing to print. Without the quotes (\`printfn Hello, World!\`), F# would think \`Hello\` and \`World\` are names of things rather than literal text, and it would fail with an error.
+- *In memory:* when the program runs, the computer holds the actual characters \`H\`, \`e\`, \`l\`, \`l\`, \`o\`, and so on in memory as a string value, and passes that value to \`printfn\`.
+
+\`\`\`
+printfn "Hello, World!"
+^^^^^^^ ^^^^^^^^^^^^^^^^
+   |            |
+   |            the string (text) to print — quotes are fences, not text
+   the function (the action: print a line)
+\`\`\`
+
+**Two things that are NOT there — and why that's normal in F#:**
+- *No parentheses.* Many languages write \`printfn("Hello, World!")\`. F# usually doesn't need the \`( )\` — a space alone is enough to hand a value to a function. (Parentheses are still allowed; they just aren't required here.)
+- *No semicolon at the end.* Many languages end every line with \`;\`. F# is **whitespace-significant**, meaning it uses line breaks and indentation to understand where things begin and end, so it doesn't need a \`;\` to mark the end of the line. F# is also **expression-oriented** — almost everything is a value that evaluates to a result, rather than a list of commands that each need punctuation.
+
+That's the entire program, fully understood. By the end of this phase you'll have a working development environment and the confidence that your toolchain is ready for the phases ahead.`,
     topics: [
       {
         label: 'Download .NET SDK (dotnet.microsoft.com)',
@@ -29,7 +67,7 @@ By the end you'll have a working development environment and the confidence that
         prompt: 'Write a complete F# expression that prints "Hello, World!" to the console.',
         boilerplate: '// Output: Hello, World!\nprintfn "Hello, World!"\n',
         expectedOutput: 'Hello, World!',
-        explanation: 'F# uses the printfn function for printing with a new line, which is type-safe and idiomatic.',
+        explanation: 'Read it left to right. `printfn` is a function (a built-in action) whose job is to print a line of text and then move to a new line. The space after it hands a value to the function — F# needs no parentheses for this. `"Hello, World!"` is a string: the double quotes are fences marking where the text starts and ends, so the literal text printed is Hello, World! (without the quotes). There is no semicolon because F# is whitespace-significant (line breaks end the line) and expression-oriented. At runtime the characters H-e-l-l-o-... live in memory as a string value that printfn sends to your screen.',
       },
       {
         id: 'fsharp-0-mcq-1',
@@ -57,7 +95,33 @@ By the end you'll have a working development environment and the confidence that
     level: 1,
     title: 'F# Fundamentals — let, Inference, Pipelines',
     timeEstimate: '4-6 hours',
-    intro: `By the end of this phase, you'll read everyday F# fluently — \`let\` bindings, type inference, curried function signatures like \`int -> int -> int\`, and pipelines built from \`|>\` and \`List.map\`/\`filter\`/\`sum\`. You'll predict pipeline output without running it, and tell at a glance whether \`add 5\` is a partial application or a full call. To build the muscle, you'll write \`greet.fsx\` locally with \`dotnet fsi\` — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and run \`dotnet fsi greet.fsx -- Ada\` to see your first F# program in action.`,
+    intro: `In Level 0 you ran a one-line program. Now we build the four ideas that *everything* in F# rests on. If you've never programmed before, read this section slowly — once these click, the rest of F# is mostly combinations of them.
+
+**1. A \`let\` binding — giving a name to a value.** Programs constantly produce values (a number, a piece of text, a list) and then need to refer to them again later. A \`let\` binding attaches a name to a value so you can reuse it:
+
+\`\`\`fsharp
+let message = "Hello, World!"
+\`\`\`
+
+Read left to right: \`let\` is the keyword that means "I am about to introduce a name." \`message\` is the **name** you're choosing (you pick it; it could be anything). \`=\` here does **not** mean "set this from now on" — in F# \`=\` means "is defined to be." And \`"Hello, World!"\` is the **value** the name points at. After this line, writing \`message\` anywhere is the same as writing the text again.
+
+The crucial F# twist: \`let\` bindings are **immutable by default**. "Immutable" means *cannot be changed*. Once \`message\` is the string \`"Hello, World!"\`, you cannot later say \`message = "Goodbye"\` to overwrite it — F# won't allow it. This is different from the "variable" you may have heard about in other languages, where the value in a box can be swapped out anytime. In F# a \`let\` binding is more like a label stuck onto a value than a box you keep refilling. (If you truly need a changeable slot you must opt in with \`let mutable\`, which you'll meet later — but the default, and the F# habit, is immutable.)
+
+**2. A type — what *kind* of value something is.** Every value has a **type**: a category that says what it is and what you can do with it. \`"Hello"\` has type \`string\` (text). \`42\` has type \`int\` (a whole number). \`3.14\` has type \`float\`. \`true\`/\`false\` have type \`bool\`. Types matter because they decide which operations make sense: you can add two \`int\`s, but you can't sensibly add an \`int\` to a piece of text. The remarkable part is that in F# you almost never have to *write* the type down. F# has very strong **type inference** — the compiler reads your code and works out the types for you. When you write \`let x = 42\`, F# figures out on its own that \`x\` is an \`int\`. You get the safety of a strongly typed language without the noise of spelling every type out.
+
+**3. A function — a reusable action, and in F# itself a value.** A function is a named recipe: give it some input, it produces an output. You met one already (\`printfn\`). Here is one you define yourself:
+
+\`\`\`fsharp
+let double x = x * x
+\`\`\`
+
+That's the same \`let ... = ...\` shape as before — because in F# **a function is just another kind of value**, and you bind it to a name exactly like you bind a string or a number. \`double\` is the name, \`x\` is the **parameter** (a placeholder for the input that will be supplied later), and \`x * x\` is the body — the value the function produces. Functions being values is a big deal: it means you can hand a function to another function, store one in a list, or build one and return it. That idea powers the pipelines below.
+
+**4. The expression-oriented mindset.** In some languages you write a sequence of *commands* ("do this, then do that"). F# instead leans on **expressions** — pieces of code that *evaluate to a value*. \`2 + 3\` is an expression that becomes \`5\`. An \`if ... then ... else ...\` in F# is an expression too: the whole thing produces a value. Even a function body is an expression whose value is what the function returns. This is why there are no semicolons everywhere and why code reads like a chain of "this becomes that becomes the next thing." Holding this mindset is what makes pipelines feel natural.
+
+---
+
+With those four ideas in hand: by the end of this phase, you'll read everyday F# fluently — \`let\` bindings, type inference, curried function signatures like \`int -> int -> int\`, and pipelines built from \`|>\` and \`List.map\`/\`filter\`/\`sum\`. You'll predict pipeline output without running it, and tell at a glance whether \`add 5\` is a partial application or a full call. To build the muscle, you'll write \`greet.fsx\` locally with \`dotnet fsi\` — install the .NET SDK from [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download) and run \`dotnet fsi greet.fsx -- Ada\` to see your first F# program in action.`,
     video: {
       title: 'F# Functional Programming Tutorial',
       youtubeId: '25D40A46-Yg',
